@@ -10,14 +10,38 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:4399-on-vscode.play"
+		"onStartupFinished"
 	],
 	"main": "./extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "4399 on vscode",
+			"properties": {
+				"4399-on-vscode.user-agent": {
+					"description": "4399 on vscode 发出的请求头中的 UA",
+					"type": "string",
+					"default": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
+				},
+				"4399-on-vscode.cookie": {
+					"description": "4399 on vscode 发出的请求头中的 cookie, 该设置可能会由此扩展自动更改",
+					"type": "string",
+					"default": ""
+				},
+				"4399-on-vscode.referer": {
+					"description": "4399 on vscode 发出的请求头中的 referer",
+					"type": "string",
+					"default": "https://www.4399.com/"
+				}
+			}
+		},
 		"commands": [
 			{
-				"command": "4399-on-vscode.play",
-				"title": "play4399"
+				"command": "4399-on-vscode.search",
+				"title": "4399 on vscode: 搜索"
+			},
+			{
+				"command": "4399-on-vscode.get",
+				"title": "4399 on vscode: 输入游戏链接"
 			}
 		]
 	},
@@ -39,8 +63,8 @@
 	},
 	"keywords": [
 		"4399",
+		"小游戏",
 		"防沉迷",
-		"游戏",
 		"games",
 		"fcm"
 	],
@@ -48,6 +72,8 @@
 	"license": "MIT",
 	"icon": "https://github.com/dsy4567/dsy4567.github.io/blob/main/icon.png?raw=true",
 	"dependencies": {
-		"http": "^0.0.1-security"
+		"axios": "^0.27.2",
+		"cheerio": "^1.0.0-rc.12",
+		"iconv-lite": "^0.6.3"
 	}
 }

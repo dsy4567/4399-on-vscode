@@ -1,7 +1,10 @@
 const vscode = require("vscode");
-const http = require("http");
-const webviewHtml = `
+const cheerio = require("cheerio");
+const axios = require("axios").default;
+const iconv = require("iconv-lite");
+var getUrlTimes = 0;
 
+const getWebviewHtml = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -9,7 +12,7 @@ const webviewHtml = `
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta
             http-equiv="Content-Security-Policy"
-            content="allow-same-origin allow-pointer-lock allow-scripts allow-downloads allow-forms"
+            content="allow-same-origin allow-pointer-lock allow-scripts"
         />
         <title>4399</title>
         <base target="_self" />
@@ -17,24 +20,6 @@ const webviewHtml = `
 
     <body>
         <style>
-            @media (prefers-color-scheme: dark) {
-                body,
-                button,
-                input {
-                    background-color: rgb(30, 30, 30);
-                    color: white;
-                }
-            }
-
-            @media (prefers-color-scheme: light) {
-                body,
-                button,
-                input {
-                    color: black;
-                    background-color: rgb(255, 255, 255);
-                }
-            }
-
             body {
                 margin: 0;
                 padding: 0;
@@ -44,232 +29,129 @@ const webviewHtml = `
                 width: 100%;
                 height: 100vh;
             }
-            button {
-                width: 75px;
-            }
-            input {
-                width: 99%;
-            }
         </style>
-        <input
-            placeholder="手动输入以 4399.com/flash 开头的链接, 或将链接拖拽至这里"
-            id="inp"
-            type="text"
-        />
-        <button onclick="确定()">确定</button>
-        <button onclick="inp.value = '';">清空</button>
-        <button onclick="ifra.src = ifra.src;">重新加载</button>
-        <iframe id="ifra" src="http://www.4399.com/" frameborder="0"></iframe>
-        <script>
-            const vscode = acquireVsCodeApi();
-            // /**
-            //  *
-            //  * @param {String} 开始
-            //  * @param {String} 结束
-            //  * @param {String} 值
-            //  * @param {String} 类型 "1": url, "2": 字母+数字, "3": 数字
-            //  * @returns {String}
-            //  */
-            // function 获取中间(开始, 结束, 值, 类型) {
-            //     if (开始 && !值.indexOf(开始) != -1) {
-            //         值 = 值.substring(值.indexOf(开始) + 开始.length);
-            //     }
-            //     if (结束) {
-            //         值 = decodeURI(值.substring(0, 值.indexOf(结束)));
-            //     }
-            //     switch (类型) {
-            //         case "1":
-            //             if (
-            //                 !(
-            //                     值.substring(0, 2) == "//" ||
-            //                     值.substring(0, 7) == "http://" ||
-            //                     值.substring(0, 8) == "https://"
-            //                 )
-            //             ) {
-            //                 return null;
-            //             }
-            //             break;
-            //         case "2":
-            //             if (!/^[0-9a-zA-Z]*$/g.test(值)) {
-            //                 return null;
-            //             }
-            //             break;
-            //         case "3":
-            //             if (isNaN(Number(值))) {
-            //                 return null;
-            //             }
-            //             break;
-
-            //         default:
-            //             break;
-            //     }
-            //     return 值;
-            // }
-            // function 获取真实4399游戏地址(游戏地址, 回调) {
-            //     // http://www.4399.com/flash/223745.htm
-            //     let xhr = new XMLHttpRequest();
-            //     xhr.onload = () => {
-            //         let 游戏地址2 = 获取中间(
-            //             '<a class="btn" href="',
-            //             '" target="_self"></a>',
-            //             xhr.responseText,
-            //             "1"
-            //         ); // http://www.4399.com/flash/223745_2.htm
-            //         if (游戏地址2) {
-            //             let xhr2 = new XMLHttpRequest();
-            //             xhr2.onload = () => {
-            //                 let 游戏真实地址 = 获取中间(
-            //                     'var _strGamePath="',
-            //                     '";',
-            //                     xhr.responseText
-            //                 );
-            //                 if (游戏真实地址) {
-            //                     回调("//sxiao.4399.com/4399swf" + 游戏真实地址); // //sxiao.4399.com/4399swf/upload_swf/ftp37/cwb/20211115/01a/index.htm
-            //                 }
-            //             };
-            //             xhr2.open("GET", 游戏地址2);
-            //             xhr2.send();
-            //         }
-            //     };
-            //     xhr.open("GET", 游戏地址);
-            //     xhr.send();
-            // }
-            function 确定() {
-                // 获取真实4399游戏地址, (u) => {
-                //     inp.value = u;
-                // });
-                vscode.postMessage({gameUrl:inp.value});
-            }
-
-            window.addEventListener("message", (event) => {
-                const u = event.data.gameUrl;
-                if (u) ifra.src = u;
-            });
-        </script>
+        <iframe src="${url}" frameborder="0"></iframe>
     </body>
 </html>
 
 `;
-/**
- *
- * @param {String} 开始
- * @param {String} 结束
- * @param {String} 值
- * @param {String} 类型 "1": url, "2": 字母+数字, "3": 数字
- * @returns {String}
- */
-function 获取中间(开始, 结束, 值, 类型) {
-    if (开始 && !值.indexOf(开始) != -1) {
-        值 = 值.substring(值.indexOf(开始) + 开始.length);
-    }
-    if (结束) {
-        值 = decodeURI(值.substring(0, 值.indexOf(结束)));
-    }
-    if ((!开始 && !结束) || !值.includes(开始) || !值.includes(结束)) {
-        return null;
-    }
-
-    switch (类型) {
-        case "1":
-            if (
-                !(
-                    值.substring(0, 2) == "//" ||
-                    值.substring(0, 7) == "http://" ||
-                    值.substring(0, 8) == "https://"
-                )
-            ) {
-                return null;
-            }
-            break;
-        case "2":
-            if (!/^[0-9a-zA-Z]*$/g.test(值)) {
-                return null;
-            }
-            break;
-        case "3":
-            if (isNaN(Number(值))) {
-                return null;
-            }
-            break;
-
-        default:
-            break;
-    }
-    return 值;
+function log(a, b) {
+    b
+        ? console.log("[4399 on vscode]", a, b)
+        : console.log("[4399 on vscode]", a);
 }
-function 获取真实4399游戏地址(游戏地址, 回调) {
-    // http://www.4399.com/flash/223745.htm || https://www.4399.com/flash/222591.htm || ...
-    res(游戏地址, (html) => {
-        console.log(html);
-        let 游戏真实地址 = 获取中间('_strGamePath="', '";', html);
-        console.log(游戏真实地址);
-        if (游戏真实地址 && html.includes("js/serversxiao.js")) {
-            回调("//sxiao.4399.com/4399swf" + 游戏真实地址); // //sxiao.4399.com/4399swf/upload_swf/ftp37/cwb/20211115/01a/index.htm
-        } else if (游戏真实地址 && html.includes("js/serverszhong.js")) {
-            回调("//szhong.4399.com/4399swf" + 游戏真实地址); // //szhong.4399.com/4399swf/upload_swf/ftp36/huangcijin/20210915/06/index.html
-        } else if (游戏真实地址 && html.includes("js/serversda.js")) {
-            回调("//sda.4399.com/4399swf" + 游戏真实地址); // //sda.4399.com/4399swf/...
-        }
-    });
+function err(a, b) {
+    b
+        ? vscode.window.showErrorMessage(a + b)
+        : vscode.window.showErrorMessage(a);
+    b
+        ? console.error("[4399 on vscode]", a, b)
+        : console.error("[4399 on vscode]", a);
 }
-function res(url, callback) {
-    request(url, { headers: {} }, (err, res, html) => {
-        if (err) {
-            callback("");
-        }
-        callback(html);
-    });
-    const req = https.request(options, (res) => {
-        console.log(`状态码: ${res.statusCode}`);
+function getCfg(name) {
+    return vscode.workspace
+        .getConfiguration()
+        .get("4399-on-vscode." + name, undefined);
+}
+function setCfg(name, val) {
+    return vscode.workspace
+        .getConfiguration()
+        .update("4399-on-vscode." + name, val, true);
+}
+function getPlayUrl(url) {
+    getUrlTimes++;
+    if (getUrlTimes > 3) {
+        getUrlTimes = 0;
+        throw new Error("[4399 on vscode] 获取地址次数过多");
+    }
 
-        res.on("data", (d) => {
-            process.stdout.write(d);
+    axios
+        .get(url, {
+            baseURL: "http://www.4399.com/",
+            responseType: "arraybuffer",
+            headers: {
+                cookie: getCfg("cookie"),
+                "user-agent": getCfg("user-agent"),
+                referer: getCfg("referer"),
+            },
+        })
+        .then((res) => {
+            res.data = iconv.decode(res.data, "gb2312");
+            if (res.data) {
+                log("成功获取到游戏页面");
+                setCfg("cookie", res.headers["set-cookie"]);
+                log("cookie: ", res.headers["set-cookie"]);
+                const $ = cheerio.load(res.data);
+                const html = $("html").html();
+                const title = $("title").html();
+
+                let server = html.match(/src\=\"\/js\/server.+\.js\"/i);
+                let gamePath = html.match(/\_strGamePath\=\"\/.\"/i);
+                if (!server || !gamePath)
+                    throw new Error(
+                        "[4399 on vscode] 字符串匹配结果为空, 此扩展可能不支持此游戏"
+                    );
+                server =
+                    "http://" +
+                    server[0].replace('src="/js/server', "").replace('.js"') +
+                    ".4399.com/4399swf";
+                gamePath =
+                    server +
+                    gamePath[0].replace("_strGamePath=", "").replace('"');
+                gamePath
+                    ? showWebviewPanel(gamePath, title)
+                    : (() => {
+                          throw new Error("[4399 on vscode] 游戏真实地址为空");
+                      })();
+            } else {
+                getUrlTimes = 0;
+                err(
+                    "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
+                );
+                console.log("[4399 on vscode] ", res);
+            }
+        })
+        .catch((e) => {
+            err("无法获取游戏页面: 其它原因: ", e);
         });
-    });
+}
+function showWebviewPanel(url, title) {
+    const panel = vscode.window.createWebviewPanel(
+        "4399OnVscode",
+        title,
+        vscode.ViewColumn.Two,
+        { enableScripts: true }
+    );
+    panel.webview.html = getWebviewHtml(url);
 }
 
-exports.activate = function (context) {
+/**
+ * @param {vscode.ExtensionContext} ctx
+ */
+exports.activate = function (ctx) {
     console.log("Hello, 4399 on vscode!");
 
-    // const server = http.createServer();
-
-    // server.on("request", (req, res) => {
-    //     res.setHeader("Content-Type", "text/html;charset=utf-8");
-    //     res.setHeader("Access-Control-Allow-Origin", "*");
-    //     res.setHeader("Access-Control-Allow-Headers", "content-type");
-    //     res.setHeader("Access-Control-Allow-Methods", "DELETE,PUT,POST,GET,OPTIONS");
-    //     res.write(html);
-    //     res.end();
-    // });
-
-    // server.listen(4399, () => {
-    //     console.log("服务器启动成功");
-    // });
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand("4399-on-vscode.play", () => {
-            // Create and show panel
-            const panel = vscode.window.createWebviewPanel(
-                "4399-on-vscode",
-                "4399 on vscode",
-                vscode.ViewColumn.One,
-                { enableScripts: true }
-            );
-
-            panel.webview.html = webviewHtml;
-            // "<iframe sandbox='allow-same-origin allow-pointer-lock allow-scripts allow-downloads allow-forms' width='100%' height='100%' src='http://localhost:4399/'></iframe>";
-
-            panel.webview.onDidReceiveMessage(
-                (message) => {
-                    console.log(message);
-                    if (message.gameUrl)
-                        获取真实4399游戏地址(message, (u) => {
-                            panel.webview.postMessage({ gameUrl: u });
-                        });
-                },
-                undefined,
-                context.subscriptions
-            );
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.get", () => {
+            vscode.window
+                .showInputBox({
+                    value: "https://www.4399.com/flash/223745.htm",
+                    title: "4399 on vscode: 输入游戏链接",
+                    prompt: "输入 http(s)://www.4399.com/flash/ 开头的链接",
+                })
+                .then((url) => {
+                    log("用户输入的链接", url);
+                    if (url) {
+                        getPlayUrl(url);
+                    }
+                });
+        })
+    );
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.search", () => {
+            vscode.window.showQuickPick(["ggg", "hhh"]).then((值) => {
+                vscode.window.showInformationMessage(值);
+            });
         })
     );
 
