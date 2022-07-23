@@ -1,19 +1,10 @@
 const vscode = require("vscode");
-var cheerio = require("cheerio");
-var axios = require("axios").default;
-var iconv = require("iconv-lite");
-var basename = require("path").basename;
+const cheerio = require("cheerio");
+const axios = require("axios").default;
+const iconv = require("iconv-lite");
+const { parse } = require("path");
 
 var getUrlTimes = 0;
-var cfg = {
-    baseURL: "http://www.4399.com/",
-    responseType: "arraybuffer",
-    headers: {
-        cookie: getCfg("cookie"),
-        "user-agent": getCfg("user-agent"),
-        referer: getCfg("referer"),
-    },
-};
 const getWebviewHtml = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -49,6 +40,17 @@ const getWebviewHtml = (url) => `
 </html>
 
 `;
+function getReqCfg() {
+    return {
+        baseURL: "http://www.4399.com/",
+        responseType: "arraybuffer",
+        headers: {
+            cookie: getCfg("cookie"),
+            "user-agent": getCfg("user-agent"),
+            referer: getCfg("referer"),
+        },
+    };
+}
 function log(a, b) {
     b
         ? console.log("[4399 on vscode]", a, b)
@@ -82,7 +84,7 @@ function getPlayUrl(url) {
     }
 
     axios
-        .get(url, cfg)
+        .get(url, getReqCfg())
         .then((res) => {
             res.data = iconv.decode(res.data, "gb2312");
             if (res.data) {
@@ -126,7 +128,7 @@ function getPlayUrl(url) {
                 getUrlTimes = 0;
                 gamePath
                     ? (() => {
-                          axios.get(gamePath,cfg);
+                          axios.get(gamePath, getReqCfg());
                       })()
                     : (() => {
                           throw new Error("[4399 on vscode] 游戏真实地址为空");
