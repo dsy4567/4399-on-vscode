@@ -3,8 +3,11 @@ const cheerio = require("cheerio");
 const axios = require("axios").default;
 const iconv = require("iconv-lite");
 const { parse } = require("path");
+const http = require("http");
 
 var getUrlTimes = 0;
+var serverHtml = "";
+var server;
 const getWebviewHtml = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -40,6 +43,23 @@ const getWebviewHtml = (url) => `
 </html>
 
 `;
+function initServer(callback) {
+    server
+        ? callback()
+        : (server = http
+              .createServer(function (request, response) {
+                  response.writeHead(200, {
+                      "Content-Type": "text/html;charset=utf-8",
+                      "access-control-allow-origin": "*",
+                      //   "Content-Security-Policy": "origin-when-cross-origin",
+                  });
+                  response.end(serverHtml);
+              })
+              .listen(44399, "localhost", function () {
+                  log("服务器已启动");
+                  callback();
+              }));
+}
 function getReqCfg() {
     return {
         baseURL: "http://www.4399.com/",
@@ -89,8 +109,6 @@ function getPlayUrl(url) {
             res.data = iconv.decode(res.data, "gb2312");
             if (res.data) {
                 log("成功获取到游戏页面");
-                setCfg("cookie", res.headers["set-cookie"]);
-                log("set-cookie: ", res.headers["set-cookie"]);
                 const $ = cheerio.load(res.data);
                 const html = $.html();
 
@@ -128,7 +146,35 @@ function getPlayUrl(url) {
                 getUrlTimes = 0;
                 gamePath
                     ? (() => {
-                          axios.get(gamePath, getReqCfg());
+                          setCfg("cookie", res.headers["set-cookie"]);
+                          log("set-cookie: ", res.headers["set-cookie"]);
+
+                          axios.get(gamePath, getReqCfg()).then((res) => {
+                              res.data = iconv.decode(res.data, "gb2312");
+                              if (res.data) {
+                                  log("成功获取到游戏页面");
+                                  const $ = cheerio.load(res.data);
+                                  const base_href = gamePath.replace(
+                                      parse(new URL(gamePath).pathname).base,
+                                      ""
+                                  );
+
+                                  if (!$("base")[0]) {
+                                      log("base_href: ", base_href);
+                                      $("head").append(
+                                          `<base href="${base_href}" target="_self" />`
+                                      );
+
+                                      initServer(() => {
+                                          serverHtml = $.html();
+                                          showWebviewPanel(
+                                              "http://127.0.0.1:44399",
+                                              title
+                                          );
+                                      });
+                                  }
+                              }
+                          });
                       })()
                     : (() => {
                           throw new Error("[4399 on vscode] 游戏真实地址为空");
