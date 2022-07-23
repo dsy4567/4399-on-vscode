@@ -1,15 +1,26 @@
 const vscode = require("vscode");
-const cheerio = require("cheerio");
-const axios = require("axios").default;
-const iconv = require("iconv-lite");
-var getUrlTimes = 0;
+var cheerio = require("cheerio");
+var axios = require("axios").default;
+var iconv = require("iconv-lite");
+var basename = require("path").basename;
 
+var getUrlTimes = 0;
+var cfg = {
+    baseURL: "http://www.4399.com/",
+    responseType: "arraybuffer",
+    headers: {
+        cookie: getCfg("cookie"),
+        "user-agent": getCfg("user-agent"),
+        referer: getCfg("referer"),
+    },
+};
 const getWebviewHtml = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="referrer" content="origin-when-crossorigin">
         <meta
             http-equiv="Content-Security-Policy"
             content="allow-same-origin allow-pointer-lock allow-scripts"
@@ -30,7 +41,10 @@ const getWebviewHtml = (url) => `
                 height: 100vh;
             }
         </style>
-        <iframe src="${url}" frameborder="0"></iframe>
+        <iframe id="ifr" src="http://www.4399.com/" referrerpolicy="http://www.4399.com/" frameborder="0"></iframe>
+        <script>
+            setTimeout(() => { ifr.src=\`${url}?\`; }, 3000)
+        </script>
     </body>
 </html>
 
@@ -62,44 +76,58 @@ function getPlayUrl(url) {
     getUrlTimes++;
     if (getUrlTimes > 3) {
         getUrlTimes = 0;
-        throw new Error("[4399 on vscode] 获取地址次数过多");
+        throw new Error(
+            "[4399 on vscode] 获取地址次数过多, 已重置获取地址次数, 请再试一次"
+        );
     }
 
     axios
-        .get(url, {
-            baseURL: "http://www.4399.com/",
-            responseType: "arraybuffer",
-            headers: {
-                cookie: getCfg("cookie"),
-                "user-agent": getCfg("user-agent"),
-                referer: getCfg("referer"),
-            },
-        })
+        .get(url, cfg)
         .then((res) => {
             res.data = iconv.decode(res.data, "gb2312");
             if (res.data) {
                 log("成功获取到游戏页面");
                 setCfg("cookie", res.headers["set-cookie"]);
-                log("cookie: ", res.headers["set-cookie"]);
+                log("set-cookie: ", res.headers["set-cookie"]);
                 const $ = cheerio.load(res.data);
-                const html = $("html").html();
-                const title = $("title").html();
+                const html = $.html();
 
+                let title = "";
+                try {
+                    title = html
+                        .match(/<title>.+<\/title>/i)[0]
+                        .replace(/<\/?title>/gi, "")
+                        .split(/[,_]/)[0];
+                } catch (e) {
+                    title = $("title").html();
+                }
                 let server = html.match(/src\=\"\/js\/server.+\.js\"/i);
-                let gamePath = html.match(/\_strGamePath\=\"\/.\"/i);
-                if (!server || !gamePath)
+                let gamePath = html.match(/\_strGamePath\=\".+\.htm[l]?\"/i);
+                if (!server || !gamePath) {
+                    // debugger;
                     throw new Error(
-                        "[4399 on vscode] 字符串匹配结果为空, 此扩展可能不支持此游戏"
+                        "[4399 on vscode] 字符串匹配结果为空, 此扩展可能出现了问题, 或不支持此游戏"
                     );
+                }
                 server =
                     "http://" +
-                    server[0].replace('src="/js/server', "").replace('.js"') +
+                    html
+                        .match(/src\=\"\/js\/server.+\.js\"/i)[0]
+                        .split('"')[1]
+                        .replace("/js/server", "")
+                        .replace(".js", "") +
                     ".4399.com/4399swf";
                 gamePath =
                     server +
-                    gamePath[0].replace("_strGamePath=", "").replace('"');
+                    gamePath[0]
+                        .replace("_strGamePath=", "")
+                        .replace(/["]/g, "");
+
+                getUrlTimes = 0;
                 gamePath
-                    ? showWebviewPanel(gamePath, title)
+                    ? (() => {
+                          axios.get(gamePath,cfg);
+                      })()
                     : (() => {
                           throw new Error("[4399 on vscode] 游戏真实地址为空");
                       })();
@@ -112,13 +140,14 @@ function getPlayUrl(url) {
             }
         })
         .catch((e) => {
+            getUrlTimes = 0;
             err("无法获取游戏页面: 其它原因: ", e);
         });
 }
 function showWebviewPanel(url, title) {
     const panel = vscode.window.createWebviewPanel(
         "4399OnVscode",
-        title,
+        title ? title : "4399 on vscode",
         vscode.ViewColumn.Two,
         { enableScripts: true }
     );
@@ -129,8 +158,6 @@ function showWebviewPanel(url, title) {
  * @param {vscode.ExtensionContext} ctx
  */
 exports.activate = function (ctx) {
-    console.log("Hello, 4399 on vscode!");
-
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.get", () => {
             vscode.window
