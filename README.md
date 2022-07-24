@@ -1,5 +1,5 @@
 <p align="center">
-<img src="icon.png" />
+<img src="icon.png" alt="logo" title="logo" />
 <h1 align="center">4399 on vscode</h1>
 </p>
 
