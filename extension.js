@@ -58,12 +58,18 @@ function initHttpServer(callback) {
                       response.end(serverHtml);
                   } else {
                       axios
-                          .get("http://" + server + request.url, getCfg())
+                          .get(
+                              "http://" + server + request.url,
+                              getReqCfg("text")
+                          )
                           .then((res) => {
                               response.writeHead(200, {
                                   "Content-Type": "text/html",
                                   "access-control-allow-origin": "*",
                               });
+                              if (typeof res.data !== "string") {
+                                  return response.end(JSON.stringify(res.data));
+                              }
                               response.end(res.data);
                           })
                           .catch((e) => {
@@ -73,8 +79,8 @@ function initHttpServer(callback) {
                                   "Content-Type": "text/html",
                                   "access-control-allow-origin": "*",
                               });
-                              response.end(e);
-                              err("服务器出现错误: 其它原因: ", e);
+                              response.end(e.message);
+                              err("服务器出现错误: 其它原因: ", e.message);
                           });
                       //   response.end();
                   }
@@ -175,7 +181,7 @@ function getPlayUrl(url) {
                           log("set-cookie: ", res.headers["set-cookie"]);
 
                           axios
-                              .get(gameUrl, getReqCfg())
+                              .get(gameUrl, getReqCfg("text"))
                               .then((res) => {
                                   //   res.data = iconv.decode(res.data, "gb2312");
                                   if (res.data) {
@@ -261,6 +267,6 @@ exports.activate = function (ctx) {
             });
         })
     );
-    log("配置: ", getCfg());
+    log("配置: ", getReqCfg());
     console.log("4399 on vscode is ready!");
 };
