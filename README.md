@@ -1,65 +1,22 @@
-# 4399-on-vscode README
+<p align="center">
+<img src="icon.png" />
+<h1 align="center">4399 on vscode</h1>
+</p>
 
-This is the README for your extension "4399-on-vscode". After writing up a brief description, we recommend including the following sections.
+# ✨ 简介
 
-## Features
+4399 on vscode 是一个 vscode 扩展,它可以让您在紧张的开发工作之余, 通过玩一会 4399, 放松身心, 更好地开始接下来的工作
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+# 🔨 使用方法
 
-For example if there is an image subfolder under your extension project workspace:
+按下 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
+, 输入 `4399 on vscode` 开始探索
 
-\!\[feature X\]\(images/feature-x.png\)
+# 💊 调试
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+在 vscode 里按一下 <kbd>F5</kbd> 即可
 
-## Requirements
+# ⚖️ 许可证
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Copyright (c) 2022 [dsy4567](https://github.com/dsy4567/)  
+源代码同时在 [MIT 和 反"996" 许可证](LICENSE)下获得许可

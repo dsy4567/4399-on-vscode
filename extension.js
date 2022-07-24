@@ -60,27 +60,29 @@ function initHttpServer(callback) {
                       axios
                           .get(
                               "http://" + server + request.url,
-                              getReqCfg("text")
+                              getReqCfg("arraybuffer")
                           )
                           .then((res) => {
-                              response.writeHead(200, {
-                                  "Content-Type": "text/html",
-                                  "access-control-allow-origin": "*",
-                              });
-                              if (typeof res.data !== "string") {
-                                  return response.end(JSON.stringify(res.data));
-                              }
+                              let headers = res.headers["content-type"];
+                              headers["access-control-allow-origin"] = "*";
+                              response.writeHead(200, headers);
                               response.end(res.data);
                           })
                           .catch((e) => {
                               //   getUrlTimes = 0;
-                              log(request);
+                              log(request, request.url);
                               response.writeHead(500, {
                                   "Content-Type": "text/html",
                                   "access-control-allow-origin": "*",
                               });
+                              response.statusMessage = e.message;
                               response.end(e.message);
-                              err("服务器出现错误: 其它原因: ", e.message);
+                              if (
+                                  !String(e.message).includes(
+                                      "Request failed with status code"
+                                  )
+                              )
+                                  err("服务器出现错误: 其它原因: ", e.message);
                           });
                       //   response.end();
                   }
@@ -109,8 +111,8 @@ function log(a, b) {
 }
 function err(a, b) {
     b
-        ? vscode.window.showErrorMessage(a + b)
-        : vscode.window.showErrorMessage(a);
+        ? vscode.window.showErrorMessage("(详细信息请见控制台) " + a + b)
+        : vscode.window.showErrorMessage("(详细信息请见控制台) " + a);
     b
         ? console.error("[4399 on vscode]", a, b)
         : console.error("[4399 on vscode]", a);
