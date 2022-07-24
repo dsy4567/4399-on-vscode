@@ -264,9 +264,9 @@ exports.activate = function (ctx) {
     );
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.search", () => {
-            vscode.window.showQuickPick(["ggg", "hhh"]).then((值) => {
-                vscode.window.showInformationMessage(值);
-            });
+            // vscode.window.showQuickPick(["ggg", "hhh"]).then((值) => {
+                vscode.window.showInformationMessage("功能待开发, 敬请期待");
+            // });
         })
     );
     log("配置: ", getReqCfg());
