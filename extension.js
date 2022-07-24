@@ -2,12 +2,15 @@ const vscode = require("vscode");
 const cheerio = require("cheerio");
 const axios = require("axios").default;
 const iconv = require("iconv-lite");
-const { parse } = require("path");
+// const { parse } = require("path");
 const http = require("http");
 
 var getUrlTimes = 0;
+var httpServer;
 var serverHtml = "";
-var server;
+var server = ""; // szhong.4399.com
+var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
+var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 const getWebviewHtml = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -35,35 +38,57 @@ const getWebviewHtml = (url) => `
                 height: 100vh;
             }
         </style>
-        <iframe id="ifr" src="http://www.4399.com/" referrerpolicy="http://www.4399.com/" frameborder="0"></iframe>
+        <iframe id="ifr" src="${url}" frameborder="0"></iframe>
         <script>
-            setTimeout(() => { ifr.src=\`${url}?\`; }, 3000)
         </script>
     </body>
 </html>
 
 `;
-function initServer(callback) {
-    server
+function initHttpServer(callback) {
+    httpServer
         ? callback()
-        : (server = http
+        : (httpServer = http
               .createServer(function (request, response) {
-                  response.writeHead(200, {
-                      "Content-Type": "text/html;charset=utf-8",
-                      "access-control-allow-origin": "*",
-                      //   "Content-Security-Policy": "origin-when-cross-origin",
-                  });
-                  response.end(serverHtml);
+                  if (request.url.includes(gamePath)) {
+                      response.writeHead(200, {
+                          "Content-Type": "text/html",
+                          "access-control-allow-origin": "*",
+                      });
+                      response.end(serverHtml);
+                  } else {
+                      axios
+                          .get("http://" + server + request.url, getCfg())
+                          .then((res) => {
+                              response.writeHead(200, {
+                                  "Content-Type": "text/html",
+                                  "access-control-allow-origin": "*",
+                              });
+                              response.end(res.data);
+                          })
+                          .catch((e) => {
+                              //   getUrlTimes = 0;
+                              log(request);
+                              response.writeHead(500, {
+                                  "Content-Type": "text/html",
+                                  "access-control-allow-origin": "*",
+                              });
+                              response.end(e);
+                              err("服务器出现错误: 其它原因: ", e);
+                          });
+                      //   response.end();
+                  }
               })
               .listen(44399, "localhost", function () {
                   log("服务器已启动");
                   callback();
-              }));
+              })
+              .on("error", (e) => err(e.stack)));
 }
-function getReqCfg() {
+function getReqCfg(responseType) {
     return {
         baseURL: "http://www.4399.com/",
-        responseType: "arraybuffer",
+        responseType: responseType,
         headers: {
             cookie: getCfg("cookie"),
             "user-agent": getCfg("user-agent"),
@@ -104,7 +129,7 @@ function getPlayUrl(url) {
     }
 
     axios
-        .get(url, getReqCfg())
+        .get(url, getReqCfg("arraybuffer"))
         .then((res) => {
             res.data = iconv.decode(res.data, "gb2312");
             if (res.data) {
@@ -121,60 +146,67 @@ function getPlayUrl(url) {
                 } catch (e) {
                     title = $("title").html();
                 }
-                let server = html.match(/src\=\"\/js\/server.+\.js\"/i);
-                let gamePath = html.match(/\_strGamePath\=\".+\.htm[l]?\"/i);
-                if (!server || !gamePath) {
+                let server_matched = html.match(/src\=\"\/js\/server.+\.js\"/i);
+                let gamePath_matched = html.match(
+                    /\_strGamePath\=\".+\.htm[l]?\"/i
+                );
+                if (!server_matched || !gamePath_matched) {
                     // debugger;
                     throw new Error(
                         "[4399 on vscode] 字符串匹配结果为空, 此扩展可能出现了问题, 或不支持此游戏"
                     );
                 }
                 server =
-                    "http://" +
-                    html
-                        .match(/src\=\"\/js\/server.+\.js\"/i)[0]
+                    server_matched[0]
                         .split('"')[1]
                         .replace("/js/server", "")
-                        .replace(".js", "") +
-                    ".4399.com/4399swf";
+                        .replace(".js", "") + ".4399.com";
                 gamePath =
-                    server +
-                    gamePath[0]
+                    "/4399swf" +
+                    gamePath_matched[0]
                         .replace("_strGamePath=", "")
                         .replace(/["]/g, "");
+                gameUrl = "http://" + server + gamePath;
 
                 getUrlTimes = 0;
-                gamePath
+                gameUrl
                     ? (() => {
                           setCfg("cookie", res.headers["set-cookie"]);
                           log("set-cookie: ", res.headers["set-cookie"]);
 
-                          axios.get(gamePath, getReqCfg()).then((res) => {
-                              res.data = iconv.decode(res.data, "gb2312");
-                              if (res.data) {
-                                  log("成功获取到游戏页面");
-                                  const $ = cheerio.load(res.data);
-                                  const base_href = gamePath.replace(
-                                      parse(new URL(gamePath).pathname).base,
-                                      ""
-                                  );
+                          axios
+                              .get(gameUrl, getReqCfg())
+                              .then((res) => {
+                                  //   res.data = iconv.decode(res.data, "gb2312");
+                                  if (res.data) {
+                                      log("成功获取到游戏真实页面", gameUrl);
+                                      //   const $ = cheerio.load(res.data);
+                                      //   const base_href = gameUrl.replace(
+                                      //       parse(new URL(gameUrl).pathname).base,
+                                      //       ""
+                                      //   );
 
-                                  if (!$("base")[0]) {
-                                      log("base_href: ", base_href);
-                                      $("head").append(
-                                          `<base href="${base_href}" target="_self" />`
-                                      );
+                                      //   if (!$("base")[0]) {
+                                      //       log("base_href: ", base_href);
+                                      //       $("head").append(
+                                      //           `<base href="${base_href}" target="_self" />`
+                                      //       );
 
-                                      initServer(() => {
-                                          serverHtml = $.html();
+                                      initHttpServer(() => {
+                                          serverHtml = res.data;
                                           showWebviewPanel(
-                                              "http://127.0.0.1:44399",
+                                              "http://localhost:44399" +
+                                                  gamePath,
                                               title
                                           );
                                       });
+                                      //   }
                                   }
-                              }
-                          });
+                              })
+                              .catch((e) => {
+                                  getUrlTimes = 0;
+                                  err("无法获取游戏真实页面: 其它原因: ", e);
+                              });
                       })()
                     : (() => {
                           throw new Error("[4399 on vscode] 游戏真实地址为空");
@@ -229,6 +261,6 @@ exports.activate = function (ctx) {
             });
         })
     );
-
+    log("配置: ", getCfg());
     console.log("4399 on vscode is ready!");
 };
