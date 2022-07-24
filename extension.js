@@ -17,11 +17,6 @@ const getWebviewHtml = (url) => `
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="referrer" content="origin-when-crossorigin">
-        <meta
-            http-equiv="Content-Security-Policy"
-            content="allow-same-origin allow-pointer-lock allow-scripts"
-        />
         <title>4399</title>
         <base target="_self" />
     </head>
@@ -52,6 +47,7 @@ function initHttpServer(callback) {
               .createServer(function (request, response) {
                   if (request.url.includes(gamePath)) {
                       response.writeHead(200, {
+                        "content-security-policy":"allow-pointer-lock allow-scripts",
                           "Content-Type": "text/html",
                           "access-control-allow-origin": "*",
                       });
@@ -236,7 +232,7 @@ function showWebviewPanel(url, title) {
     const panel = vscode.window.createWebviewPanel(
         "4399OnVscode",
         title ? title : "4399 on vscode",
-        vscode.ViewColumn.Two,
+        vscode.ViewColumn.One,
         { enableScripts: true }
     );
     panel.webview.html = getWebviewHtml(url);
@@ -263,7 +259,7 @@ exports.activate = function (ctx) {
         })
     );
     ctx.subscriptions.push(
-        vscode.commands.registerCommand("4399-on-vscode.search", () => {
+        vscode.commands.registerCommand("4399-on-vscode.special", () => {
             // vscode.window.showQuickPick(["ggg", "hhh"]).then((值) => {
                 vscode.window.showInformationMessage("功能待开发, 敬请期待");
             // });

@@ -36,8 +36,8 @@
 		},
 		"commands": [
 			{
-				"command": "4399-on-vscode.search",
-				"title": "4399 on vscode: 搜索"
+				"command": "4399-on-vscode.special",
+				"title": "4399 on vscode: 推荐"
 			},
 			{
 				"command": "4399-on-vscode.get",
