@@ -164,7 +164,7 @@ function getPlayUrl(url) {
                     /\_strGamePath\=\".+\.htm[l]?\"/i
                 );
                 if (!server_matched || !gamePath_matched) {
-                    debugger
+                    debugger;
                     throw new Error(
                         "[4399 on vscode] 字符串匹配结果为空, 此扩展可能出现了问题, 或不支持此游戏"
                     );
@@ -280,7 +280,8 @@ exports.activate = function (ctx) {
                         ).each((i, elem) => {
                             gameNames[i] = $(elem).attr("alt");
                         });
-                        if (!gameNames[0]||!urls[0]) return err("一个推荐的游戏也没有");
+                        if (!gameNames[0] || !urls[0])
+                            return err("一个推荐的游戏也没有");
                         vscode.window.showQuickPick(gameNames).then((val) => {
                             let index = gameNames.indexOf(val);
                             log(urls[index]);
@@ -326,9 +327,15 @@ exports.activate = function (ctx) {
                                     "#skinbody > div.w_980.cf > div.anim > div:nth-child(3) > div > div.pop > b > a"
                                 ).each((i, elem) => {
                                     urls[i] = $(elem).attr("href");
-                                    gameNames[i] = $(elem).html().replace(/<font color=['"]?red['"]?>/,"").replace("</font>","");
+                                    gameNames[i] = $(elem)
+                                        .html()
+                                        .replace(
+                                            /<font color=['"]?red['"]?>/,
+                                            ""
+                                        )
+                                        .replace("</font>", "");
                                 });
-                                if (!gameNames[0]||!urls[0])
+                                if (!gameNames[0] || !urls[0])
                                     return err("一个游戏也没搜到");
                                 vscode.window
                                     .showQuickPick(gameNames)
