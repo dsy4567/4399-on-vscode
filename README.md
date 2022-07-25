@@ -26,4 +26,4 @@
 # ⚖️ 许可证
 
 Copyright (c) 2022 [dsy4567](https://github.com/dsy4567/)  
-源代码同时在 [MIT 和 反"996" 许可证](LICENSE)下获得许可
+源代码同时在 [MIT 和 反"996" 许可证](https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE)下获得许可
