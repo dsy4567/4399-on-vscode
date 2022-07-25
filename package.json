@@ -12,7 +12,7 @@
 	"activationEvents": [
 		"onStartupFinished"
 	],
-	"main": "./extension/extension.js",
+	"main": "extension.js",
 	"contributes": {
 		"configuration": {
 			"title": "4399 on vscode",
@@ -75,6 +75,7 @@
 		"cheerio": "^1.0.0-rc.12",
 		"iconv-lite": "^0.6.3"
 	},
+	"icon": "icon.png",
 	"repository": "https://github.com/dsy4567/4399-on-vscode.git",
 	"author": "dsy4567",
 	"bugs": {

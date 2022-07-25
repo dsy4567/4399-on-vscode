@@ -9,6 +9,7 @@ on:
             - "master"
         paths:
             - "**.js"
+            - "**.json"
 
 jobs:
     build:
