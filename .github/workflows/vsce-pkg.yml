@@ -29,7 +29,7 @@ jobs:
         cache: 'npm'
     - name: init
       run: npm install
-    - name: build
+    - name: init-vsce
       run: npm install -g vsce
     - name: pkg
       run: vsce package
