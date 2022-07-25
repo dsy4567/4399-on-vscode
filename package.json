@@ -69,7 +69,7 @@
 		"fcm"
 	],
 	"publisher": "dsy4567",
-	"license": "MIT",
+	"license": "SEE LICENSE IN <LICENSE>",
 	"icon": "https://github.com/dsy4567/dsy4567.github.io/blob/main/icon.png?raw=true",
 	"dependencies": {
 		"axios": "^0.27.2",
