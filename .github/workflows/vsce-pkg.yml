@@ -27,6 +27,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+    - name: init
+      run: npm install
     - name: build
       run: npm install -g vsce
     - name: pkg
