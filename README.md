@@ -1,5 +1,5 @@
 <p align="center">
-<img src="icon.png" alt="logo" title="logo" />
+<img src="extension/icon.png" alt="logo" title="logo" />
 <h1 align="center">4399 on vscode</h1>
 </p>
 
@@ -17,6 +17,10 @@
 -   **请不要用这个扩展玩页游, flash 或 u3d 游戏, 此扩展不会支持这类游戏**
 -   此扩展不支持登陆账号
 -   如果游戏竖着显示, 请不要拆分编辑器, 并尝试调整窗口大小
+
+# 🛠️ 安装
+
+此扩展还没有发布到扩展商店, 请点[这里](https://github.com/dsy4567/4399-on-vscode/blob/master/4399-on-vscode-0.0.1.vsix)安装
 
 # 💊 运行/调试
 
