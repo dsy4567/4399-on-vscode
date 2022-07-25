@@ -248,7 +248,7 @@ exports.activate = function (ctx) {
                 .showInputBox({
                     value: "https://www.4399.com/flash/223745.htm",
                     title: "4399 on vscode: 输入游戏链接",
-                    prompt: "输入 http(s)://www.4399.com/flash/ 开头的链接",
+                    prompt: "输入 http(s)://www.4399.com/flash/ 后面的数字()",
                 })
                 .then((url) => {
                     log("用户输入的链接", url);
