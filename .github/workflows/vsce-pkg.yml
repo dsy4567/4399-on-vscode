@@ -33,8 +33,14 @@ jobs:
       run: npm install -g vsce
     - name: pkg
       run: vsce package
+    - name: commit
+      run: |
+        git config --global user.email dsy4567@outlook.com
+        git config --global user.name dsy4567
+        git add .
+        git commit -m "auto run vsce package" -a
     - name: GitHub Push
-      uses: ad-m/github-push-action@v0.6.0
+      uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     
