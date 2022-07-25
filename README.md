@@ -27,14 +27,14 @@
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
 -   搜索功能不能搜到全部游戏
 
-# 🛠️ 安装
+<!-- # 🛠️ 安装
 
 此扩展还没有发布到扩展商店, 请点[这里](https://github.com/dsy4567/4399-on-vscode/blob/master/4399-on-vscode-0.0.1.vsix)安装
 
 # 💊 运行/调试
 
 1. 运行 `npm install` 安装依赖
-2. 在 vscode 里按一下 <kbd>F5</kbd>
+2. 在 vscode 里按一下 <kbd>F5</kbd> -->
 
 # ⚖️ 许可证
 

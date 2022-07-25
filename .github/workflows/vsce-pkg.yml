@@ -10,6 +10,7 @@ on:
         paths:
             - "**.js"
             - "**.json"
+            - "**.md"
 
 jobs:
     build:
