@@ -41,7 +41,11 @@
 			},
 			{
 				"command": "4399-on-vscode.get",
-				"title": "4399 on vscode: 输入游戏链接"
+				"title": "4399 on vscode: 输入游戏 id"
+			},
+			{
+				"command": "4399-on-vscode.search",
+				"title": "4399 on vscode: 搜索"
 			}
 		]
 	},

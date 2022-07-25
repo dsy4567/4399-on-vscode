@@ -47,7 +47,8 @@ function initHttpServer(callback) {
               .createServer(function (request, response) {
                   if (request.url.includes(gamePath)) {
                       response.writeHead(200, {
-                        "content-security-policy":"allow-pointer-lock allow-scripts",
+                          "content-security-policy":
+                              "allow-pointer-lock allow-scripts",
                           "Content-Type": "text/html",
                           "access-control-allow-origin": "*",
                       });
@@ -65,8 +66,7 @@ function initHttpServer(callback) {
                               response.end(res.data);
                           })
                           .catch((e) => {
-                              //   getUrlTimes = 0;
-                              log(request, request.url);
+                              //   log(request, request.url);
                               response.writeHead(500, {
                                   "Content-Type": "text/html",
                                   "access-control-allow-origin": "*",
@@ -78,7 +78,7 @@ function initHttpServer(callback) {
                                       "Request failed with status code"
                                   )
                               )
-                                  err("服务器出现错误: 其它原因: ", e.message);
+                                  err("服务器出现错误: ", e.message);
                           });
                       //   response.end();
                   }
@@ -107,8 +107,8 @@ function log(a, b) {
 }
 function err(a, b) {
     b
-        ? vscode.window.showErrorMessage("(详细信息请见控制台) " + a + b)
-        : vscode.window.showErrorMessage("(详细信息请见控制台) " + a);
+        ? vscode.window.showErrorMessage(a + b + " (详细信息请见控制台)")
+        : vscode.window.showErrorMessage(a + " (详细信息请见控制台)");
     b
         ? console.error("[4399 on vscode]", a, b)
         : console.error("[4399 on vscode]", a);
@@ -141,6 +141,15 @@ function getPlayUrl(url) {
                 const $ = cheerio.load(res.data);
                 const html = $.html();
 
+                if (
+                    !$(
+                        "#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap"
+                    )[0]
+                ) {
+                    throw new Error(
+                        "[4399 on vscode] 这个游戏可能是页游或非 h5 游戏"
+                    );
+                }
                 let title = "";
                 try {
                     title = html
@@ -150,21 +159,24 @@ function getPlayUrl(url) {
                 } catch (e) {
                     title = $("title").html();
                 }
-                let server_matched = html.match(/src\=\"\/js\/server.+\.js\"/i);
+                let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
                 let gamePath_matched = html.match(
                     /\_strGamePath\=\".+\.htm[l]?\"/i
                 );
                 if (!server_matched || !gamePath_matched) {
-                    // debugger;
+                    debugger
                     throw new Error(
                         "[4399 on vscode] 字符串匹配结果为空, 此扩展可能出现了问题, 或不支持此游戏"
                     );
                 }
-                server =
-                    server_matched[0]
-                        .split('"')[1]
-                        .replace("/js/server", "")
-                        .replace(".js", "") + ".4399.com";
+                if (server_matched[0] == 'src="/js/server.js"')
+                    server = "s1.4399.com";
+                else
+                    server =
+                        server_matched[0]
+                            .split('"')[1]
+                            .replace("/js/server", "")
+                            .replace(".js", "") + ".4399.com";
                 gamePath =
                     "/4399swf" +
                     gamePath_matched[0]
@@ -184,17 +196,6 @@ function getPlayUrl(url) {
                                   //   res.data = iconv.decode(res.data, "gb2312");
                                   if (res.data) {
                                       log("成功获取到游戏真实页面", gameUrl);
-                                      //   const $ = cheerio.load(res.data);
-                                      //   const base_href = gameUrl.replace(
-                                      //       parse(new URL(gameUrl).pathname).base,
-                                      //       ""
-                                      //   );
-
-                                      //   if (!$("base")[0]) {
-                                      //       log("base_href: ", base_href);
-                                      //       $("head").append(
-                                      //           `<base href="${base_href}" target="_self" />`
-                                      //       );
 
                                       initHttpServer(() => {
                                           serverHtml = res.data;
@@ -209,7 +210,7 @@ function getPlayUrl(url) {
                               })
                               .catch((e) => {
                                   getUrlTimes = 0;
-                                  err("无法获取游戏真实页面: 其它原因: ", e);
+                                  err("无法获取游戏真实页面: ", e);
                               });
                       })()
                     : (() => {
@@ -225,7 +226,7 @@ function getPlayUrl(url) {
         })
         .catch((e) => {
             getUrlTimes = 0;
-            err("无法获取游戏页面: 其它原因: ", e);
+            err("无法获取游戏页面: ", e);
         });
 }
 function showWebviewPanel(url, title) {
@@ -246,21 +247,108 @@ exports.activate = function (ctx) {
         vscode.commands.registerCommand("4399-on-vscode.get", () => {
             vscode.window
                 .showInputBox({
-                    value: "https://www.4399.com/flash/223745.htm",
-                    title: "4399 on vscode: 输入游戏链接",
-                    prompt: "输入 http(s)://www.4399.com/flash/ 后面的数字()",
+                    value: "222735",
+                    title: "4399 on vscode: 输入游戏 id",
+                    prompt: "输入 http(s)://www.4399.com/flash/ 后面的数字(游戏 id)",
                 })
-                .then((url) => {
-                    log("用户输入的链接", url);
-                    if (url) {
-                        getPlayUrl(url);
+                .then((id) => {
+                    log("用户输入的 id", id);
+                    if (id) {
+                        getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
                     }
                 });
         })
     );
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.special", () => {
-                vscode.window.showInformationMessage("功能待开发, 敬请期待");
+            axios
+                .get("https://www.4399.com/", getReqCfg("arraybuffer"))
+                .then((res) => {
+                    res.data = iconv.decode(res.data, "gb2312");
+                    if (res.data) {
+                        log("成功获取到4399首页");
+                        const $ = cheerio.load(res.data);
+                        let gameNames = [],
+                            urls = [];
+                        $(
+                            "#skinbody > div.middle_3.cf > div.box_c > div.tm_fun.h_3 > ul > li > a[href*='/flash/']"
+                        ).each((i, elem) => {
+                            urls[i] = $(elem).attr("href");
+                        });
+                        $(
+                            "#skinbody > div.middle_3.cf > div.box_c > div.tm_fun.h_3 > ul > li > a[href*='/flash/'] > img"
+                        ).each((i, elem) => {
+                            gameNames[i] = $(elem).attr("alt");
+                        });
+                        if (!gameNames[0]||!urls[0]) return err("一个推荐的游戏也没有");
+                        vscode.window.showQuickPick(gameNames).then((val) => {
+                            let index = gameNames.indexOf(val);
+                            log(urls[index]);
+                            if (index != -1) getPlayUrl(urls[index]);
+                        });
+                    }
+                })
+                .catch((e) => {
+                    getUrlTimes = 0;
+                    err("无法获取4399首页: ", e);
+                });
+        })
+    );
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.search", () => {
+            vscode.window
+                .showInputBox({
+                    value: "人生重开模拟器",
+                    title: "4399 on vscode: 搜索",
+                    prompt: "输入搜索词",
+                })
+                .then((val) => {
+                    axios
+                        .get(
+                            "https://so2.4399.com/search/search.php?k=" +
+                                encodeURI(val),
+                            getReqCfg("arraybuffer")
+                        )
+                        .then((res) => {
+                            res.data = iconv.decode(res.data, "gb2312");
+                            if (res.data) {
+                                log("成功获取到4399搜索页面");
+                                const $ = cheerio.load(res.data);
+                                /**
+                                 * @type {string[]}
+                                 */
+                                let gameNames = [],
+                                    /**
+                                     * @type {string[]}
+                                     */
+                                    urls = [];
+                                $(
+                                    "#skinbody > div.w_980.cf > div.anim > div:nth-child(3) > div > div.pop > b > a"
+                                ).each((i, elem) => {
+                                    urls[i] = $(elem).attr("href");
+                                    gameNames[i] = $(elem).html().replace(/<font color=['"]?red['"]?>/,"").replace("</font>","");
+                                });
+                                if (!gameNames[0]||!urls[0])
+                                    return err("一个游戏也没搜到");
+                                vscode.window
+                                    .showQuickPick(gameNames)
+                                    .then((val) => {
+                                        let index = gameNames.indexOf(val);
+                                        if (index != -1) {
+                                            let url = urls[index];
+                                            if (url.substring(0, 2) == "//")
+                                                url = "http:" + url;
+                                            log(url);
+                                            getPlayUrl(url);
+                                        }
+                                    });
+                            }
+                        })
+                        .catch((e) => {
+                            getUrlTimes = 0;
+                            err("无法获取4399首页: ", e);
+                        });
+                });
         })
     );
     log("配置: ", getReqCfg());
