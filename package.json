@@ -69,7 +69,7 @@
 		"fcm"
 	],
 	"publisher": "dsy4567",
-	"license": "SEE LICENSE IN <LICENSE>",
+	"license": "SEE LICENSE IN LICENSE",
 	"icon": "./icon.png",
 	"dependencies": {
 		"axios": "^0.27.2",
