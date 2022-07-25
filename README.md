@@ -3,7 +3,7 @@
 > 如果觉得好用, 请不要吝啬[star](https://github.com/dsy4567/4399-on-vscode)
 
 <p align="center">
-<img src="icon.png" alt="logo" title="logo" />
+<img src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
 <h1 align="center">4399 on vscode</h1>
 </p>
 
