@@ -12,7 +12,7 @@
 	"activationEvents": [
 		"onStartupFinished"
 	],
-	"main": "./extension.js",
+	"main": "./extension/extension.js",
 	"contributes": {
 		"configuration": {
 			"title": "4399 on vscode",
