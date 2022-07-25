@@ -70,16 +70,13 @@
 	],
 	"publisher": "dsy4567",
 	"license": "SEE LICENSE IN <LICENSE>",
-	"icon": "https://github.com/dsy4567/dsy4567.github.io/blob/main/icon.png?raw=true",
+	"icon": "./icon.png",
 	"dependencies": {
 		"axios": "^0.27.2",
 		"cheerio": "^1.0.0-rc.12",
 		"iconv-lite": "^0.6.3"
 	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/dsy4567/4399-on-vscode.git"
-	},
+	"repository": "https://github.com/dsy4567/4399-on-vscode.git",
 	"author": "dsy4567",
 	"bugs": {
 		"url": "https://github.com/dsy4567/4399-on-vscode/issues"
