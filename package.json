@@ -2,7 +2,7 @@
 	"name": "4399-on-vscode",
 	"displayName": "4399 on vscode",
 	"description": "在vscode上玩4399",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"engines": {
 		"vscode": "^1.67.0"
 	},
@@ -23,7 +23,7 @@
 					"default": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
 				},
 				"4399-on-vscode.cookie": {
-					"description": "4399 on vscode 发出的请求头中的 cookie, 该设置可能会由此扩展自动更改",
+					"description": "4399 on vscode 发出的请求头中的 cookie, 该设置可能会由此扩展自动更改, 您设置的 cookie 无法用于登陆账号",
 					"type": "string",
 					"default": ""
 				},
@@ -31,6 +31,16 @@
 					"description": "4399 on vscode 发出的请求头中的 referer",
 					"type": "string",
 					"default": "https://www.4399.com/"
+				},
+				"4399-on-vscode.outputLogs": {
+					"description": "控制是否输出日志",
+					"type": "boolean",
+					"default": false
+				},
+				"4399-on-vscode.title": {
+					"description": "控制 Webview 标题, 若留空则使用游戏名称",
+					"type": "string",
+					"default": ""
 				}
 			}
 		},

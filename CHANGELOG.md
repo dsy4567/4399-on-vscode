@@ -1,9 +1,15 @@
-# Change Log
+# 4399 on vscode - 更新日志
 
-All notable changes to the "4399-on-vscode" extension will be documented in this file.
+## v0.0.3
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+-   ✨ 新增自定义标题和其它设置项
+-   🛠️ 修复游戏搜索结果只有一个的问题
+-   补 CHANGELOG
 
-## [Unreleased]
+## v0.0.2
 
-- Initial release
+-   更新描述
+
+## v0.0.1
+
+-   第一个版本

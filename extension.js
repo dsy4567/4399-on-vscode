@@ -6,11 +6,18 @@ const iconv = require("iconv-lite");
 const http = require("http");
 
 var getUrlTimes = 0;
+/**
+ * @type {http.Server}
+ */
 var httpServer;
 var serverHtml = "";
 var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
+/**
+ * @type {vscode.WebviewPanel}
+ */
+var panel;
 const getWebviewHtml = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -60,7 +67,7 @@ function initHttpServer(callback) {
                               getReqCfg("arraybuffer")
                           )
                           .then((res) => {
-                              let headers = res.headers["content-type"];
+                              let headers = res.headers;
                               headers["access-control-allow-origin"] = "*";
                               response.writeHead(200, headers);
                               response.end(res.data);
@@ -101,6 +108,7 @@ function getReqCfg(responseType) {
     };
 }
 function log(a, b) {
+    if (!getCfg("outputLogs")) return;
     b
         ? console.log("[4399 on vscode]", a, b)
         : console.log("[4399 on vscode]", a);
@@ -127,9 +135,7 @@ function getPlayUrl(url) {
     getUrlTimes++;
     if (getUrlTimes > 3) {
         getUrlTimes = 0;
-        throw new Error(
-            "[4399 on vscode] 获取地址次数过多, 已重置获取地址次数, 请再试一次"
-        );
+        return err("获取地址次数过多, 已重置获取地址次数, 请再试一次");
     }
 
     axios
@@ -146,9 +152,7 @@ function getPlayUrl(url) {
                         "#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap"
                     )[0]
                 ) {
-                    throw new Error(
-                        "[4399 on vscode] 这个游戏可能是页游或非 h5 游戏"
-                    );
+                    return err("这个游戏可能是页游或非 h5 游戏");
                 }
                 let title = "";
                 try {
@@ -164,9 +168,8 @@ function getPlayUrl(url) {
                     /\_strGamePath\=\".+\.htm[l]?\"/i
                 );
                 if (!server_matched || !gamePath_matched) {
-                    debugger;
-                    throw new Error(
-                        "[4399 on vscode] 字符串匹配结果为空, 此扩展可能出现了问题, 或不支持此游戏"
+                    return err(
+                        "字符串匹配结果为空, 此扩展可能出现了问题, 或不支持此游戏"
                     );
                 }
                 if (server_matched[0] == 'src="/js/server.js"')
@@ -214,14 +217,14 @@ function getPlayUrl(url) {
                               });
                       })()
                     : (() => {
-                          throw new Error("[4399 on vscode] 游戏真实地址为空");
+                          return err("游戏真实地址为空");
                       })();
             } else {
                 getUrlTimes = 0;
                 err(
                     "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
                 );
-                console.log("[4399 on vscode] ", res);
+                log(res);
             }
         })
         .catch((e) => {
@@ -230,9 +233,14 @@ function getPlayUrl(url) {
         });
 }
 function showWebviewPanel(url, title) {
-    const panel = vscode.window.createWebviewPanel(
+    try {
+        panel.dispose();
+    } catch (e) {}
+
+    const customTitle = getCfg("title");
+    panel = vscode.window.createWebviewPanel(
         "4399OnVscode",
-        title ? title : "4399 on vscode",
+        customTitle ? customTitle : title ? title : "4399 on vscode",
         vscode.ViewColumn.One,
         { enableScripts: true }
     );
@@ -324,7 +332,7 @@ exports.activate = function (ctx) {
                                      */
                                     urls = [];
                                 $(
-                                    "#skinbody > div.w_980.cf > div.anim > div:nth-child(3) > div > div.pop > b > a"
+                                    "#skinbody > div.w_980.cf > div.anim > div > div > div.pop > b > a"
                                 ).each((i, elem) => {
                                     urls[i] = $(elem).attr("href");
                                     gameNames[i] = $(elem)
