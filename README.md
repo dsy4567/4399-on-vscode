@@ -45,6 +45,5 @@
 # ⚖️ 许可证
 
 Copyright (c) 2022 [dsy4567](https://github.com/dsy4567/)  
-源代码同时在 [MIT 和 反"996" 许可证](https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE)下获得许可
-
+源代码在 [MIT 许可证](https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE) 下获得许可  
 游戏由 [4399](http://www.4399.com) 提供, 游戏的版权归各自游戏作者所有
