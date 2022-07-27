@@ -5,6 +5,7 @@
 <p align="center">
 <img src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
 <h1 align="center">4399 on vscode</h1>
+<img src="https://dsy4567.github.io/4-o-v.gif" alt="演示" title="logo" />
 </p>
 
 # ✨ 简介
@@ -32,13 +33,14 @@
 
 # 📢 已知问题
 
+-   游戏没有声音, 即使替换 [ffmpeg.dll](https://stackoverflow.com/questions/48321919/show-html5-video-on-previewhtml-command-in-vscode-extension/51735036#51735036) 也不行
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
--   游戏存档可能会丢失
+-   游戏存档有时会丢失
 -   悬浮球内用户头像无法显示
 
 # 🕒 待开发功能
 
--   使用 [ruffle]() 运行旧的 flash 游戏
+-   使用 [ruffle](https://github.com/ruffle-rs/ruffle) 运行旧的 flash 游戏
 
 # ⚖️ 许可证
 

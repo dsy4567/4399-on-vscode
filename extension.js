@@ -5,7 +5,6 @@ const iconv = require("iconv-lite");
 // const { parse } = require("path");
 const http = require("http");
 
-var getUrlTimes = 0;
 /**
  * @type {http.Server}
  */
@@ -115,8 +114,8 @@ function log(a, b) {
 }
 function err(a, b) {
     b
-        ? vscode.window.showErrorMessage(a + b + " (详细信息请见控制台)")
-        : vscode.window.showErrorMessage(a + " (详细信息请见控制台)");
+        ? vscode.window.showErrorMessage(a + b)
+        : vscode.window.showErrorMessage(a);
     b
         ? console.error("[4399 on vscode]", a, b)
         : console.error("[4399 on vscode]", a);
@@ -132,12 +131,6 @@ function setCfg(name, val) {
         .update("4399-on-vscode." + name, val, true);
 }
 function getPlayUrl(url) {
-    getUrlTimes++;
-    if (getUrlTimes > 3) {
-        getUrlTimes = 0;
-        return err("获取地址次数过多, 已重置获取地址次数, 请再试一次");
-    }
-
     axios
         .get(url, getReqCfg("arraybuffer"))
         .then((res) => {
@@ -187,7 +180,6 @@ function getPlayUrl(url) {
                         .replace(/["]/g, "");
                 gameUrl = "http://" + server + gamePath;
 
-                getUrlTimes = 0;
                 gameUrl
                     ? (() => {
                           setCfg("cookie", res.headers["set-cookie"]);
@@ -212,7 +204,6 @@ function getPlayUrl(url) {
                                   }
                               })
                               .catch((e) => {
-                                  getUrlTimes = 0;
                                   err("无法获取游戏真实页面: ", e);
                               });
                       })()
@@ -220,7 +211,6 @@ function getPlayUrl(url) {
                           return err("游戏真实地址为空");
                       })();
             } else {
-                getUrlTimes = 0;
                 err(
                     "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
                 );
@@ -228,7 +218,6 @@ function getPlayUrl(url) {
             }
         })
         .catch((e) => {
-            getUrlTimes = 0;
             err("无法获取游戏页面: ", e);
         });
 }
@@ -260,8 +249,8 @@ exports.activate = function (ctx) {
                     prompt: "输入 http(s)://www.4399.com/flash/ 后面的数字(游戏 id)",
                 })
                 .then((id) => {
-                    log("用户输入的 id", id);
                     if (id) {
+                        log("用户输入 ", id);
                         getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
                     }
                 });
@@ -291,6 +280,9 @@ exports.activate = function (ctx) {
                         if (!gameNames[0] || !urls[0])
                             return err("一个推荐的游戏也没有");
                         vscode.window.showQuickPick(gameNames).then((val) => {
+                            log("用户输入 ", val);
+                            if (!val) return;
+
                             let index = gameNames.indexOf(val);
                             log(urls[index]);
                             if (index != -1) getPlayUrl(urls[index]);
@@ -298,7 +290,6 @@ exports.activate = function (ctx) {
                     }
                 })
                 .catch((e) => {
-                    getUrlTimes = 0;
                     err("无法获取4399首页: ", e);
                 });
         })
@@ -312,6 +303,9 @@ exports.activate = function (ctx) {
                     prompt: "输入搜索词",
                 })
                 .then((val) => {
+                    console.log("ggg", val);
+                    if (!val) return;
+
                     axios
                         .get(
                             "https://so2.4399.com/search/search.php?k=" +
@@ -348,6 +342,9 @@ exports.activate = function (ctx) {
                                 vscode.window
                                     .showQuickPick(gameNames)
                                     .then((val) => {
+                                        log("用户输入 ", val);
+                                        if (!val) return;
+
                                         let index = gameNames.indexOf(val);
                                         if (index != -1) {
                                             let url = urls[index];
@@ -360,12 +357,10 @@ exports.activate = function (ctx) {
                             }
                         })
                         .catch((e) => {
-                            getUrlTimes = 0;
                             err("无法获取4399首页: ", e);
                         });
                 });
         })
     );
-    log("配置: ", getReqCfg());
     console.log("4399 on vscode is ready!");
 };

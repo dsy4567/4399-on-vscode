@@ -1,10 +1,10 @@
 {
 	"name": "4399-on-vscode",
 	"displayName": "4399 on vscode",
-	"description": "在vscode上玩4399",
-	"version": "0.0.3",
+	"description": "在vscode上玩4399小游戏, 帮助你劳逸结合, 提高开发效率",
+	"version": "0.1.0",
 	"engines": {
-		"vscode": "^1.67.0"
+		"vscode": "^1.51.0"
 	},
 	"categories": [
 		"Other"
@@ -76,14 +76,14 @@
 		"typescript": "^4.6.4"
 	},
 	"keywords": [
-		"4399",
-		"小游戏",
-		"防沉迷",
+		"小霸王",
+		"游戏",
+		"童年回忆",
 		"games",
-		"fcm"
+		"高效工作"
 	],
 	"publisher": "dsy4567",
-	"license": "SEE LICENSE IN LICENSE",
+	"license": "MIT",
 	"dependencies": {
 		"axios": "^0.27.2",
 		"cheerio": "^1.0.0-rc.12",
@@ -93,6 +93,7 @@
 	"repository": "https://github.com/dsy4567/4399-on-vscode.git",
 	"author": "dsy4567",
 	"bugs": {
+		"email": "dsy4567@outlook.com",
 		"url": "https://github.com/dsy4567/4399-on-vscode/issues"
 	},
 	"homepage": "https://github.com/dsy4567/4399-on-vscode#readme"
