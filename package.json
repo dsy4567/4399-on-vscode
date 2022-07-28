@@ -2,7 +2,7 @@
 	"name": "4399-on-vscode",
 	"displayName": "4399 on vscode",
 	"description": "在vscode上玩4399小游戏, 帮助你劳逸结合, 提高开发效率",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"engines": {
 		"vscode": "^1.67.0"
 	},
@@ -37,8 +37,13 @@
 					"type": "boolean",
 					"default": false
 				},
+				"4399-on-vscode.moreOpen": {
+					"description": "控制是否允许游戏多开",
+					"type": "boolean",
+					"default": false
+				},
 				"4399-on-vscode.title": {
-					"description": "控制 Webview 标题, 若留空则使用游戏名称",
+					"description": "控制 Webview 标题, 若留空则使用游戏名称或 4399 on vscode",
 					"type": "string",
 					"default": ""
 				}
@@ -47,19 +52,23 @@
 		"commands": [
 			{
 				"command": "4399-on-vscode.old-flash-games",
-				"title": "4399 on vscode: 旧的 flash 游戏"
+				"title": "4399 on vscode: 旧的 flash 游戏",
+				"shortTitle": "4399 on vscode: special"
 			},
 			{
 				"command": "4399-on-vscode.special",
-				"title": "4399 on vscode: 推荐"
+				"title": "4399 on vscode: 推荐",
+				"shortTitle": "4399 on vscode: search"
 			},
 			{
 				"command": "4399-on-vscode.get",
-				"title": "4399 on vscode: 输入游戏 id"
+				"title": "4399 on vscode: 输入游戏 id",
+				"shortTitle": "4399 on vscode: get"
 			},
 			{
 				"command": "4399-on-vscode.search",
-				"title": "4399 on vscode: 搜索"
+				"title": "4399 on vscode: 搜索",
+				"shortTitle": "4399 on vscode: search"
 			}
 		]
 	},
@@ -82,7 +91,7 @@
 	"keywords": [
 		"小霸王",
 		"游戏",
-		"童年回忆",
+		"flash",
 		"games",
 		"高效工作"
 	],

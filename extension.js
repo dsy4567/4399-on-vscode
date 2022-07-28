@@ -33,7 +33,7 @@ const http = require("http");
  * @type {http.Server}
  */
 var httpServer;
-var serverHtml = "";
+var DATA;
 var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -113,7 +113,7 @@ function initHttpServer(callback) {
                           "Content-Type": "text/html",
                           "access-control-allow-origin": "*",
                       });
-                      response.end(serverHtml);
+                      response.end(DATA);
                   } else {
                       axios
                           .get(
@@ -185,6 +185,28 @@ function setCfg(name, val) {
         .getConfiguration()
         .update("4399-on-vscode." + name, val, true);
 }
+function getServer(server_matched) {
+    switch (server_matched[0]) {
+        case 'src="/js/server3.js"':
+            return "nitrome.com.4399.com";
+        case 'src="/js/server4.js"':
+            return "s8.4399.com";
+        case 'src="/js/server8.js"':
+            return "flashs1.4399.com";
+        case 'src="/js/server10.js"':
+            return "s6.4399.com";
+        case 'src="/js/server.js"':
+            return "s1.4399.com";
+
+        default:
+            return (
+                server_matched[0]
+                    .split('"')[1]
+                    .replace("/js/server", "")
+                    .replace(".js", "") + ".4399.com"
+            );
+    }
+}
 function getPlayUrl(url) {
     axios
         .get(url, getReqCfg("arraybuffer"))
@@ -195,13 +217,6 @@ function getPlayUrl(url) {
                 const $ = cheerio.load(res.data);
                 const html = $.html();
 
-                if (
-                    !$(
-                        "#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap"
-                    )[0]
-                ) {
-                    return err("这个游戏可能是页游或非 h5 游戏");
-                }
                 let title = "";
                 try {
                     title = html
@@ -213,21 +228,14 @@ function getPlayUrl(url) {
                 }
                 let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
                 let gamePath_matched = html.match(
-                    /\_strGamePath\=\".+\.htm[l]?\"/i
+                    /\_strGamePath\=\".+\.(swf|htm[l]?)\"/i
                 );
                 if (!server_matched || !gamePath_matched) {
                     return err(
-                        "字符串匹配结果为空, 此扩展可能出现了问题, 或不支持此游戏"
+                        "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后)的 flash 游戏或非 h5 游戏"
                     );
                 }
-                if (server_matched[0] == 'src="/js/server.js"')
-                    server = "s1.4399.com";
-                else
-                    server =
-                        server_matched[0]
-                            .split('"')[1]
-                            .replace("/js/server", "")
-                            .replace(".js", "") + ".4399.com";
+                server = getServer(server_matched);
                 gamePath =
                     "/4399swf" +
                     gamePath_matched[0]
@@ -240,19 +248,31 @@ function getPlayUrl(url) {
                           setCfg("cookie", res.headers["set-cookie"]);
                           log("set-cookie: ", res.headers["set-cookie"]);
 
+                          if (
+                              !$(
+                                  "#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap"
+                              )[0] &&
+                              !gamePath.includes(".swf")
+                          ) {
+                              return err(
+                                  "这个游戏可能是页游, 较新(约2006年6月以后)的 flash 游戏或非 h5 游戏"
+                              );
+                          }
                           axios
-                              .get(gameUrl, getReqCfg("text"))
+                              .get(gameUrl, getReqCfg("arraybuffer"))
                               .then((res) => {
-                                  //   res.data = iconv.decode(res.data, "gb2312");
                                   if (res.data) {
                                       log("成功获取到游戏真实页面", gameUrl);
 
                                       initHttpServer(() => {
-                                          serverHtml = res.data;
+                                          DATA = res.data;
                                           showWebviewPanel(
                                               "http://localhost:44399" +
                                                   gamePath,
-                                              title
+                                              title,
+                                              gamePath.includes(".swf")
+                                                  ? "fl"
+                                                  : undefined
                                           );
                                       });
                                       //   }
@@ -276,7 +296,7 @@ function getPlayUrl(url) {
             err("无法获取游戏页面: ", e);
         });
 }
-function searchGames(url, type) {
+function searchGames(url) {
     axios
         .get(url, getReqCfg("arraybuffer"))
         .then((res) => {
@@ -320,10 +340,11 @@ function searchGames(url, type) {
             err("无法获取4399首页: ", e);
         });
 }
-function showWebviewPanel(url, title) {
-    try {
-        panel.dispose();
-    } catch (e) {}
+function showWebviewPanel(url, title, type) {
+    if (!getCfg("moreOpen"))
+        try {
+            panel.dispose();
+        } catch (e) {}
 
     const customTitle = getCfg("title");
     panel = vscode.window.createWebviewPanel(
@@ -332,7 +353,9 @@ function showWebviewPanel(url, title) {
         vscode.ViewColumn.One,
         { enableScripts: true }
     );
-    panel.webview.html = getWebviewHtml(url);
+    type == "fl"
+        ? (panel.webview.html = getWebviewHtml_flash(url))
+        : (panel.webview.html = getWebviewHtml(url));
 }
 
 /**
@@ -405,26 +428,21 @@ exports.activate = function (ctx) {
                     if (!val) return;
                     searchGames(
                         "https://so2.4399.com/search/search.php?k=" +
-                            encodeURI(val)
+                            encodeURI(val) +
+                            "&view=list&sort=thetime"
                     );
                 });
         })
     );
     ctx.subscriptions.push(
-        vscode.commands.registerCommand("4399-on-vscode.old-flash-games", () => {
-            vscode.window
-                .showInputBox({
-                    value: "人生重开模拟器",
-                    title: "4399 on vscode: 搜索",
-                    prompt: "输入搜索词",
-                })
-                .then((val) => {
-                    if (!val) return;
-                    searchGames(
-                        "https://so2.4399.com/search/search.php?k=flash","fl"
-                    );
-                });
-        })
+        vscode.commands.registerCommand(
+            "4399-on-vscode.old-flash-games",
+            () => {
+                searchGames(
+                    "https://so2.4399.com/search/search.php?k=flash&view=list&sort=thetime"
+                );
+            }
+        )
     );
     console.log("4399 on vscode is ready!");
 };
