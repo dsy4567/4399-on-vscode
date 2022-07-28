@@ -1,0 +1,2 @@
+- 注意请求 url 格式 https://so2.4399.com/search/search.php?k=flash&view=list&sort=thetime
+-  flash

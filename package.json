@@ -46,6 +46,10 @@
 		},
 		"commands": [
 			{
+				"command": "4399-on-vscode.old-flash-games",
+				"title": "4399 on vscode: 旧的 flash 游戏"
+			},
+			{
 				"command": "4399-on-vscode.special",
 				"title": "4399 on vscode: 推荐"
 			},

@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2022 dsy4567(https://github.com/dsy4567/ ; dsy4567)
+Copyright (c) 2022 dsy4567(https://github.com/dsy4567/ ; dsy4567@outlook.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -69,6 +69,37 @@ const getWebviewHtml = (url) => `
     </body>
 </html>
 
+`;
+const getWebviewHtml_flash = (url) => `
+<!DOCTYPE html>
+<html style="height: 100%;margin: 0;padding: 0;">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0"
+        />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>flash 播放器(Ruffle 引擎)</title>
+        <script>
+            window.play = function (url) {
+                var html =
+                    '<object id="flashgame" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="//download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=10,0,0,0" width="100%" height="100%"><param id="game" name="movie" value="' +
+                    url +
+                    '" /><embed id="flashgame1" name="flashgame" src="' +
+                    url +
+                    '" quality="high" pluginspage="//www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="100%" height="100%" /> <param name="quality" value="high" /></object>';
+                document.body.innerHTML =html
+            };
+        </script>
+        <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    </head>
+    <body style="height: 100%;margin: 0;padding: 0;">
+        <script>
+            window.play("${url}");
+        </script>
+    </body>
+</html>
 `;
 function initHttpServer(callback) {
     httpServer
@@ -245,6 +276,50 @@ function getPlayUrl(url) {
             err("无法获取游戏页面: ", e);
         });
 }
+function searchGames(url, type) {
+    axios
+        .get(url, getReqCfg("arraybuffer"))
+        .then((res) => {
+            res.data = iconv.decode(res.data, "gb2312");
+            if (res.data) {
+                log("成功获取到4399搜索页面");
+                const $ = cheerio.load(res.data);
+                /**
+                 * @type {string[]}
+                 */
+                let gameNames = [],
+                    /**
+                     * @type {string[]}
+                     */
+                    urls = [];
+                $(
+                    "#skinbody > div.w_980.cf > div.anim > div > div > div.pop > b > a"
+                ).each((i, elem) => {
+                    urls[i] = $(elem).attr("href");
+                    gameNames[i] = $(elem)
+                        .html()
+                        .replace(/<font color=['"]?red['"]?>/, "")
+                        .replace("</font>", "");
+                });
+                if (!gameNames[0] || !urls[0]) return err("一个游戏也没搜到");
+                vscode.window.showQuickPick(gameNames).then((val) => {
+                    log("用户输入 ", val);
+                    if (!val) return;
+
+                    let index = gameNames.indexOf(val);
+                    if (index != -1) {
+                        let url = urls[index];
+                        if (url.substring(0, 2) == "//") url = "http:" + url;
+                        log(url);
+                        getPlayUrl(url);
+                    }
+                });
+            }
+        })
+        .catch((e) => {
+            err("无法获取4399首页: ", e);
+        });
+}
 function showWebviewPanel(url, title) {
     try {
         panel.dispose();
@@ -327,62 +402,27 @@ exports.activate = function (ctx) {
                     prompt: "输入搜索词",
                 })
                 .then((val) => {
-                    console.log("ggg", val);
                     if (!val) return;
-
-                    axios
-                        .get(
-                            "https://so2.4399.com/search/search.php?k=" +
-                                encodeURI(val),
-                            getReqCfg("arraybuffer")
-                        )
-                        .then((res) => {
-                            res.data = iconv.decode(res.data, "gb2312");
-                            if (res.data) {
-                                log("成功获取到4399搜索页面");
-                                const $ = cheerio.load(res.data);
-                                /**
-                                 * @type {string[]}
-                                 */
-                                let gameNames = [],
-                                    /**
-                                     * @type {string[]}
-                                     */
-                                    urls = [];
-                                $(
-                                    "#skinbody > div.w_980.cf > div.anim > div > div > div.pop > b > a"
-                                ).each((i, elem) => {
-                                    urls[i] = $(elem).attr("href");
-                                    gameNames[i] = $(elem)
-                                        .html()
-                                        .replace(
-                                            /<font color=['"]?red['"]?>/,
-                                            ""
-                                        )
-                                        .replace("</font>", "");
-                                });
-                                if (!gameNames[0] || !urls[0])
-                                    return err("一个游戏也没搜到");
-                                vscode.window
-                                    .showQuickPick(gameNames)
-                                    .then((val) => {
-                                        log("用户输入 ", val);
-                                        if (!val) return;
-
-                                        let index = gameNames.indexOf(val);
-                                        if (index != -1) {
-                                            let url = urls[index];
-                                            if (url.substring(0, 2) == "//")
-                                                url = "http:" + url;
-                                            log(url);
-                                            getPlayUrl(url);
-                                        }
-                                    });
-                            }
-                        })
-                        .catch((e) => {
-                            err("无法获取4399首页: ", e);
-                        });
+                    searchGames(
+                        "https://so2.4399.com/search/search.php?k=" +
+                            encodeURI(val)
+                    );
+                });
+        })
+    );
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.old-flash-games", () => {
+            vscode.window
+                .showInputBox({
+                    value: "人生重开模拟器",
+                    title: "4399 on vscode: 搜索",
+                    prompt: "输入搜索词",
+                })
+                .then((val) => {
+                    if (!val) return;
+                    searchGames(
+                        "https://so2.4399.com/search/search.php?k=flash","fl"
+                    );
                 });
         })
     );
