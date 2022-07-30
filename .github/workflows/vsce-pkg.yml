@@ -4,43 +4,37 @@
 name: build
 
 on:
-    push:
-        branches:
-            - "master"
-        paths:
-            - "**.js"
-            - "**.json"
-            - "**.md"
+  workflow_dispatch:
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                node-version: [16.x]
-                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    strategy:
+      matrix:
+        node-version: [16.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
-        steps:
-            - uses: actions/checkout@v3
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
-              with:
-                  node-version: ${{ matrix.node-version }}
-                  cache: "npm"
-            - name: init
-              run: npm install
-            - name: init-vsce
-              run: npm install -g vsce
-            - name: pkg
-              run: vsce package
-            - name: commit
-              run: |
-                  git config --global user.email dsy4567@outlook.com
-                  git config --global user.name dsy4567
-                  git add .
-                  git commit -m "auto run vsce package" -a
-            - name: GitHub Push
-              uses: ad-m/github-push-action@master
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - name: init
+        run: npm install
+      - name: init-vsce
+        run: npm install -g vsce
+      - name: pkg
+        run: vsce package
+      - name: commit
+        run: |
+          git config --global user.email dsy4567@outlook.com
+          git config --global user.name dsy4567
+          git add .
+          git commit -m "auto run vsce package" -a
+      - name: GitHub Push
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
