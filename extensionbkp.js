@@ -37,16 +37,34 @@ const myRequest = {
          * @param {string} url
          * @param {myReqCfgType} reqCfg
          */
-        async (url, reqCfg) => {},
+        async (url, reqCfg) => {
+            return new Promise((resolve, reject) => {
+                let cfg = new URL(url, reqCfg.baseURL);
+                cfg.protocol = "http:";
+                cfg.headers = reqCfg.headers;
+
+                http.get(cfg, (res) => {
+                    let D;
+                    res.on("data", (d) => {
+                        D += d;
+                    });
+                    res.on("end", () => {
+                        resolve(D);
+                    });
+                    res.on("error", (e) => {
+                        reject(e);
+                    });
+                }).on("error", (e) => {
+                    reject(e);
+                });
+            });
+        },
 };
 
 /**
  * @type {http.Server}
  */
 var httpServer;
-/**
- * @type {ArrayBuffer}
- */
 var DATA;
 var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -276,109 +294,99 @@ function getServer(server_matched, callback) {
 }
 /**
  * 获取游戏真实地址
- * @param {string} url
+ * @param {import("axios").AxiosResponse} res
  */
-function getRealUrl(url) {
-    if (url.startsWith("/") && !url.startsWith("//")) {
-        url = getReqCfg().baseURL + url;
+function getRealUrl(res) {
+    res.data = iconv.decode(res.data, "gb2312");
+    log("成功获取到游戏页面");
+    const $ = cheerio.load(res.data);
+    const html = $.html();
+
+    /**
+     * @type {string | null}
+     */
+    let title = "";
+    /**
+     * @type {RegExpMatchArray | null}
+     */
+    let m = null;
+    try {
+        m = html.match(/<title>.+<\/title>/i);
+        if (!m) {
+            throw new Error();
+        }
+        title = m[0].replace(/<\/?title>/gi, "").split(/[,_]/)[0];
+    } catch (e) {
+        title = $("title").html();
     }
-    axios
-        .get(url, getReqCfg("arraybuffer"))
-        .then((res) => {
-            console.log("ggg");
-            if (res.data) {
-                res.data = iconv.decode(res.data, "gb2312");
-                log("成功获取到游戏页面");
-                const $ = cheerio.load(res.data);
-                const html = $.html();
 
-                /**
-                 * @type {string | null}
-                 */
-                let title = "";
-                /**
-                 * @type {RegExpMatchArray | null}
-                 */
-                let m = null;
-                try {
-                    m = html.match(/<title>.+<\/title>/i);
-                    if (!m) {
-                        throw new Error();
-                    }
-                    title = m[0].replace(/<\/?title>/gi, "").split(/[,_]/)[0];
-                } catch (e) {
-                    title = $("title").html();
-                }
+    let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
+    let gamePath_matched = html.match(/\_strGamePath\=\".+\.(swf|htm[l]?)\"/i);
+    if (!server_matched || !gamePath_matched) {
+        return err(
+            "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后)的 flash 游戏或非 h5 游戏"
+        );
+    }
+    server = getServer(server_matched);
+    gamePath =
+        "/4399swf" +
+        gamePath_matched[0].replace("_strGamePath=", "").replace(/["]/g, "");
+    gameUrl = "http://" + server + gamePath;
 
-                let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
-                let gamePath_matched = html.match(
-                    /\_strGamePath\=\".+\.(swf|htm[l]?)\"/i
-                );
-                if (!server_matched || !gamePath_matched) {
-                    return err(
-                        "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后)的 flash 游戏或非 h5 游戏"
-                    );
-                }
-                server = getServer(server_matched);
-                gamePath =
-                    "/4399swf" +
-                    gamePath_matched[0]
-                        .replace("_strGamePath=", "")
-                        .replace(/["]/g, "");
-                gameUrl = "http://" + server + gamePath;
+    gameUrl
+        ? (() => {
+              setCfg("cookie", res.headers["set-cookie"]);
+              log("set-cookie: ", res.headers["set-cookie"]);
 
-                gameUrl
-                    ? (() => {
-                          setCfg("cookie", res.headers["set-cookie"]);
-                          log("set-cookie: ", res.headers["set-cookie"]);
+              if (
+                  !$(
+                      "#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap"
+                  )[0] &&
+                  !gamePath.includes(".swf")
+              ) {
+                  return err(
+                      "这个游戏可能是页游, 较新(约2006年6月以后)的 flash 游戏或非 h5 游戏"
+                  );
+              }
+              axios
+                  .get(gameUrl, getReqCfg("arraybuffer"))
+                  .then((res) => {
+                      if (res.data) {
+                          log("成功获取到游戏真实页面", gameUrl);
 
-                          if (
-                              !$(
-                                  "#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap"
-                              )[0] &&
-                              !gamePath.includes(".swf")
-                          ) {
-                              return err(
-                                  "这个游戏可能是页游, 较新(约2006年6月以后)的 flash 游戏或非 h5 游戏"
+                          initHttpServer(() => {
+                              DATA = res.data;
+                              showWebviewPanel(
+                                  "http://localhost:44399" + gamePath,
+                                  title,
+                                  gamePath.includes(".swf") ? "fl" : undefined
                               );
-                          }
-                          axios
-                              .get(gameUrl, getReqCfg("arraybuffer"))
-                              .then((res) => {
-                                  if (res.data) {
-                                      log("成功获取到游戏真实页面", gameUrl);
+                          });
+                          //   }
+                      }
+                  })
+                  .catch((e) => {
+                      err("无法获取游戏真实页面: ", e);
+                  });
+          })()
+        : (() => {
+              return err("游戏真实地址为空");
+          })();
 
-                                      initHttpServer(() => {
-                                          DATA = res.data;
-                                          showWebviewPanel(
-                                              "http://localhost:44399" +
-                                                  gamePath,
-                                              title,
-                                              gamePath.includes(".swf")
-                                                  ? "fl"
-                                                  : undefined
-                                          );
-                                      });
-                                      //   }
-                                  }
-                              })
-                              .catch((e) => {
-                                  err("无法获取游戏真实页面: ", e);
-                              });
-                      })()
-                    : (() => {
-                          return err("游戏真实地址为空");
-                      })();
-            } else {
-                err(
-                    "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
-                );
-                log(res);
-            }
-        })
-        .catch((e) => {
-            err("无法获取游戏页面: ", e);
-        });
+    // axios
+    //     .get(url, getReqCfg("arraybuffer"))
+    //     .then((res) => {
+    //         console.log("ggg");
+    //         if (res.data) {} else {
+    //             err(
+    //                 "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
+    //             );
+    //             log(res);
+    //         }
+    //     })
+    //     .catch((e) => {
+    //         err("无法获取游戏页面: ", e);
+    //     });
 }
 /**
  * 搜索游戏
@@ -429,7 +437,26 @@ function searchGames(url) {
                             url = "http:" + url;
                         }
                         log(url);
-                        getRealUrl(url);
+
+                        // if (url.startsWith("/") && !url.startsWith("//")) {
+                        //     url = getReqCfg().baseURL + url;
+                        // }
+                        // url=new URL(url)
+                        myRequest
+                            .get(url, getReqCfg("arraybuffer"))
+                            .then((res) => {
+                                if (res.data) {
+                                    getRealUrl(res);
+                                } else {
+                                    err(
+                                        "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
+                                    );
+                                    log(res);
+                                }
+                            })
+                            .catch((e) => {
+                                err("无法获取游戏页面: ", e);
+                            });
                     }
                 });
             }
@@ -478,7 +505,24 @@ exports.activate = (ctx) => {
                 .then((id) => {
                     if (id) {
                         log("用户输入 ", id);
-                        getRealUrl("https://www.4399.com/flash/" + id + ".htm");
+                        axios
+                            .get(
+                                "https://www.4399.com/flash/" + id + ".htm",
+                                getReqCfg("arraybuffer")
+                            )
+                            .then((res) => {
+                                if (res.data) {
+                                    getRealUrl(res);
+                                } else {
+                                    err(
+                                        "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
+                                    );
+                                    log(res);
+                                }
+                            })
+                            .catch((e) => {
+                                err("无法获取游戏页面: ", e);
+                            });
                     }
                 });
         })
@@ -523,7 +567,21 @@ exports.activate = (ctx) => {
                             let index = gameNames.indexOf(val);
                             log(urls[index]);
                             if (index !== -1) {
-                                getRealUrl(urls[index]);
+                                axios
+                                    .get(urls[index], getReqCfg("arraybuffer"))
+                                    .then((res) => {
+                                        if (res.data) {
+                                            getRealUrl(res);
+                                        } else {
+                                            err(
+                                                "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie"
+                                            );
+                                            log(res);
+                                        }
+                                    })
+                                    .catch((e) => {
+                                        err("无法获取游戏页面: ", e);
+                                    });
                             }
                         });
                     }

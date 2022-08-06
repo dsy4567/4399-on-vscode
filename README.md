@@ -1,12 +1,12 @@
-> 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏伤身，合理安排时间，享受健康生活
-
-> 如果觉得好用, 请不要吝啬[star](https://github.com/dsy4567/4399-on-vscode)
-
 <p align="center">
 <img src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
 <h1 align="center">4399 on vscode</h1>
 <img src="https://dsy4567.github.io/4-o-v.gif" alt="演示" title="logo" />
 </p>
+
+> 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏伤身，合理安排时间，享受健康生活
+
+> 如果觉得好用, 请不要吝啬[star](https://github.com/dsy4567/4399-on-vscode)
 
 # ✨ 简介
 
