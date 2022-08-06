@@ -26,7 +26,8 @@ SOFTWARE.
 
 const vscode = require("vscode");
 const cheerio = require("cheerio");
-// const axios = require("axios").default;
+const axios = require("axios").default;
+// const axios_1=axios
 const iconv = require("iconv-lite");
 const http = require("http");
 const myRequest = {
@@ -36,28 +37,7 @@ const myRequest = {
          * @param {string} url
          * @param {myReqCfgType} reqCfg
          */
-        async (url, reqCfg) => {
-            return new Promise((resolve, reject) => {
-                let cfg = new URL(url, reqCfg.baseURL);
-                cfg.protocol = "http:";
-                cfg.headers = reqCfg.headers;
-
-                http.get(cfg, (res) => {
-                    let D;
-                    res.on("data", (d) => {
-                        D += d;
-                    });
-                    res.on("end", () => {
-                        resolve(D);
-                    });
-                    res.on("error", (e) => {
-                        reject(e);
-                    });
-                }).on("error", (e) => {
-                    reject(e);
-                });
-            });
-        },
+        async (url, reqCfg) => {},
 };
 
 /**
@@ -163,7 +143,7 @@ function initHttpServer(callback) {
                       });
                       response.end(DATA);
                   } else {
-                      myRequest
+                      axios
                           .get(
                               "http://" + server + request.url,
                               getReqCfg("arraybuffer")
@@ -201,12 +181,12 @@ function initHttpServer(callback) {
 }
 /**
  * 获取请求配置
- * @returns {myReqCfgType}
+ * @param {"arraybuffer" | "blob" | "document" | "json" | "text" | "stream" | undefined} responseType
  */
-function getReqCfg(/*responseType*/) {
+function getReqCfg(responseType) {
     return {
         baseURL: "http://www.4399.com",
-        // responseType: responseType,
+        responseType: responseType,
         headers: {
             cookie: getCfg("cookie"),
             "user-agent": getCfg("user-agent"),
@@ -267,7 +247,8 @@ function setCfg(name, val) {
  * @param {(server: string) => void} callback
  */
 function getServer(server_matched, callback) {
-    myRequest
+    const axios_1 = require("axios");
+    axios_1
         .get(
             "http://www.4399.com" + server_matched[0].split('"')[1],
             getReqCfg("text")
@@ -297,13 +278,14 @@ function getServer(server_matched, callback) {
  * 获取游戏真实地址
  * @param {string} url
  */
-function getPlayUrl(url) {
+function getRealUrl(url) {
     if (url.startsWith("/") && !url.startsWith("//")) {
         url = getReqCfg().baseURL + url;
     }
-    myRequest
+    axios
         .get(url, getReqCfg("arraybuffer"))
         .then((res) => {
+            console.log("ggg");
             if (res.data) {
                 res.data = iconv.decode(res.data, "gb2312");
                 log("成功获取到游戏页面");
@@ -360,7 +342,7 @@ function getPlayUrl(url) {
                                   "这个游戏可能是页游, 较新(约2006年6月以后)的 flash 游戏或非 h5 游戏"
                               );
                           }
-                          myRequest
+                          axios
                               .get(gameUrl, getReqCfg("arraybuffer"))
                               .then((res) => {
                                   if (res.data) {
@@ -403,7 +385,7 @@ function getPlayUrl(url) {
  * @param {string} url
  */
 function searchGames(url) {
-    myRequest
+    axios
         .get(url, getReqCfg("arraybuffer"))
         .then((res) => {
             if (res.data) {
@@ -447,7 +429,7 @@ function searchGames(url) {
                             url = "http:" + url;
                         }
                         log(url);
-                        getPlayUrl(url);
+                        getRealUrl(url);
                     }
                 });
             }
@@ -496,14 +478,14 @@ exports.activate = (ctx) => {
                 .then((id) => {
                     if (id) {
                         log("用户输入 ", id);
-                        getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
+                        getRealUrl("https://www.4399.com/flash/" + id + ".htm");
                     }
                 });
         })
     );
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.special", () => {
-            myRequest
+            axios
                 .get("https://www.4399.com/", getReqCfg("arraybuffer"))
                 .then((res) => {
                     if (res.data) {
@@ -541,7 +523,7 @@ exports.activate = (ctx) => {
                             let index = gameNames.indexOf(val);
                             log(urls[index]);
                             if (index !== -1) {
-                                getPlayUrl(urls[index]);
+                                getRealUrl(urls[index]);
                             }
                         });
                     }

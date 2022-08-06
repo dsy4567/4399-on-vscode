@@ -20,6 +20,9 @@
 		"no-unreachable": "warn",
 		"no-unused-vars": "warn",
 		"constructor-super": "warn",
-		"valid-typeof": "warn"
+		"valid-typeof": "warn",
+        "curly": "warn",
+        "eqeqeq": "warn",
+        "no-throw-literal": "warn"
 	}
 }

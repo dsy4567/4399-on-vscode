@@ -12,7 +12,7 @@
 	"activationEvents": [
 		"onStartupFinished"
 	],
-	"main": "extension.js",
+	"main": "extensionbkp.js",
 	"contributes": {
 		"configuration": {
 			"title": "4399 on vscode",
@@ -109,5 +109,11 @@
 		"email": "dsy4567@outlook.com",
 		"url": "https://github.com/dsy4567/4399-on-vscode/issues"
 	},
-	"homepage": "https://github.com/dsy4567/4399-on-vscode#readme"
+	"homepage": "https://github.com/dsy4567/4399-on-vscode#readme",
+	"__metadata": {
+		"id": "eaadad03-ec72-4ee9-99d2-2ba1074630ff",
+		"publisherDisplayName": "dsy4567",
+		"publisherId": "27271018-2d0a-415e-ac11-e0fb3b5cf344",
+		"isPreReleaseVersion": false
+	}
 }
