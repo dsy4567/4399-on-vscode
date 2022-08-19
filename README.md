@@ -35,7 +35,7 @@
 
 # 📢 已知问题
 
--   游戏没有声音, 即使替换 [ffmpeg.dll](https://stackoverflow.com/questions/48321919/show-html5-video-on-previewhtml-command-in-vscode-extension/51735036#51735036) 也不行
+-   游戏没有声音, 即使[替换 ffmpeg.dll](https://stackoverflow.com/questions/48321919/show-html5-video-on-previewhtml-command-in-vscode-extension/51735036#51735036) 也不行
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
 -   游戏存档有时会丢失
 -   悬浮球内用户头像无法显示
@@ -48,5 +48,5 @@
 
 # ⚖️ 许可证
 
-Copyright (c) 2022 [dsy4567](https://github.com/dsy4567/), 源代码在 [MIT 许可证](https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE) 下获得许可  
+MIT License with "Anti 996" License  
 游戏由 [4399](http://www.4399.com) 提供, 游戏的版权归各自游戏作者所有
