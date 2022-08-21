@@ -35,7 +35,7 @@
 
 # 📢 已知问题
 
--   游戏没有声音, 即使[替换 ffmpeg.dll](https://stackoverflow.com/questions/48321919/show-html5-video-on-previewhtml-command-in-vscode-extension/51735036#51735036) 也不行
+-   h5 游戏没有声音, 即使[替换 ffmpeg.dll](https://stackoverflow.com/questions/48321919/show-html5-video-on-previewhtml-command-in-vscode-extension/51735036#51735036) 也不行
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
 -   游戏存档有时会丢失
 -   悬浮球内用户头像无法显示
