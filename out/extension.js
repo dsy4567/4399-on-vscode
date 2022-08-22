@@ -250,12 +250,12 @@ async function getServer(server_matched) {
             .replace(".js", "") + ".4399.com");
     }
 }
-async function getPlayUrl(url, axios) {
+async function getPlayUrl(url) {
     if (url.startsWith("/") && !url.startsWith("//")) {
         url = getReqCfg().baseURL + url;
     }
     try {
-        let res = await axios.get(url, getReqCfg("arraybuffer"));
+        let res = await axios_1.default.get(url, getReqCfg("arraybuffer"));
         if (res.data) {
             res.data = iconv.decode(res.data, "gb2312");
             log("成功获取到游戏页面");
@@ -296,7 +296,7 @@ async function getPlayUrl(url, axios) {
                         isFlashPage = true;
                     }
                     try {
-                        res = await axios.get(gameUrl, getReqCfg("arraybuffer"));
+                        res = await axios_1.default.get(gameUrl, getReqCfg("arraybuffer"));
                         if (!res.data) {
                             return err("无法获取游戏页面: html 为空, 您可能需要配置 UA 和 Cookie (错误发生在处理游戏真实页面阶段)");
                         }
@@ -312,7 +312,7 @@ async function getPlayUrl(url, axios) {
                                 gameUrl = gameUrl.replace(gameUrl.split("/").at(-1), fileName);
                                 let u = new URL(gameUrl);
                                 gamePath = u.pathname;
-                                res.data = (await axios.get(gameUrl, getReqCfg("arraybuffer"))).data;
+                                res.data = (await axios_1.default.get(gameUrl, getReqCfg("arraybuffer"))).data;
                             }
                         }
                         if (res.data) {
@@ -382,7 +382,7 @@ function searchGames(url) {
                         url = "http:" + url;
                     }
                     log("游戏页面: ", url);
-                    getPlayUrl(url, axios_1.default);
+                    getPlayUrl(url);
                 }
             });
         }
@@ -405,6 +405,11 @@ function showWebviewPanel(url, title, type) {
         : (panel.webview.html = getWebviewHtml_h5(url));
 }
 exports.activate = (ctx) => {
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", () => {
+        getPlayUrl("https://www.4399.com/flash/" +
+            String(Math.floor(Math.random() * 10000) + 200000) +
+            ".htm");
+    }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get", () => {
         vscode.window
             .showInputBox({
@@ -415,7 +420,7 @@ exports.activate = (ctx) => {
             .then((id) => {
             if (id) {
                 log("用户输入 ", id);
-                getPlayUrl("https://www.4399.com/flash/" + id + ".htm", axios_1.default);
+                getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
             }
         });
     }));
@@ -451,7 +456,7 @@ exports.activate = (ctx) => {
                         if (!url) {
                             return err("变量 url 可能为 undefined");
                         }
-                        getPlayUrl(url, axios_1.default);
+                        getPlayUrl(url);
                     }
                     else {
                         log("用户似乎取消了操作");

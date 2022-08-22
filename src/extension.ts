@@ -263,7 +263,7 @@ async function getServer(server_matched: RegExpMatchArray): Promise<string> {
         );
     }
 }
-async function getPlayUrl(url: string, axios: AxiosStatic) {
+async function getPlayUrl(url: string) {
     if (url.startsWith("/") && !url.startsWith("//")) {
         url = getReqCfg().baseURL + url;
     }
@@ -439,7 +439,7 @@ function searchGames(url: string) {
                                 url = "http:" + url;
                             }
                             log("游戏页面: ", url);
-                            getPlayUrl(url, axios);
+                            getPlayUrl(url);
                         }
                     });
             }
@@ -470,6 +470,16 @@ function showWebviewPanel(url: string, title: string | null, type?: string) {
 
 exports.activate = (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.random", () => {
+            getPlayUrl(
+                "https://www.4399.com/flash/" +
+                    String(Math.floor(Math.random() * 10000) + 200000) +
+                    ".htm"
+            );
+        })
+    );
+
+    ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.get", () => {
             vscode.window
                 .showInputBox({
@@ -480,10 +490,7 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
                 .then((id) => {
                     if (id) {
                         log("用户输入 ", id);
-                        getPlayUrl(
-                            "https://www.4399.com/flash/" + id + ".htm",
-                            axios
-                        );
+                        getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
                     }
                 });
         })
@@ -530,7 +537,7 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
                                     if (!url) {
                                         return err("变量 url 可能为 undefined");
                                     }
-                                    getPlayUrl(url, axios);
+                                    getPlayUrl(url);
                                 } else {
                                     log("用户似乎取消了操作");
                                 }

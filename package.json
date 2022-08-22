@@ -57,23 +57,23 @@
 		"commands": [
 			{
 				"command": "4399-on-vscode.old-flash-games",
-				"title": "4399 on vscode: 旧的 flash 游戏",
-				"shortTitle": "4399 on vscode: special"
+				"title": "4399 on vscode: 旧的 flash 游戏"
 			},
 			{
 				"command": "4399-on-vscode.special",
-				"title": "4399 on vscode: 推荐",
-				"shortTitle": "4399 on vscode: search"
+				"title": "4399 on vscode: 推荐"
 			},
 			{
 				"command": "4399-on-vscode.get",
-				"title": "4399 on vscode: 输入游戏 id",
-				"shortTitle": "4399 on vscode: get"
+				"title": "4399 on vscode: 输入游戏 id"
 			},
 			{
 				"command": "4399-on-vscode.search",
-				"title": "4399 on vscode: 搜索",
-				"shortTitle": "4399 on vscode: search"
+				"title": "4399 on vscode: 搜索"
+			},
+			{
+				"command": "4399-on-vscode.random",
+				"title": "4399 on vscode: 试试手气(有几率失败)"
 			}
 		]
 	},
