@@ -35,10 +35,9 @@
 
 # 📢 已知问题
 
--   h5 游戏没有声音, 即使[替换 ffmpeg.dll](https://stackoverflow.com/questions/48321919/show-html5-video-on-previewhtml-command-in-vscode-extension/51735036#51735036) 也不行
+-   大多数 h5 游戏在 [替换 ffmpeg.dll](https://github.com/nondanee/vsc-netease-music#requirement) 后仍然没有声音(用 [Cocos](https://www.cocos.com/) 做的游戏 %99.99 没有声音)
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
--   游戏存档有时会丢失
--   悬浮球内用户头像无法显示
+-   游戏悬浮球内用户头像无法显示
 
 # 🤝 感谢以下项目
 
