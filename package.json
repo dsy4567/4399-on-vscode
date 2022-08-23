@@ -1,7 +1,7 @@
 {
 	"name": "4399-on-vscode",
 	"displayName": "4399 on vscode",
-	"description": "在vscode上玩4399小游戏, 帮助你劳逸结合, 提高开发效率",
+	"description": "在 vscode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率",
 	"version": "0.1.4",
 	"engines": {
 		"vscode": "^1.70.0"
