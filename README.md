@@ -43,7 +43,7 @@
 
 cookie 用于登录 h5 页游
 
-请使用基于 chromium 内核的浏览器登录 4399, 然后在 [ptlogin.4399.com](https://ptlogin.4399.com) 下打开开发者工具(按 F12), 在控制台(console)下输入以下代码即可
+请使用基于 chromium 内核的浏览器登录 4399, 然后在 [ptlogin.4399.com](https://ptlogin.4399.com) 下打开开发者工具(按 F12), 在控制台(console)下输入以下代码即可(cookie 将复制到剪贴板)
 
 ```javascript
 copy(document.cookie);
