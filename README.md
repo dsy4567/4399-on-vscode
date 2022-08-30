@@ -56,7 +56,6 @@ copy(document.cookie);
 -   **请不要用这个扩展玩 u3d 或 2006 年 6 月以后的 flash 游戏, 此扩展不会支持这类游戏**
 -   如果需要 flash 游戏和少数 h5 游戏有声音, 请尝试 [替换 ffmpeg.dll](https://github.com/nondanee/vsc-netease-music#requirement)
 -   当 Webview 界面移动位置, 或从隐藏状态恢复显示, 游戏将被重置
--   此扩展不支持登陆账号
 -   如果游戏显示方向不正确, 请尽可能让游戏界面变宽(比如取消拆分编辑器)
 
 # 📢 已知问题
