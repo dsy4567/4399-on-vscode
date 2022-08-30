@@ -2,7 +2,7 @@
 	"name": "4399-on-vscode",
 	"displayName": "4399 on vscode",
 	"description": "在 vscode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"engines": {
 		"vscode": "^1.70.0"
 	},
@@ -26,11 +26,6 @@
 					"description": "4399 on vscode 发出的请求头中的 UA",
 					"type": "string",
 					"default": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
-				},
-				"4399-on-vscode.cookie": {
-					"description": "4399 on vscode 发出的请求头中的 cookie, 该设置可能会由此扩展自动更改, 您设置的 cookie 无法用于登陆账号",
-					"type": "string",
-					"default": ""
 				},
 				"4399-on-vscode.referer": {
 					"description": "4399 on vscode 发出的请求头中的 referer",
@@ -56,20 +51,28 @@
 		},
 		"commands": [
 			{
-				"command": "4399-on-vscode.old-flash-games",
-				"title": "4399 on vscode: 旧的 flash 游戏"
-			},
-			{
 				"command": "4399-on-vscode.special",
 				"title": "4399 on vscode: 推荐"
 			},
 			{
 				"command": "4399-on-vscode.get",
-				"title": "4399 on vscode: 输入游戏 id"
+				"title": "4399 on vscode: 输入游戏 id (链接以 http(s)://www.4399.com/flash/ 开头)"
+			},
+			{
+				"command": "4399-on-vscode.get-h5-web-game",
+				"title": "4399 on vscode: 输入游戏 id (链接以 http(s)://www.zxwyouxi.com/g/ 开头)"
 			},
 			{
 				"command": "4399-on-vscode.search",
 				"title": "4399 on vscode: 搜索"
+			}, 
+			{
+				"command": "4399-on-vscode.login",
+				"title": "4399 on vscode: 登录(cookie)"
+			},
+			{
+				"command": "4399-on-vscode.old-flash-games",
+				"title": "4399 on vscode: 旧的 flash 游戏"
 			},
 			{
 				"command": "4399-on-vscode.random",

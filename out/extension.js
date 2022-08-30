@@ -81,6 +81,7 @@ const iconv = require("iconv-lite");
 const http = require("http");
 var httpServer;
 var DATA;
+var cookie;
 var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -199,7 +200,6 @@ function getReqCfg(responseType) {
         baseURL: "http://www.4399.com/",
         responseType: responseType,
         headers: {
-            cookie: getCfg("cookie"),
             "user-agent": getCfg("user-agent"),
             referer: getCfg("referer"),
         },
@@ -250,6 +250,48 @@ async function getServer(server_matched) {
             .replace(".js", "") + ".4399.com");
     }
 }
+// 获取 h5 页游的真实地址
+async function getPlayUrlForWebGames(urlOrId) {
+    login(async () => {
+        let i = urlOrId.split("/").at(-1);
+        if (i && !isNaN(Number(i))) {
+            urlOrId = i;
+        }
+        else {
+            let i = urlOrId.split("gameId=").at(-1);
+            if (i && !isNaN(Number(i))) {
+                urlOrId = i;
+            }
+            else {
+                return err("h5 页游链接格式不正确");
+            }
+        }
+        let gameId = Number(urlOrId);
+        if (isNaN(gameId)) {
+            return err("h5 页游链接格式不正确");
+        }
+        try {
+            let m = cookie.match(/Pauth=.+;/i);
+            let cookieValue = "";
+            if (m) {
+                cookieValue = m[0].split("=")[1].split(";")[0];
+            }
+            if (!cookieValue) {
+                return err("cookie 没有需要的值");
+            }
+            let data = (await axios_1.default.post("https://h.api.4399.com/intermodal/user/grant2", "gameId=" +
+                gameId +
+                "&authType=cookie&cookieValue=" +
+                cookieValue, getReqCfg("json"))).data;
+            if (data.data?.game?.gameUrl) {
+                showWebviewPanel(data.data.game.gameUrl, decodeURI(data.data.game.gameName));
+            }
+        }
+        catch (e) {
+            err("无法获取游戏页面", String(e));
+        }
+    });
+}
 async function getPlayUrl(url) {
     if (url.startsWith("/") && !url.startsWith("//")) {
         url = getReqCfg().baseURL + url;
@@ -276,6 +318,14 @@ async function getPlayUrl(url) {
             let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
             let gamePath_matched = html.match(/\_strGamePath\=\".+\.(swf|htm[l]?)\"/i);
             if (!server_matched || !gamePath_matched) {
+                let u1 = $("iframe#flash22").attr("src");
+                let u2 = $("a.start-btn").attr("href");
+                if (u1) {
+                    return getPlayUrlForWebGames(u1);
+                }
+                if (u2) {
+                    return getPlayUrlForWebGames(u2);
+                }
                 return err("正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后或 AS3)的 flash 游戏或非 h5 游戏");
             }
             let s = await getServer(server_matched);
@@ -289,8 +339,6 @@ async function getPlayUrl(url) {
             gameUrl = "http://" + s + gamePath;
             gameUrl
                 ? (async () => {
-                    setCfg("cookie", res.headers["set-cookie"]);
-                    log("set-cookie: ", res.headers["set-cookie"]);
                     if (!$("#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap")[0] &&
                         !gamePath.includes(".swf")) {
                         isFlashPage = true;
@@ -404,6 +452,22 @@ function showWebviewPanel(url, title, type) {
         ? (panel.webview.html = getWebviewHtml_flash(url))
         : (panel.webview.html = getWebviewHtml_h5(url));
 }
+function login(callback) {
+    if (cookie) {
+        return callback();
+    }
+    vscode.window
+        .showInputBox({
+        title: "4399 on vscode: 登录(cookie)",
+        prompt: "请输入 cookie, 获取方法请见扩展详情页",
+    })
+        .then((c) => {
+        if (c) {
+            cookie = c;
+            callback();
+        }
+    });
+}
 exports.activate = (ctx) => {
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", () => {
         getPlayUrl("https://www.4399.com/flash/" +
@@ -421,6 +485,20 @@ exports.activate = (ctx) => {
             if (id) {
                 log("用户输入 ", id);
                 getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
+            }
+        });
+    }));
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get-h5-web-game", () => {
+        vscode.window
+            .showInputBox({
+            value: "100060323",
+            title: "4399 on vscode: 输入游戏 id",
+            prompt: "输入 http(s)://www.zxwyouxi.com/g/ 后面的数字(游戏 id)",
+        })
+            .then((id) => {
+            if (id) {
+                log("用户输入 ", id);
+                getPlayUrlForWebGames("https://www.zxwyouxi.com/g/" + id);
             }
         });
     }));
@@ -486,6 +564,11 @@ exports.activate = (ctx) => {
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.old-flash-games", () => {
         searchGames("https://so2.4399.com/search/search.php?k=flash&view=list&sort=thetime");
+    }));
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.login", () => {
+        login(() => {
+            vscode.window.showInformationMessage("登录成功");
+        });
     }));
     console.log("4399 on vscode is ready!");
 };
