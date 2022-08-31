@@ -79,11 +79,13 @@ const cheerio = require("cheerio");
 const axios_1 = require("axios");
 const iconv = require("iconv-lite");
 const http = require("http");
+const open = require("open");
 var httpServer;
 var DATA;
 var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
+var gameInfoUrl = "";
 var alerted = false;
 var panel;
 var context;
@@ -223,7 +225,7 @@ function initHttpServer(callback) {
 function getReqCfg(responseType) {
     let c = GlobalStorage(context).get("cookie");
     return {
-        baseURL: "http://www.4399.com/",
+        baseURL: "http://www.4399.com",
         responseType: responseType,
         headers: {
             "user-agent": getCfg("user-agent"),
@@ -362,6 +364,7 @@ async function getPlayUrl(url) {
             }
             let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
             let gamePath_matched = html.match(/\_strGamePath\=\".+\.(swf|htm[l]?)\"/i);
+            gameInfoUrl = url;
             if (!server_matched || !gamePath_matched) {
                 let u1 = $("iframe#flash22").attr("src");
                 let u2 = $("a.start-btn").attr("href");
@@ -497,13 +500,54 @@ function searchGames(url) {
         err("无法获取4399首页: ", e);
     });
 }
-function showWebviewPanel(url, title, type) {
-    if (!getCfg("moreOpen")) {
-        try {
-            panel.dispose();
-        }
-        catch (e) { }
+async function showGameInfo(url = gameInfoUrl) {
+    if (!url) {
+        return vscode.window.showErrorMessage("无法显示这个游戏的详细信息");
     }
+    if (url.startsWith("/") && !url.startsWith("//")) {
+        url = getReqCfg().baseURL + url;
+    }
+    const html = iconv.decode((await axios_1.default.get(url, getReqCfg("arraybuffer"))).data, "gb2312");
+    const $ = cheerio.load(html);
+    const desc1 = $("#introduce > font").text().replaceAll(/[\n ]/gi, "");
+    const desc2 = $("body > div.waper > div.content > div > div.box1.cf > div.intro.fl > div")
+        .text()
+        .replaceAll(/[\n ]/gi, "");
+    const desc3 = $("body > div.main > div.w3.mb10 > div > div.bd_bg > div > div.w3_con1.cf > div.fl.con_l > div.cf.con_l1 > div.m11.fl > p")
+        .text()
+        .replaceAll(/[\n ]/gi, "");
+    const desc4 = $("#cont").text().replaceAll(/[\n ]/gi, "");
+    let desc = desc1 || desc2 || desc3 || desc4 || "未知";
+    let title = $("title")
+        .text()
+        .split(/[-_ |，,¦]/gi)[0]
+        .replaceAll(/[\n ]/gi, "");
+    let gameId = url.split(/[/.]/gi).at(-2);
+    title = title ? title : "未知";
+    gameId = !gameId || !isNaN(Number(gameId)) ? "未知" : gameId;
+    vscode.window
+        .showQuickPick([
+        "🎮 游戏名: " + title,
+        "📜 简介: " + desc,
+        "🆔 游戏 id: " + gameId,
+        "🌏 在浏览器中打开",
+        "💬 查看评论",
+    ])
+        .then((item) => {
+        if (item) {
+            if (item.includes("在浏览器中打开")) {
+                open(url);
+            }
+            else if (item.includes("查看评论")) {
+            }
+        }
+    });
+}
+function showWebviewPanel(url, title, type) {
+    try {
+        panel.dispose();
+    }
+    catch (e) { }
     const customTitle = getCfg("title");
     panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 On VSCode", vscode.ViewColumn.One, { enableScripts: true });
     if (type !== "fl") {

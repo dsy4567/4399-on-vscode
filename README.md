@@ -4,7 +4,7 @@
 
 <h1 align="center">4399 on vscode</h1>
 
-在 vscode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率
+在 vscode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)
 
 [![Visual Studio Marketplace](https://img.shields.io/badge/Visual%20Studio-Marketplace-007acc.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
 [![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/dsy4567.4399-on-vscode.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
@@ -32,7 +32,6 @@
 -   👆 手动输入游戏 id
 -   🕒 历史记录
 -   🔧 自定义标题(摸鱼必备)
--   📚 多开游戏
 -   💬 查看/发表评论(需要登录)
 -   ❔ 随机游戏(试试手气)
 -   🛠️ 更多功能开发中......

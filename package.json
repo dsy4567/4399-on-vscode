@@ -1,7 +1,7 @@
 {
 	"name": "4399-on-vscode",
 	"displayName": "4399 On VSCode",
-	"description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率",
+	"description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
 	"version": "0.1.5",
 	"engines": {
 		"vscode": "^1.70.0"
@@ -39,11 +39,6 @@
 				},
 				"4399-on-vscode.outputLogs": {
 					"description": "控制是否输出日志",
-					"type": "boolean",
-					"default": false
-				},
-				"4399-on-vscode.moreOpen": {
-					"description": "控制是否允许游戏多开, 请勿在任何一个游戏未完全加载完成前多开游戏",
 					"type": "boolean",
 					"default": false
 				},
@@ -142,7 +137,8 @@
 	"dependencies": {
 		"axios": "^0.27.2",
 		"cheerio": "^1.0.0-rc.12",
-		"iconv-lite": "^0.6.3"
+		"iconv-lite": "^0.6.3",
+		"open": "^8.4.0"
 	},
 	"icon": "icon.png",
 	"repository": "https://github.com/dsy4567/4399-on-vscode.git",
