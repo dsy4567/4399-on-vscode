@@ -256,16 +256,16 @@ function log(a: any, b?: any) {
         return;
     }
     b
-        ? console.log("[4399 On VSCode]", a, b)
-        : console.log("[4399 On VSCode]", a);
+        ? console.log("[4399 on VSCode]", a, b)
+        : console.log("[4399 on VSCode]", a);
 }
 function err(a: any, b?: any) {
     b
         ? vscode.window.showErrorMessage("" + a + b)
         : vscode.window.showErrorMessage("" + a);
     b
-        ? console.error("[4399 On VSCode]", a, b)
-        : console.error("[4399 On VSCode]", a);
+        ? console.error("[4399 on VSCode]", a, b)
+        : console.error("[4399 on VSCode]", a);
 }
 function getCfg(name: string, defaultValue: any = undefined): any {
     return vscode.workspace
@@ -333,6 +333,7 @@ function getPlayUrlForWebGames(urlOrId: string) {
             let data: {
                 data?: {
                     game?: {
+                        mainId: number;
                         gameName: string;
                         gameUrl?: string;
                     };
@@ -351,6 +352,12 @@ function getPlayUrlForWebGames(urlOrId: string) {
                 data.data?.game?.gameUrl &&
                 data.data.game.gameUrl !== "&addiction=0"
             ) {
+                try {
+                    gameInfoUrl =
+                        "http://www.4399.com/flash/" +
+                        data.data.game.mainId +
+                        ".htm";
+                } catch (e) {}
                 let url = "https://www.zxwyouxi.com/g/" + urlOrId;
                 let title = decodeURI(data.data.game.gameName);
                 try {
@@ -369,7 +376,7 @@ function getPlayUrlForWebGames(urlOrId: string) {
 
                 showWebviewPanel(data.data.game.gameUrl, title);
             } else {
-                err("好像没有这个游戏");
+                err("无法登录游戏, 或者根本没有这个游戏");
             }
         } catch (e) {
             err("无法获取游戏页面", String(e));
@@ -583,53 +590,103 @@ function searchGames(url: string) {
 }
 async function showGameInfo(url = gameInfoUrl) {
     if (!url) {
-        return vscode.window.showErrorMessage("无法显示这个游戏的详细信息");
+        return vscode.window.showErrorMessage(
+            "无法显示这个游戏的详细信息, 或者未在玩游戏"
+        );
     }
-    if (url.startsWith("/") && !url.startsWith("//")) {
-        url = getReqCfg().baseURL + url;
-    }
+    try {
+        if (url.startsWith("/") && !url.startsWith("//")) {
+            url = getReqCfg().baseURL + url;
+        }
 
-    const html = iconv.decode(
-        (await axios.get(url, getReqCfg("arraybuffer"))).data,
-        "gb2312"
-    );
-    const $ = cheerio.load(html);
-    const desc1 = $("#introduce > font").text().replaceAll(/[\n ]/gi, "");
-    const desc2 = $(
-        "body > div.waper > div.content > div > div.box1.cf > div.intro.fl > div"
-    )
-        .text()
-        .replaceAll(/[\n ]/gi, "");
-    const desc3 = $(
-        "body > div.main > div.w3.mb10 > div > div.bd_bg > div > div.w3_con1.cf > div.fl.con_l > div.cf.con_l1 > div.m11.fl > p"
-    )
-        .text()
-        .replaceAll(/[\n ]/gi, "");
-    const desc4 = $("#cont").text().replaceAll(/[\n ]/gi, "");
-    let desc = desc1 || desc2 || desc3 || desc4 || "未知";
-    let title = $("title")
-        .text()
-        .split(/[-_ |，,¦]/gi)[0]
-        .replaceAll(/[\n ]/gi, "");
-    let gameId = url.split(/[/.]/gi).at(-2);
-    title = title ? title : "未知";
-    gameId = !gameId || !isNaN(Number(gameId)) ? "未知" : gameId;
-    vscode.window
-        .showQuickPick([
-            "🎮 游戏名: " + title,
-            "📜 简介: " + desc,
-            "🆔 游戏 id: " + gameId,
-            "🌏 在浏览器中打开",
-            "💬 查看评论",
-        ])
-        .then((item) => {
-            if (item) {
-                if (item.includes("在浏览器中打开")) {
-                    open(url);
-                } else if (item.includes("查看评论")) {
+        const html = iconv.decode(
+            (await axios.get(url, getReqCfg("arraybuffer"))).data,
+            "gb2312"
+        );
+        if (!html) {
+            return err(
+                "无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号(错误发生在获取游戏详情页阶段)"
+            );
+        }
+
+        const $ = cheerio.load(html);
+        const desc1 = $("#introduce > font").text().replaceAll(/[\n ]/gi, "");
+        const desc2 = $(
+            "body > div.waper > div.content > div > div.box1.cf > div.intro.fl > div"
+        )
+            .text()
+            .replaceAll(/[\n ]/gi, "");
+        const desc3 = $(
+            "body > div.main > div.w3.mb10 > div > div.bd_bg > div > div.w3_con1.cf > div.fl.con_l > div.cf.con_l1 > div.m11.fl > p"
+        )
+            .text()
+            .replaceAll(/[\n ]/gi, "");
+        const desc4 = $("#cont").text().replaceAll(/[\n ]/gi, "");
+        let desc = desc1 || desc2 || desc3 || desc4 || "未知";
+        let title = $("title")
+            .text()
+            .split(/[-_ |，,¦]/gi)[0]
+            .replaceAll(/[\n ]/gi, "");
+        let gameId = url.split(/[/.]/gi).at(-2);
+        title = title ? title : "未知";
+        gameId = !gameId || isNaN(Number(gameId)) ? "未知" : gameId;
+        vscode.window
+            .showQuickPick([
+                "🎮 游戏名: " + title,
+                "📜 简介: " + desc,
+                "🆔 游戏 id: " + gameId,
+                "🌏 在浏览器中打开",
+                "💬 热门评论",
+            ])
+            .then(async (item) => {
+                if (item) {
+                    try {
+                        if (item.includes("在浏览器中打开")) {
+                            open(url);
+                        } else if (item.includes("热门评论")) {
+                            const html = iconv.decode(
+                                (
+                                    await axios.get(
+                                        "https://cdn.comment.4399pk.com/nhot-" +
+                                            gameId +
+                                            "-1.htm",
+                                        getReqCfg("arraybuffer")
+                                    )
+                                ).data,
+                                "utf8"
+                            );
+                            if (!html) {
+                                return err(
+                                    "无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号(错误发生在获取游戏评论页阶段)"
+                                );
+                            }
+
+                            const $ = cheerio.load(html);
+                            let items: string[] = [],
+                                tops: string[] = [];
+                            $("#cntBox > div.zd > div.con").each((i, elem) => {
+                                tops[i] = "[置顶评论] " + $(elem).text();
+                            });
+                            $(".lam .tex").each((i, elem) => {
+                                items[i] = $(elem).text();
+                            });
+                            items.unshift(...tops);
+                            vscode.window.showQuickPick(items).then((item) => {
+                                if (item) {
+                                    vscode.window.showInformationMessage(item);
+                                }
+                            });
+                        } else {
+                            vscode.window.showInformationMessage(item);
+                        }
+                    } catch (e) {
+                        err("无法获取游戏页面", String(e));
+                    }
                 }
-            }
-        });
+            });
+    } catch (e) {
+        err("无法获取游戏页面", String(e));
+    }
 }
 function showWebviewPanel(url: string, title: string | null, type?: "fl") {
     try {
@@ -639,12 +696,12 @@ function showWebviewPanel(url: string, title: string | null, type?: "fl") {
     const customTitle = getCfg("title");
     panel = vscode.window.createWebviewPanel(
         "4399OnVscode",
-        customTitle ? customTitle : title ? title : "4399 On VSCode",
+        customTitle ? customTitle : title ? title : "4399 on VSCode",
         vscode.ViewColumn.One,
         { enableScripts: true }
     );
 
-    if (type !== "fl") {
+    if (type !== "fl" && getCfg("injectionScript", true)) {
         try {
             if (url.endsWith(".html") || url.endsWith(".htm")) {
                 const $ = cheerio.load(iconv.decode(DATA as Buffer, "utf8"));
@@ -664,7 +721,7 @@ function showWebviewPanel(url: string, title: string | null, type?: "fl") {
     if (!alerted) {
         alerted = true;
         vscode.window.showInformationMessage(
-            "温馨提示: 道路千万条, 谨慎第一条, 摸鱼不适度, 钱包两行泪"
+            "温馨提示: 道路千万条, 谨慎第一条, 摸鱼不适度, 工资两行泪"
         );
     }
 }
@@ -685,8 +742,8 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
     if (!GlobalStorage(context).get("cookie")) {
         vscode.window
             .showInputBox({
-                title: "4399 On VSCode: 登录(cookie)",
-                prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游, 评论您喜欢的游戏或者使用其它需要登录的功能",
+                title: "4399 on VSCode: 登录(cookie)",
+                prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游或者使用其它需要登录的功能",
             })
             .then((c) => {
                 if (c) {
@@ -729,15 +786,17 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
 
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.get", () => {
+            let i = GlobalStorage(ctx).get("id1");
             vscode.window
                 .showInputBox({
-                    value: "222735",
-                    title: "4399 On VSCode: 输入游戏 id",
+                    value: i ? String(i) : "222735",
+                    title: "4399 on VSCode: 输入游戏 id",
                     prompt: "输入 http(s)://www.4399.com/flash/ 后面的数字(游戏 id)",
                 })
                 .then((id) => {
                     if (id) {
                         log("用户输入 ", id);
+                        GlobalStorage(ctx).set("id1", id);
                         getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
                     }
                 });
@@ -748,15 +807,17 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand(
             "4399-on-vscode.get-h5-web-game",
             () => {
+                let i = GlobalStorage(ctx).get("id2");
                 vscode.window
                     .showInputBox({
-                        value: "100060323",
-                        title: "4399 On VSCode: 输入游戏 id",
+                        value: i ? String(i) : "100060323",
+                        title: "4399 on VSCode: 输入游戏 id",
                         prompt: "输入 http(s)://www.zxwyouxi.com/g/ 后面的数字(游戏 id)",
                     })
                     .then((id) => {
                         if (id) {
                             log("用户输入 ", id);
+                            GlobalStorage(ctx).set("id2", id);
                             getPlayUrlForWebGames(
                                 "https://www.zxwyouxi.com/g/" + id
                             );
@@ -822,16 +883,18 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
 
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.search", () => {
+            let s = GlobalStorage(ctx).get("kwd");
             vscode.window
                 .showInputBox({
-                    value: "人生重开模拟器",
-                    title: "4399 On VSCode: 搜索",
+                    value: s ? String(s) : "人生重开模拟器",
+                    title: "4399 on VSCode: 搜索",
                     prompt: "输入搜索词",
                 })
                 .then((val) => {
                     if (!val) {
                         return;
                     }
+                    GlobalStorage(ctx).set("kwd", val);
                     searchGames(
                         "https://so2.4399.com/search/search.php?k=" +
                             encodeURI(val) +
@@ -855,6 +918,12 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.login", () => {
             login(() => {}, true);
+        })
+    );
+
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.info", () => {
+            showGameInfo();
         })
     );
 
@@ -901,5 +970,5 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
     );
 
     context = ctx;
-    console.log("4399 On VSCode is ready!");
+    console.log("4399 on VSCode is ready!");
 };
