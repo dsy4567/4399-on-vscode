@@ -81,14 +81,26 @@ const iconv = require("iconv-lite");
 const http = require("http");
 var httpServer;
 var DATA;
-var cookie;
 var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
-/**
- * @type {vscode.WebviewPanel}
- */
+var alerted = false;
 var panel;
+var context;
+const getScript = (cookie) => `
+<script>
+// 强制设置 cookie
+Object.defineProperty(document, "cookie", {
+    value: \`${cookie}\`,
+    writable: false,
+});
+// 强制在当前标签页打开
+Object.defineProperty(window, "open", {
+    value: (url) => { location.href = url; },
+    writable: false,
+});
+</script>
+`;
 const getWebviewHtml_h5 = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -130,6 +142,13 @@ const getWebviewHtml_flash = (url) => `
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
         <title>flash 播放器(Ruffle 引擎)</title>
         <script>
+            // 强制在当前标签页打开
+            Object.defineProperty(window, "open", {
+                value: (url) => { location.href = url; },
+                writable: false,
+            });
+        </script>
+        <script>
             window.play = function (url) {
                 var html =
                     '<object id="flashgame" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="//download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=10,0,0,0" width="100%" height="100%"><param id="game" name="movie" value="' +
@@ -149,6 +168,12 @@ const getWebviewHtml_flash = (url) => `
     </body>
 </html>
 `;
+const GlobalStorage = (context) => {
+    return {
+        get: (key) => JSON.parse(context.globalState.get(key) || "null"),
+        set: (key, value) => context.globalState.update(key, JSON.stringify(value)),
+    };
+};
 function initHttpServer(callback) {
     httpServer
         ? callback()
@@ -183,25 +208,27 @@ function initHttpServer(callback) {
                     response.statusMessage = e.message;
                     response.end(e.message);
                     if (!String(e.message).includes("Request failed with status code")) {
-                        err("服务器出现错误: ", e.message);
+                        err("本地服务器出现错误: ", e.message);
                     }
                 });
                 //   response.end();
             }
         })
-            .listen(44399, "localhost", function () {
-            log("服务器已启动");
+            .listen(Number(getCfg("port", 44399)), "localhost", function () {
+            log("本地服务器已启动");
             callback();
         })
             .on("error", (e) => err(e.stack)));
 }
 function getReqCfg(responseType) {
+    let c = GlobalStorage(context).get("cookie");
     return {
         baseURL: "http://www.4399.com/",
         responseType: responseType,
         headers: {
             "user-agent": getCfg("user-agent"),
             referer: getCfg("referer"),
+            cookie: c ? c : "",
         },
     };
 }
@@ -210,21 +237,21 @@ function log(a, b) {
         return;
     }
     b
-        ? console.log("[4399 on vscode]", a, b)
-        : console.log("[4399 on vscode]", a);
+        ? console.log("[4399 On VSCode]", a, b)
+        : console.log("[4399 On VSCode]", a);
 }
 function err(a, b) {
     b
         ? vscode.window.showErrorMessage("" + a + b)
         : vscode.window.showErrorMessage("" + a);
     b
-        ? console.error("[4399 on vscode]", a, b)
-        : console.error("[4399 on vscode]", a);
+        ? console.error("[4399 On VSCode]", a, b)
+        : console.error("[4399 On VSCode]", a);
 }
-function getCfg(name) {
+function getCfg(name, defaultValue = undefined) {
     return vscode.workspace
         .getConfiguration()
-        .get("4399-on-vscode." + name, undefined);
+        .get("4399-on-vscode." + name, defaultValue);
 }
 function setCfg(name, val) {
     return vscode.workspace
@@ -239,7 +266,7 @@ async function getServer(server_matched) {
             return res.data.split('"')[1].split("/")[2];
         }
         else {
-            throw new Error("无法获取定义游戏服务器的脚本: 响应文本为空, 您可能需要配置 UA 和 Cookie");
+            throw new Error("无法获取定义游戏服务器的脚本: 响应文本为空, 您可能需要配置 UA 或登录账号");
         }
     }
     catch (e) {
@@ -251,8 +278,8 @@ async function getServer(server_matched) {
     }
 }
 // 获取 h5 页游的真实地址
-async function getPlayUrlForWebGames(urlOrId) {
-    login(async () => {
+function getPlayUrlForWebGames(urlOrId) {
+    login(async (cookie) => {
         let i = urlOrId.split("/").at(-1);
         if (i && !isNaN(Number(i))) {
             urlOrId = i;
@@ -277,14 +304,32 @@ async function getPlayUrlForWebGames(urlOrId) {
                 cookieValue = m[0].split("=")[1].split(";")[0];
             }
             if (!cookieValue) {
-                return err("cookie 没有需要的值");
+                return err("cookie 没有 Pauth 的值");
             }
             let data = (await axios_1.default.post("https://h.api.4399.com/intermodal/user/grant2", "gameId=" +
                 gameId +
                 "&authType=cookie&cookieValue=" +
                 cookieValue, getReqCfg("json"))).data;
-            if (data.data?.game?.gameUrl) {
-                showWebviewPanel(data.data.game.gameUrl, decodeURI(data.data.game.gameName));
+            if (data.data?.game?.gameUrl &&
+                data.data.game.gameUrl !== "&addiction=0") {
+                let url = "https://www.zxwyouxi.com/g/" + urlOrId;
+                let title = decodeURI(data.data.game.gameName);
+                try {
+                    let D = new Date();
+                    updateHistory({
+                        date: ` (${D.getFullYear()}年${D.getMonth() + 1}月${D.getDate()}日${D.getHours()}时${D.getMinutes()}分)`,
+                        name: title ? title : url,
+                        webGame: true,
+                        url: url,
+                    });
+                }
+                catch (e) {
+                    err("写入历史记录失败", String(e));
+                }
+                showWebviewPanel(data.data.game.gameUrl, title);
+            }
+            else {
+                err("好像没有这个游戏");
             }
         }
         catch (e) {
@@ -304,7 +349,7 @@ async function getPlayUrl(url) {
             const $ = cheerio.load(res.data);
             const html = $.html();
             if (!html) {
-                return err("无法获取游戏页面: html 为空, 您可能需要配置 UA 和 Cookie(错误发生在获取游戏详情页阶段)");
+                return err("无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号(错误发生在获取游戏详情页阶段)");
             }
             let title = "";
             let m = null;
@@ -328,6 +373,18 @@ async function getPlayUrl(url) {
                 }
                 return err("正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后或 AS3)的 flash 游戏或非 h5 游戏");
             }
+            try {
+                let D = new Date();
+                updateHistory({
+                    date: ` (${D.getFullYear()}年${D.getMonth() + 1}月${D.getDate()}日${D.getHours()}时${D.getMinutes()}分)`,
+                    name: title ? title : url,
+                    webGame: false,
+                    url: url,
+                });
+            }
+            catch (e) {
+                err("写入历史记录失败", String(e));
+            }
             let s = await getServer(server_matched);
             let isFlashPage = false;
             server = s;
@@ -346,7 +403,7 @@ async function getPlayUrl(url) {
                     try {
                         res = await axios_1.default.get(gameUrl, getReqCfg("arraybuffer"));
                         if (!res.data) {
-                            return err("无法获取游戏页面: html 为空, 您可能需要配置 UA 和 Cookie (错误发生在处理游戏真实页面阶段)");
+                            return err("无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号 (错误发生在处理游戏真实页面阶段)");
                         }
                         if (isFlashPage &&
                             res.headers["content-type"]
@@ -367,11 +424,12 @@ async function getPlayUrl(url) {
                             log("成功获取到游戏真实页面", gameUrl);
                             initHttpServer(() => {
                                 DATA = res.data;
-                                showWebviewPanel("http://localhost:44399" + gamePath, title, gamePath.includes(".swf")
+                                showWebviewPanel("http://localhost:" +
+                                    getCfg("port", 44399) +
+                                    gamePath, title, gamePath.includes(".swf")
                                     ? "fl"
                                     : undefined);
                             });
-                            //   }
                         }
                     }
                     catch (e) {
@@ -383,7 +441,7 @@ async function getPlayUrl(url) {
                 })();
         }
         else {
-            err("无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 和 Cookie");
+            err("无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 或登录账号");
             log(res);
         }
     }
@@ -447,26 +505,71 @@ function showWebviewPanel(url, title, type) {
         catch (e) { }
     }
     const customTitle = getCfg("title");
-    panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 on vscode", vscode.ViewColumn.One, { enableScripts: true });
+    panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 On VSCode", vscode.ViewColumn.One, { enableScripts: true });
+    if (type !== "fl") {
+        try {
+            if (url.endsWith(".html") || url.endsWith(".htm")) {
+                const $ = cheerio.load(iconv.decode(DATA, "utf8"));
+                $("head").append(getScript(GlobalStorage(context).get("cookie")));
+                DATA = $.html();
+            }
+        }
+        catch (e) {
+            err("无法为游戏页面设置 document.cookie");
+        }
+    }
     type === "fl"
         ? (panel.webview.html = getWebviewHtml_flash(url))
         : (panel.webview.html = getWebviewHtml_h5(url));
-}
-function login(callback) {
-    if (cookie) {
-        return callback();
+    if (!alerted) {
+        alerted = true;
+        vscode.window.showInformationMessage("温馨提示: 道路千万条, 谨慎第一条, 摸鱼不适度, 钱包两行泪");
     }
-    vscode.window
-        .showInputBox({
-        title: "4399 on vscode: 登录(cookie)",
-        prompt: "请输入 cookie, 获取方法请见扩展详情页",
-    })
-        .then((c) => {
-        if (c) {
-            cookie = c;
-            callback();
+}
+function login(callback, loginOnly = false) {
+    if (GlobalStorage(context).get("cookie")) {
+        if (loginOnly) {
+            return vscode.window
+                .showInformationMessage("您已登录, 是否退出登录?", "是", "否")
+                .then((value) => {
+                if (value === "是") {
+                    GlobalStorage(context).set("cookie", "");
+                    vscode.window.showInformationMessage("退出登录成功");
+                }
+            });
         }
-    });
+        return callback(GlobalStorage(context).get("cookie"));
+    }
+    if (!GlobalStorage(context).get("cookie")) {
+        vscode.window
+            .showInputBox({
+            title: "4399 On VSCode: 登录(cookie)",
+            prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游, 评论您喜欢的游戏或者使用其它需要登录的功能",
+        })
+            .then((c) => {
+            if (c) {
+                let m = c.match(/Pauth=.+;/i);
+                let cookieValue = "";
+                if (m) {
+                    cookieValue = m[0].split("=")[1].split(";")[0];
+                }
+                if (!cookieValue) {
+                    return err("登录失败, cookie 没有 Pauth 值");
+                }
+                GlobalStorage(context).set("cookie", c);
+                vscode.window.showInformationMessage("登录成功, 请注意定期更新 cookie");
+                callback(c);
+            }
+        });
+    }
+}
+function updateHistory(history) {
+    let h = GlobalStorage(context).get("history");
+    if (!h || (typeof h === "object" && !h[0])) {
+        h = [];
+    }
+    h.unshift(history);
+    GlobalStorage(context).set("history", h);
 }
 exports.activate = (ctx) => {
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", () => {
@@ -478,7 +581,7 @@ exports.activate = (ctx) => {
         vscode.window
             .showInputBox({
             value: "222735",
-            title: "4399 on vscode: 输入游戏 id",
+            title: "4399 On VSCode: 输入游戏 id",
             prompt: "输入 http(s)://www.4399.com/flash/ 后面的数字(游戏 id)",
         })
             .then((id) => {
@@ -492,7 +595,7 @@ exports.activate = (ctx) => {
         vscode.window
             .showInputBox({
             value: "100060323",
-            title: "4399 on vscode: 输入游戏 id",
+            title: "4399 On VSCode: 输入游戏 id",
             prompt: "输入 http(s)://www.zxwyouxi.com/g/ 后面的数字(游戏 id)",
         })
             .then((id) => {
@@ -550,7 +653,7 @@ exports.activate = (ctx) => {
         vscode.window
             .showInputBox({
             value: "人生重开模拟器",
-            title: "4399 on vscode: 搜索",
+            title: "4399 On VSCode: 搜索",
             prompt: "输入搜索词",
         })
             .then((val) => {
@@ -566,10 +669,49 @@ exports.activate = (ctx) => {
         searchGames("https://so2.4399.com/search/search.php?k=flash&view=list&sort=thetime");
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.login", () => {
-        login(() => {
-            vscode.window.showInformationMessage("登录成功");
-        });
+        login(() => { }, true);
     }));
-    console.log("4399 on vscode is ready!");
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.history", () => {
+        try {
+            let h = GlobalStorage(ctx).get("history");
+            if (!h || (typeof h === "object" && !h[0])) {
+                h = [];
+            }
+            h.unshift({
+                webGame: false,
+                name: "🧹 清空历史记录",
+                url: "",
+                date: "",
+            });
+            let quickPickList = [];
+            h.forEach((obj) => {
+                quickPickList.push(obj.name + obj.date);
+            });
+            vscode.window.showQuickPick(quickPickList).then((gameName) => {
+                if (gameName === "🧹 清空历史记录") {
+                    return GlobalStorage(ctx).set("history", []);
+                }
+                if (gameName) {
+                    for (let index = 0; index < h.length; index++) {
+                        const item = h[index];
+                        if (item.name + item.date === gameName) {
+                            if (item.webGame) {
+                                getPlayUrlForWebGames(item.url);
+                            }
+                            else {
+                                getPlayUrl(item.url);
+                            }
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+        catch (e) {
+            err("无法读取历史记录", String(e));
+        }
+    }));
+    context = ctx;
+    console.log("4399 On VSCode is ready!");
 };
 //# sourceMappingURL=extension.js.map
