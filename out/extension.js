@@ -80,6 +80,7 @@ const axios_1 = require("axios");
 const iconv = require("iconv-lite");
 const http = require("http");
 const open = require("open");
+const cookie = require("cookie");
 var httpServer;
 var DATA;
 var server = ""; // szhong.4399.com
@@ -95,6 +96,11 @@ const getScript = (cookie) => `
 Object.defineProperty(document, "cookie", {
     value: \`${cookie}\`,
     writable: false,
+});
+// 设置 document.domain 不会报错
+Object.defineProperty(document, "cookie", {
+    value: “4399.com”,
+    writable: true,
 });
 // 强制在当前标签页打开
 Object.defineProperty(window, "open", {
@@ -187,7 +193,7 @@ function initHttpServer(callback) {
             if (request.url.includes(gamePath)) {
                 response.writeHead(200, {
                     "content-security-policy": "allow-pointer-lock allow-scripts",
-                    "Content-Type": "text/html",
+                    "content-type": "text/html",
                     "access-control-allow-origin": "*",
                 });
                 response.end(DATA);
@@ -420,10 +426,18 @@ async function getPlayUrl(url) {
                                 .toLocaleLowerCase()
                                 .includes("html")) {
                             let m = iconv.decode(res.data, "gb2312").match(/<embed.+src=".+.swf/i);
-                            if (m !== null) {
+                            if (m) {
                                 let fileName = m[0]
                                     .split('"')
                                     .at(-1);
+                                if (fileName.includes("gameloader.swf")) {
+                                    m = fileName.match(/gameswf=.+.swf/);
+                                    if (m) {
+                                        fileName = m[0]
+                                            .split("=")
+                                            .at(-1);
+                                    }
+                                }
                                 gameUrl = gameUrl.replace(gameUrl.split("/").at(-1), fileName);
                                 let u = new URL(gameUrl);
                                 gamePath = u.pathname;
@@ -541,13 +555,26 @@ async function showGameInfo(url = gameInfoUrl) {
             "🎮 游戏名: " + title,
             "📜 简介: " + desc,
             "🆔 游戏 id: " + gameId,
+            "❤️ 添加到收藏盒",
             "🌏 在浏览器中打开",
             "💬 热门评论",
         ])
             .then(async (item) => {
             if (item) {
                 try {
-                    if (item.includes("在浏览器中打开")) {
+                    if (item.includes("添加到收藏盒")) {
+                        login(async () => {
+                            try {
+                                await axios_1.default.get("https://gprp.4399.com/cg/add_collection.php?gid=" +
+                                    gameId, getReqCfg("json"));
+                                vscode.window.showInformationMessage("添加到收藏盒成功");
+                            }
+                            catch (e) {
+                                err("添加到收藏盒失败", String(e));
+                            }
+                        });
+                    }
+                    else if (item.includes("在浏览器中打开")) {
                         open(url);
                     }
                     else if (item.includes("热门评论")) {
@@ -587,18 +614,17 @@ async function showGameInfo(url = gameInfoUrl) {
     }
 }
 function showWebviewPanel(url, title, type) {
-    try {
-        panel.dispose();
-    }
-    catch (e) { }
+    // try {
+    //     panel.dispose();
+    // } catch (e) {}
     const customTitle = getCfg("title");
-    panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 on VSCode", vscode.ViewColumn.One, { enableScripts: true });
+    panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 on VSCode", vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true });
     if (type !== "fl" && getCfg("injectionScript", true)) {
         try {
             if (url.endsWith(".html") || url.endsWith(".htm")) {
-                const $ = cheerio.load(iconv.decode(DATA, "utf8"));
-                $("head").append(getScript(GlobalStorage(context).get("cookie")));
-                DATA = $.html();
+                DATA =
+                    getScript(GlobalStorage(context).get("cookie")) +
+                        iconv.decode(DATA, "utf8");
             }
         }
         catch (e) {
@@ -617,7 +643,7 @@ function login(callback, loginOnly = false) {
     if (GlobalStorage(context).get("cookie")) {
         if (loginOnly) {
             return vscode.window
-                .showInformationMessage("您已登录, 是否退出登录?", "是", "否")
+                .showInformationMessage("是否退出登录?", "是", "否")
                 .then((value) => {
                 if (value === "是") {
                     GlobalStorage(context).set("cookie", "");
@@ -628,24 +654,103 @@ function login(callback, loginOnly = false) {
         return callback(GlobalStorage(context).get("cookie"));
     }
     if (!GlobalStorage(context).get("cookie")) {
+        if (!loginOnly) {
+            vscode.window.showInformationMessage("请登录后继续");
+        }
         vscode.window
-            .showInputBox({
-            title: "4399 on VSCode: 登录(cookie)",
-            prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游或者使用其它需要登录的功能",
-        })
-            .then((c) => {
-            if (c) {
-                let m = c.match(/Pauth=.+;/i);
-                let cookieValue = "";
-                if (m) {
-                    cookieValue = m[0].split("=")[1].split(";")[0];
-                }
-                if (!cookieValue) {
-                    return err("登录失败, cookie 没有 Pauth 值");
-                }
-                GlobalStorage(context).set("cookie", c);
-                vscode.window.showInformationMessage("登录成功, 请注意定期更新 cookie");
-                callback(c);
+            .showQuickPick(["🆔 使用账号密码登录", "🍪 使用 cookie 登录"])
+            .then((value) => {
+            if (value?.includes("使用 cookie 登录")) {
+                vscode.window
+                    .showInputBox({
+                    title: "4399 on VSCode: 登录(使用 cookie)",
+                    prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游或者使用其它需要登录的功能",
+                })
+                    .then((c) => {
+                    if (c) {
+                        try {
+                            let parsedCookie = cookie.parse(c);
+                            if (!parsedCookie["Pauth"]) {
+                                return err("登录失败, cookie 没有 Pauth 值");
+                            }
+                            GlobalStorage(context).set("cookie", encodeURI(c));
+                            let welcomeMsg = "";
+                            if (parsedCookie["Pnick"]) {
+                                welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
+                            }
+                            vscode.window.showInformationMessage(welcomeMsg +
+                                "登录成功, 请注意定期更新 cookie");
+                            callback(encodeURI(c));
+                        }
+                        catch (e) {
+                            return err("登录失败, 其它原因", String(e));
+                        }
+                    }
+                });
+            }
+            else if (value?.includes("使用账号密码登录")) {
+                vscode.window
+                    .showInputBox({
+                    title: "4399 on VSCode: 登录(使用账号密码)",
+                    prompt: "请输入 4399 账号",
+                })
+                    .then((user) => {
+                    if (user) {
+                        vscode.window
+                            .showInputBox({
+                            title: "4399 on VSCode: 登录(使用账号密码)",
+                            prompt: "请输入密码",
+                            password: true,
+                        })
+                            .then(async (pwd) => {
+                            if (pwd) {
+                                try {
+                                    const r = await axios_1.default.post("https://ptlogin.4399.com/ptlogin/login.do?v=1", `username=${user}&password=${pwd}`, getReqCfg("arraybuffer"));
+                                    const html = iconv.decode(r.data, "utf8");
+                                    const $ = cheerio.load(html);
+                                    const msg = $("#Msg");
+                                    if (msg.text()) {
+                                        return err("登录失败, ", msg
+                                            .text()
+                                            .replace(/[\n\r\t ]/gi, ""));
+                                    }
+                                    let c = r.headers["set-cookie"];
+                                    let cookies = [];
+                                    // 合并多个 set-cookie
+                                    if (c && c[0]) {
+                                        c.forEach((co) => {
+                                            cookies.push(cookie.parse(co));
+                                        });
+                                        cookies = Object.assign({}, ...cookies, {
+                                            Path: "/",
+                                            Domain: "4399.com",
+                                        });
+                                        cookies =
+                                            objectToQuery(cookies);
+                                        let parsedCookie = cookie.parse(cookies);
+                                        if (!parsedCookie["Pauth"]) {
+                                            return err("登录失败, cookie 没有 Pauth 值");
+                                        }
+                                        GlobalStorage(context).set("cookie", encodeURI(cookies));
+                                        let welcomeMsg = "";
+                                        if (parsedCookie["Pnick"]) {
+                                            welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
+                                        }
+                                        vscode.window.showInformationMessage(welcomeMsg +
+                                            "登录成功, 请注意定期重新登录");
+                                        callback(encodeURI(cookies));
+                                    }
+                                    else {
+                                        return err("登录失败, 响应头没有 set-cookie");
+                                    }
+                                }
+                                catch (e) {
+                                    return err("登录失败, 其它原因", String(e));
+                                }
+                            }
+                        });
+                    }
+                });
             }
         });
     }
@@ -657,6 +762,35 @@ function updateHistory(history) {
     }
     h.unshift(history);
     GlobalStorage(context).set("history", h);
+}
+function objectToQuery(obj, prefix) {
+    if (typeof obj !== "object") {
+        return "";
+    }
+    const attrs = Object.keys(obj);
+    return attrs.reduce((query, attr, index) => {
+        // 判断是否是第一层第一个循环
+        if (index === 0 && !prefix) {
+            query += "";
+        }
+        if (typeof obj[attr] === "object") {
+            const subPrefix = prefix ? `${prefix}[${attr}]` : attr;
+            query += objectToQuery(obj[attr], subPrefix);
+        }
+        else {
+            if (prefix) {
+                query += `${prefix}[${attr}]=${obj[attr]}`;
+            }
+            else {
+                query += `${attr}=${obj[attr]}`;
+            }
+        }
+        // 判断是否是第一层最后一个循环
+        if (index !== attrs.length - 1) {
+            query += ";";
+        }
+        return query;
+    }, "");
 }
 exports.activate = (ctx) => {
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", () => {
@@ -761,8 +895,50 @@ exports.activate = (ctx) => {
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.old-flash-games", () => {
         searchGames("https://so2.4399.com/search/search.php?k=flash&view=list&sort=thetime");
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.login", () => {
-        login(() => { }, true);
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.my", () => {
+        login((c) => {
+            let Pnick = cookie.parse(c)["Pnick"] || "未知";
+            vscode.window
+                .showQuickPick([
+                "🆔 您的昵称: " + Pnick,
+                "❤️ 我的收藏",
+                "🚪 退出登录",
+            ])
+                .then(async (value) => {
+                if (value) {
+                    if (value.includes("我的收藏")) {
+                        try {
+                            let favorites = (await axios_1.default.get("https://gprp.4399.com/cg/collections.php", getReqCfg("json"))).data;
+                            let _favorites = {};
+                            let names = [];
+                            if (favorites &&
+                                favorites.game_infos &&
+                                favorites.games) {
+                                let info = favorites.game_infos;
+                                favorites.games.forEach((id) => {
+                                    _favorites[info[id].name] =
+                                        info[id].c_url;
+                                    names.push(info[id].name);
+                                });
+                                vscode.window
+                                    .showQuickPick(names)
+                                    .then((game) => {
+                                    if (game) {
+                                        getPlayUrl(_favorites[game]);
+                                    }
+                                });
+                            }
+                        }
+                        catch (e) {
+                            return err("无法获取我的收藏, ", String(e));
+                        }
+                    }
+                    else if (value.includes("退出登录")) {
+                        login(() => { }, true);
+                    }
+                }
+            });
+        });
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.info", () => {
         showGameInfo();

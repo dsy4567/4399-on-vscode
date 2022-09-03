@@ -2,7 +2,7 @@
 	"name": "4399-on-vscode",
 	"displayName": "4399 on VSCode",
 	"description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"engines": {
 		"vscode": "^1.70.0"
 	},
@@ -82,8 +82,8 @@
 			},
 			{
 				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.login",
-				"title": "🖊 登录(cookie)/退出登录"
+				"command": "4399-on-vscode.my",
+				"title": "🕺 我的"
 			},
 			{
 				"category": "4399 on VSCode",
@@ -111,17 +111,18 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.70.0",
+		"@types/cookie": "^0.5.1",
 		"@types/glob": "^7.2.0",
 		"@types/mocha": "^9.1.1",
 		"@types/node": "16.x",
+		"@types/vscode": "^1.70.0",
 		"@typescript-eslint/eslint-plugin": "^5.31.0",
 		"@typescript-eslint/parser": "^5.31.0",
+		"@vscode/test-electron": "^2.1.5",
 		"eslint": "^8.20.0",
 		"glob": "^8.0.3",
 		"mocha": "^10.0.0",
-		"typescript": "^4.7.4",
-		"@vscode/test-electron": "^2.1.5"
+		"typescript": "^4.7.4"
 	},
 	"keywords": [
 		"小霸王",
@@ -135,6 +136,7 @@
 	"dependencies": {
 		"axios": "^0.27.2",
 		"cheerio": "^1.0.0-rc.12",
+		"cookie": "^0.5.0",
 		"iconv-lite": "^0.6.3",
 		"open": "^8.4.0"
 	},
