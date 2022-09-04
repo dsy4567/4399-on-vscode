@@ -107,7 +107,7 @@ Object.defineProperty(document, "cookie", {
 });
 // 设置 document.domain 不会报错
 Object.defineProperty(document, "cookie", {
-    value: “4399.com”,
+    value: "4399.com",
     writable: true,
 });
 // 强制在当前标签页打开
