@@ -98,22 +98,27 @@ var gameInfoUrl = "";
 var alerted = false;
 var panel: vscode.WebviewPanel;
 var context: vscode.ExtensionContext;
-const getScript = (cookie: string) => `
+const getScript = (cookie: string = "") => `
 <script>
+// 强制设置 referrer
+Object.defineProperty(document, "referrer", {
+    value: "http://www.4399.com/",
+    writable: true,
+});
 // 强制设置 cookie
 Object.defineProperty(document, "cookie", {
-    value: \`${cookie}\`,
+    value: \`${cookie.replaceAll(";", "; ")}\`,
     writable: false,
 });
 // 设置 document.domain 不会报错
-Object.defineProperty(document, "cookie", {
+Object.defineProperty(document, "domain", {
     value: "4399.com",
     writable: true,
 });
 // 强制在当前标签页打开
 Object.defineProperty(window, "open", {
     value: (url) => { location.href = url; },
-    writable: false,
+    writable: true,
 });
 </script>
 `;
@@ -140,8 +145,6 @@ const getWebviewHtml_h5 = (url: string) => `
             }
         </style>
         <iframe id="ifr" src="${url}" frameborder="0"></iframe>
-        <script>
-        </script>
     </body>
 </html>
 
@@ -650,7 +653,8 @@ async function showGameInfo(url = gameInfoUrl) {
                 "📜 简介: " + desc,
                 "🆔 游戏 id: " + gameId,
                 "❤️ 添加到收藏盒",
-                "🌏 在浏览器中打开",
+                "🌏 在浏览器中打开详情页面",
+                "🌏 在 VSCode 中打开详情页面",
                 "💬 热门评论",
             ])
             .then(async (item) => {
@@ -671,8 +675,10 @@ async function showGameInfo(url = gameInfoUrl) {
                                     err("添加到收藏盒失败", String(e));
                                 }
                             });
-                        } else if (item.includes("在浏览器中打开")) {
+                        } else if (item.includes("在浏览器中打开详情页面")) {
                             open(url);
+                        } else if (item.includes("在 VSCode 中打开详情页面")) {
+                            showWebviewPanel(url, title + " - 游戏详情");
                         } else if (item.includes("热门评论")) {
                             const html = iconv.decode(
                                 (
@@ -718,7 +724,11 @@ async function showGameInfo(url = gameInfoUrl) {
         err("无法获取游戏页面", String(e));
     }
 }
-function showWebviewPanel(url: string, title: string | null, type?: "fl") {
+function showWebviewPanel(
+    url: string,
+    title: string | null,
+    type?: "fl" | "browser"
+) {
     // try {
     //     panel.dispose();
     // } catch (e) {}
@@ -734,12 +744,14 @@ function showWebviewPanel(url: string, title: string | null, type?: "fl") {
     if (type !== "fl" && getCfg("injectionScript", true)) {
         try {
             if (url.endsWith(".html") || url.endsWith(".htm")) {
-                DATA =
-                    getScript(GlobalStorage(context).get("cookie")) +
-                    iconv.decode(DATA as Buffer, "utf8");
+                const $ = cheerio.load(iconv.decode(DATA as Buffer, "utf8"));
+                $("head").append(
+                    getScript(GlobalStorage(context).get("cookie"))
+                );
+                DATA = $.html();
             }
         } catch (e) {
-            err("无法为游戏页面设置 document.cookie");
+            err("无法为游戏页面注入优化脚本");
         }
     }
 
@@ -1095,10 +1107,11 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand("4399-on-vscode.my", () => {
             login((c) => {
                 let Pnick = cookie.parse(c)["Pnick"] || "未知";
+                Pnick = Pnick === "0" ? "未知" : Pnick;
                 vscode.window
                     .showQuickPick([
                         "🆔 您的昵称: " + Pnick,
-                        "❤️ 我的收藏",
+                        "❤️ 我的收藏盒",
                         "🚪 退出登录",
                     ])
                     .then(async (value) => {
