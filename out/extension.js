@@ -99,7 +99,7 @@ Object.defineProperty(document, "referrer", {
 });
 // 强制设置 cookie
 Object.defineProperty(document, "cookie", {
-    value: \`${cookie.replaceAll(";", "; ")}\`,
+    value: \`${GlobalStorage(context).get("cookie").replaceAll(";", "; ")}\`,
     writable: false,
 });
 // 设置 document.domain 不会报错
@@ -643,7 +643,7 @@ function showWebviewPanel(url, title, type) {
         : (panel.webview.html = getWebviewHtml_h5(url));
     if (!alerted) {
         alerted = true;
-        vscode.window.showInformationMessage("温馨提示: 道路千万条, 谨慎第一条, 摸鱼不适度, 工资两行泪");
+        vscode.window.showInformationMessage("温馨提示: **请在使用快捷键前使游戏失去焦点**, 道路千万条, 谨慎第一条, 摸鱼不适度, 工资两行泪");
     }
 }
 function login(callback, loginOnly = false) {

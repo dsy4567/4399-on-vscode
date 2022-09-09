@@ -1,151 +1,181 @@
 {
-	"name": "4399-on-vscode",
-	"displayName": "4399 on VSCode",
-	"description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-	"version": "0.1.8",
-	"engines": {
-		"vscode": "^1.70.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onStartupFinished"
-	],
-	"main": "./out/extension.js",
-	"capabilities": {
-		"untrustedWorkspaces": {
-			"supported": true
-		}
-	},
-	"contributes": {
-		"configuration": {
-			"title": "4399 on VSCode",
-			"properties": {
-				"4399-on-vscode.user-agent": {
-					"description": "4399 on VSCode 发出的请求头中的 UA",
-					"type": "string",
-					"default": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
-				},
-				"4399-on-vscode.referer": {
-					"description": "4399 on VSCode 发出的请求头中的 referer",
-					"type": "string",
-					"default": "https://www.4399.com/"
-				},
-				"4399-on-vscode.port": {
-					"description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode",
-					"type": "integer",
-					"default": 44399
-				},
-				"4399-on-vscode.outputLogs": {
-					"description": "控制是否输出日志",
-					"type": "boolean",
-					"default": false
-				},
-				"4399-on-vscode.title": {
-					"description": "控制 Webview 标题, 若留空则使用游戏名称或 4399 on VSCode",
-					"type": "string",
-					"default": ""
-				},
-				"4399-on-vscode.injectionScript": {
-					"default": true,
-					"description": "控制是否向 Webview 注入用于优化体验以及设置 cookie 的脚本",
-					"type": "boolean"
-				}
-			}
-		},
-		"commands": [
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.special",
-				"title": "✨ 推荐"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.get",
-				"title": "🆔 输入游戏 id (链接以 http(s)://www.4399.com/flash/ 开头)"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.get-h5-web-game",
-				"title": "🆔 输入游戏 id (链接以 http(s)://www.zxwyouxi.com/g/ 开头)"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.search",
-				"title": "🔍 搜索"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.info",
-				"title": "📜 游戏详情"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.my",
-				"title": "🕺 我的"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.history",
-				"title": "🕒 历史记录"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.old-flash-games",
-				"title": "⚡ 旧的 flash 游戏"
-			},
-			{
-				"category": "4399 on VSCode",
-				"command": "4399-on-vscode.random",
-				"title": "❔ 试试手气(有几率失败)"
-			}
-		]
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && npm run lint",
-		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
-	},
-	"devDependencies": {
-		"@types/cookie": "^0.5.1",
-		"@types/glob": "^7.2.0",
-		"@types/mocha": "^9.1.1",
-		"@types/node": "16.x",
-		"@types/vscode": "^1.70.0",
-		"@typescript-eslint/eslint-plugin": "^5.31.0",
-		"@typescript-eslint/parser": "^5.31.0",
-		"@vscode/test-electron": "^2.1.5",
-		"eslint": "^8.20.0",
-		"glob": "^8.0.3",
-		"mocha": "^10.0.0",
-		"typescript": "^4.7.4"
-	},
-	"keywords": [
-		"小霸王",
-		"游戏",
-		"flash",
-		"games",
-		"高效工作"
-	],
-	"publisher": "dsy4567",
-	"license": "SEE LICENSE IN LICENSE",
-	"dependencies": {
-		"axios": "^0.27.2",
-		"cheerio": "^1.0.0-rc.12",
-		"cookie": "^0.5.0",
-		"iconv-lite": "^0.6.3",
-		"open": "^8.4.0"
-	},
-	"icon": "icon.png",
-	"repository": "https://github.com/dsy4567/4399-on-vscode.git",
-	"author": "dsy4567",
-	"bugs": {
-		"email": "dsy4567@outlook.com",
-		"url": "https://github.com/dsy4567/4399-on-vscode/issues"
-	},
-	"homepage": "https://github.com/dsy4567/4399-on-vscode#readme"
+    "name": "4399-on-vscode",
+    "displayName": "4399 on VSCode",
+    "description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
+    "version": "0.1.8",
+    "engines": {
+        "vscode": "^1.70.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "main": "./out/extension.js",
+    "capabilities": {
+        "untrustedWorkspaces": {
+            "supported": true
+        }
+    },
+    "contributes": {
+        "keybindings": [
+            {
+                "command": "4399-on-vscode.special",
+                "key": "Alt+NumPad4 Alt+T"
+            },
+            {
+                "command": "4399-on-vscode.get",
+                "key": "Alt+NumPad4 Alt+G"
+            },
+            {
+                "command": "4399-on-vscode.search",
+                "key": "Alt+NumPad4 Alt+S"
+            },
+            {
+                "command": "4399-on-vscode.info",
+                "key": "Alt+NumPad4 Alt+I"
+            },
+            {
+                "command": "4399-on-vscode.history",
+                "key": "Alt+NumPad4 Alt+H"
+            },
+            {
+                "command": "4399-on-vscode.random",
+                "key": "Alt+NumPad4 Alt+R"
+            },
+            {
+                "command": "4399-on-vscode.my",
+                "key": "Alt+NumPad4 Alt+m"
+            }
+        ],
+        "configuration": {
+            "title": "4399 on VSCode",
+            "properties": {
+                "4399-on-vscode.user-agent": {
+                    "description": "4399 on VSCode 发出的请求头中的 UA",
+                    "type": "string",
+                    "default": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
+                },
+                "4399-on-vscode.referer": {
+                    "description": "4399 on VSCode 发出的请求头中的 referer",
+                    "type": "string",
+                    "default": "https://www.4399.com/"
+                },
+                "4399-on-vscode.port": {
+                    "description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode",
+                    "type": "integer",
+                    "default": 44399
+                },
+                "4399-on-vscode.outputLogs": {
+                    "description": "控制是否输出日志",
+                    "type": "boolean",
+                    "default": false
+                },
+                "4399-on-vscode.title": {
+                    "description": "控制 Webview 标题, 若留空则使用游戏名称或 4399 on VSCode",
+                    "type": "string",
+                    "default": ""
+                },
+                "4399-on-vscode.injectionScript": {
+                    "default": true,
+                    "description": "控制是否向 Webview 注入用于优化体验以及设置 cookie 的脚本",
+                    "type": "boolean"
+                }
+            }
+        },
+        "commands": [
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.special",
+                "title": "推荐"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.get",
+                "title": "输入游戏 id (链接以 http(s)://www.4399.com/flash/ 开头)"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.get-h5-web-game",
+                "title": "输入游戏 id (链接以 http(s)://www.zxwyouxi.com/g/ 开头)"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.search",
+                "title": "搜索"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.info",
+                "title": "游戏详情"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.my",
+                "title": "我的"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.history",
+                "title": "历史记录"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.old-flash-games",
+                "title": "旧的 flash 游戏"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.random",
+                "title": "试试手气(有几率失败)"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/cookie": "^0.5.1",
+        "@types/glob": "^7.2.0",
+        "@types/mocha": "^9.1.1",
+        "@types/node": "16.x",
+        "@types/vscode": "^1.70.0",
+        "@typescript-eslint/eslint-plugin": "^5.31.0",
+        "@typescript-eslint/parser": "^5.31.0",
+        "@vscode/test-electron": "^2.1.5",
+        "eslint": "^8.20.0",
+        "glob": "^8.0.3",
+        "mocha": "^10.0.0",
+        "typescript": "^4.7.4"
+    },
+    "keywords": [
+        "小霸王",
+        "游戏",
+        "flash",
+        "games",
+        "高效工作"
+    ],
+    "publisher": "dsy4567",
+    "license": "SEE LICENSE IN LICENSE",
+    "dependencies": {
+        "axios": "^0.27.2",
+        "cheerio": "^1.0.0-rc.12",
+        "cookie": "^0.5.0",
+        "iconv-lite": "^0.6.3",
+        "open": "^8.4.0"
+    },
+    "icon": "icon.png",
+    "repository": "https://github.com/dsy4567/4399-on-vscode.git",
+    "author": "dsy4567",
+    "bugs": {
+        "email": "dsy4567@outlook.com",
+        "url": "https://github.com/dsy4567/4399-on-vscode/issues"
+    },
+    "homepage": "https://github.com/dsy4567/4399-on-vscode#readme"
 }
