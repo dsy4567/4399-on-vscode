@@ -84,6 +84,7 @@ import * as cookie from "cookie";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import * as mime from "mime";
 
 interface History {
     date: string;
@@ -202,110 +203,46 @@ const GlobalStorage = (context: vscode.ExtensionContext) => {
 function initHttpServer(callback: Function) {
     let onRequest: http.RequestListener = (request, response) => {
         if (!request?.url) {
-            return response.end(null);
-        }
-        if (request.url.includes(gamePath)) {
+            response.end(null);
+        } else if (request.url === "/") {
+            response.writeHead(302, {
+                Location: gamePath,
+            });
+            response.end();
+        } else if (request.url.includes(gamePath)) {
+            let t = mime.getType(request.url ? request.url : "");
+            t = t ? t : "text/html";
             response.writeHead(200, {
                 "content-security-policy": "allow-pointer-lock allow-scripts",
-                // "content-type": "text/html",
+                "content-type": t,
                 "access-control-allow-origin": "*",
             });
             response.end(DATA);
         } else {
-            let u = new URL(request.url, "http://localhost");
-            if (
-                request.url &&
-                u.pathname.endsWith("/") &&
-                fs.existsSync(
-                    path.join(
-                        os.userInfo().homedir,
-                        `.4ov-data/cache/game/`,
-                        server,
-                        u.pathname
-                    )
-                )
-            ) {
-                fs.readFile(
-                    path.join(
-                        os.userInfo().homedir,
-                        `.4ov-data/cache/game/`,
-                        server,
-                        u.pathname
-                    ),
-                    (e, data) => {
-                        if (e) {
-                            response.writeHead(500, {
-                                "Content-Type": "text/html",
-                                "access-control-allow-origin": "*",
-                            });
-                            response.statusMessage = e.message;
-                            response.end(e.message);
-                        }
-                        response.writeHead(200, {
-                            "content-security-policy":
-                                "allow-pointer-lock allow-scripts",
-                            // "content-type": "text/html",
-                            "access-control-allow-origin": "*",
-                        });
-                        response.end(data);
-                    }
-                );
-            } else {
-                axios
-                    .get(
-                        "http://" + server + request.url,
-                        getReqCfg("arraybuffer")
-                    )
-                    .then((res) => {
-                        let headers = res.headers;
-                        headers["access-control-allow-origin"] = "*";
-                        response.writeHead(200, headers);
-                        response.end(res.data);
-                        if (request.url) {
-                            let u = new URL(request.url);
-                            if (!u.pathname.endsWith("/")) {
-                                fs.mkdir(
-                                    path.join(
-                                        os.userInfo().homedir,
-                                        `.4ov-data/cache/game/`,
-                                        server,
-                                        u.pathname
-                                    ),
-                                    (e) => {
-                                        if (e) {
-                                            console.error(e);
-                                        }
-                                        fs.writeFileSync(
-                                            path.join(
-                                                os.userInfo().homedir,
-                                                `.4ov-data/cache/game/`,
-                                                server,
-                                                u.pathname
-                                            ),
-                                            res.data
-                                        );
-                                    }
-                                );
-                            }
-                        }
-                    })
-                    .catch((e) => {
-                        //   log(request, request.url);
-                        response.writeHead(500, {
-                            "Content-Type": "text/html",
-                            "access-control-allow-origin": "*",
-                        });
-                        response.statusMessage = e.message;
-                        response.end(e.message);
-                        if (
-                            !String(e.message).includes(
-                                "Request failed with status code"
-                            )
-                        ) {
-                            err("本地服务器出现错误: ", e.message);
-                        }
+            axios
+                .get("http://" + server + request.url, getReqCfg("arraybuffer"))
+                .then((res) => {
+                    let headers = res.headers;
+                    headers["access-control-allow-origin"] = "*";
+                    response.writeHead(200, headers);
+                    response.end(res.data);
+                })
+                .catch((e) => {
+                    //   log(request, request.url);
+                    response.writeHead(500, {
+                        "Content-Type": "text/html",
+                        "access-control-allow-origin": "*",
                     });
-            }
+                    response.statusMessage = e.message;
+                    response.end(e.message);
+                    if (
+                        !String(e.message).includes(
+                            "Request failed with status code"
+                        )
+                    ) {
+                        err("本地服务器出现错误: ", e.message);
+                    }
+                });
             //   response.end();
         }
     };
@@ -323,21 +260,23 @@ function initHttpServer(callback: Function) {
                     log("本地服务器已启动");
                     callback();
                 })
-                .on("error", (e) => err(e.stack));
+                .on("error", (e) => {
+                    err(e.stack);
+                    port += 1;
+                    httpServer = http
+                        .createServer(onRequest)
+                        .listen(port, "localhost", function () {
+                            log("本地服务器已启动");
+                            callback();
+                        })
+                        .on("error", (e) => {
+                            err(e.stack);
+                            httpServer = undefined;
+                        });
+                });
         } catch (e) {
-            try {
-                port += 1;
-                httpServer = http
-                    .createServer(onRequest)
-                    .listen(port, "localhost", function () {
-                        log("本地服务器已启动");
-                        callback();
-                    })
-                    .on("error", (e) => err(e.stack));
-            } catch (e) {
-                err(String(e));
-                httpServer = undefined;
-            }
+            err(String(e));
+            httpServer = undefined;
         }
     }
 }

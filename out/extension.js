@@ -84,6 +84,7 @@ const cookie = require("cookie");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const mime = require("mime");
 var httpServer;
 var DATA;
 var server = ""; // szhong.4399.com
@@ -192,71 +193,45 @@ const GlobalStorage = (context) => {
 function initHttpServer(callback) {
     let onRequest = (request, response) => {
         if (!request?.url) {
-            return response.end(null);
+            response.end(null);
         }
-        if (request.url.includes(gamePath)) {
+        else if (request.url === "/") {
+            response.writeHead(302, {
+                Location: gamePath,
+            });
+            response.end();
+        }
+        else if (request.url.includes(gamePath)) {
+            let t = mime.getType(request.url ? request.url : "");
+            t = t ? t : "text/html";
             response.writeHead(200, {
                 "content-security-policy": "allow-pointer-lock allow-scripts",
-                // "content-type": "text/html",
+                "content-type": t,
                 "access-control-allow-origin": "*",
             });
             response.end(DATA);
         }
         else {
-            let u = new URL(request.url, "http://localhost");
-            if (request.url &&
-                u.pathname.endsWith("/") &&
-                fs.existsSync(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname))) {
-                fs.readFile(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname), (e, data) => {
-                    if (e) {
-                        response.writeHead(500, {
-                            "Content-Type": "text/html",
-                            "access-control-allow-origin": "*",
-                        });
-                        response.statusMessage = e.message;
-                        response.end(e.message);
-                    }
-                    response.writeHead(200, {
-                        "content-security-policy": "allow-pointer-lock allow-scripts",
-                        // "content-type": "text/html",
-                        "access-control-allow-origin": "*",
-                    });
-                    response.end(data);
+            axios_1.default
+                .get("http://" + server + request.url, getReqCfg("arraybuffer"))
+                .then((res) => {
+                let headers = res.headers;
+                headers["access-control-allow-origin"] = "*";
+                response.writeHead(200, headers);
+                response.end(res.data);
+            })
+                .catch((e) => {
+                //   log(request, request.url);
+                response.writeHead(500, {
+                    "Content-Type": "text/html",
+                    "access-control-allow-origin": "*",
                 });
-            }
-            else {
-                axios_1.default
-                    .get("http://" + server + request.url, getReqCfg("arraybuffer"))
-                    .then((res) => {
-                    let headers = res.headers;
-                    headers["access-control-allow-origin"] = "*";
-                    response.writeHead(200, headers);
-                    response.end(res.data);
-                    if (request.url) {
-                        let u = new URL(request.url);
-                        if (!u.pathname.endsWith("/")) {
-                            fs.mkdir(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname), (e) => {
-                                if (e) {
-                                    console.error(e);
-                                }
-                                fs.writeFileSync(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname), res.data);
-                            });
-                        }
-                    }
-                })
-                    .catch((e) => {
-                    //   log(request, request.url);
-                    response.writeHead(500, {
-                        "Content-Type": "text/html",
-                        "access-control-allow-origin": "*",
-                    });
-                    response.statusMessage = e.message;
-                    response.end(e.message);
-                    if (!String(e.message).includes("Request failed with status code")) {
-                        err("本地服务器出现错误: ", e.message);
-                    }
-                });
-            }
+                response.statusMessage = e.message;
+                response.end(e.message);
+                if (!String(e.message).includes("Request failed with status code")) {
+                    err("本地服务器出现错误: ", e.message);
+                }
+            });
             //   response.end();
         }
     };
@@ -275,10 +250,8 @@ function initHttpServer(callback) {
                 log("本地服务器已启动");
                 callback();
             })
-                .on("error", (e) => err(e.stack));
-        }
-        catch (e) {
-            try {
+                .on("error", (e) => {
+                err(e.stack);
                 port += 1;
                 httpServer = http
                     .createServer(onRequest)
@@ -286,12 +259,15 @@ function initHttpServer(callback) {
                     log("本地服务器已启动");
                     callback();
                 })
-                    .on("error", (e) => err(e.stack));
-            }
-            catch (e) {
-                err(String(e));
-                httpServer = undefined;
-            }
+                    .on("error", (e) => {
+                    err(e.stack);
+                    httpServer = undefined;
+                });
+            });
+        }
+        catch (e) {
+            err(String(e));
+            httpServer = undefined;
         }
     }
 }
