@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
+<img width="128" src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
 
 <h1 align="center">4399 on vscode</h1>
 
