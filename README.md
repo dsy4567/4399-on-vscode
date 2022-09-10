@@ -69,12 +69,17 @@ copy(document.cookie);
 -   用户头像无法显示(懒得解除 referrer 限制)
 -   游戏无法锁定鼠标(尤其是射击类游戏)
 
-# 🤝 感谢以下项目
+# 🤝 特别感谢
+
+这个扩展依赖的, 超棒的项目
 
 -   [axios](https://github.com/axios/axios)
 -   [cheerio](https://github.com/cheeriojs/cheerio)
--   [flash collector](https://github.com/cnotech/flash-collector)
 -   [ruffle](https://github.com/ruffle-rs/ruffle)
+
+给我灵感的项目
+
+-   [flash collector](https://github.com/cnotech/flash-collector)
 -   [vsc netease music](https://github.com/nondanee/vsc-netease-music)
 
 # ⚖️ 许可证
