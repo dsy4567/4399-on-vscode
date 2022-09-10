@@ -81,6 +81,9 @@ const iconv = require("iconv-lite");
 const http = require("http");
 const open = require("open");
 const cookie = require("cookie");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 var httpServer;
 var DATA;
 var server = ""; // szhong.4399.com
@@ -88,6 +91,7 @@ var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameInfoUrl = "";
 var alerted = false;
+var port = 44399;
 var panel;
 var context;
 const getScript = (cookie = "") => `
@@ -186,50 +190,76 @@ const GlobalStorage = (context) => {
     };
 };
 function initHttpServer(callback) {
-    httpServer
-        ? callback()
-        : (httpServer = http
-            .createServer(function (request, response) {
-            if (!request?.url) {
-                return response.end(null);
-            }
-            if (request.url.includes(gamePath)) {
-                response.writeHead(200, {
-                    "content-security-policy": "allow-pointer-lock allow-scripts",
-                    "content-type": "text/html",
+    let onRequest = (request, response) => {
+        if (!request?.url) {
+            return response.end(null);
+        }
+        if (request.url.includes(gamePath)) {
+            response.writeHead(200, {
+                "content-security-policy": "allow-pointer-lock allow-scripts",
+                "content-type": "text/html",
+                "access-control-allow-origin": "*",
+            });
+            response.end(DATA);
+        }
+        else {
+            axios_1.default
+                .get("http://" + server + request.url, getReqCfg("arraybuffer"))
+                .then((res) => {
+                let headers = res.headers;
+                headers["access-control-allow-origin"] = "*";
+                response.writeHead(200, headers);
+                response.end(res.data);
+            })
+                .catch((e) => {
+                //   log(request, request.url);
+                response.writeHead(500, {
+                    "Content-Type": "text/html",
                     "access-control-allow-origin": "*",
                 });
-                response.end(DATA);
-            }
-            else {
-                axios_1.default
-                    .get("http://" + server + request.url, getReqCfg("arraybuffer"))
-                    .then((res) => {
-                    let headers = res.headers;
-                    headers["access-control-allow-origin"] = "*";
-                    response.writeHead(200, headers);
-                    response.end(res.data);
+                response.statusMessage = e.message;
+                response.end(e.message);
+                if (!String(e.message).includes("Request failed with status code")) {
+                    err("本地服务器出现错误: ", e.message);
+                }
+            });
+            //   response.end();
+        }
+    };
+    if (httpServer) {
+        callback();
+    }
+    else {
+        port = Number(getCfg("port", 44399));
+        if (isNaN(port)) {
+            port = 44399;
+        }
+        try {
+            httpServer = http
+                .createServer(onRequest)
+                .listen(port, "localhost", function () {
+                log("本地服务器已启动");
+                callback();
+            })
+                .on("error", (e) => err(e.stack));
+        }
+        catch (e) {
+            try {
+                port += 1;
+                httpServer = http
+                    .createServer(onRequest)
+                    .listen(port, "localhost", function () {
+                    log("本地服务器已启动");
+                    callback();
                 })
-                    .catch((e) => {
-                    //   log(request, request.url);
-                    response.writeHead(500, {
-                        "Content-Type": "text/html",
-                        "access-control-allow-origin": "*",
-                    });
-                    response.statusMessage = e.message;
-                    response.end(e.message);
-                    if (!String(e.message).includes("Request failed with status code")) {
-                        err("本地服务器出现错误: ", e.message);
-                    }
-                });
-                //   response.end();
+                    .on("error", (e) => err(e.stack));
             }
-        })
-            .listen(Number(getCfg("port", 44399)), "localhost", function () {
-            log("本地服务器已启动");
-            callback();
-        })
-            .on("error", (e) => err(e.stack)));
+            catch (e) {
+                err(String(e));
+                httpServer = undefined;
+            }
+        }
+    }
 }
 function getReqCfg(responseType) {
     let c = GlobalStorage(context).get("cookie");
@@ -344,7 +374,7 @@ function getPlayUrlForWebGames(urlOrId) {
                 catch (e) {
                     err("写入历史记录失败", String(e));
                 }
-                showWebviewPanel(data.data.game.gameUrl, title);
+                showWebviewPanel(data.data.game.gameUrl, title, "", true);
             }
             else {
                 err("无法登录游戏, 或者根本没有这个游戏");
@@ -381,6 +411,11 @@ async function getPlayUrl(url) {
             let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
             let gamePath_matched = html.match(/\_strGamePath\=\".+\.(swf|htm[l]?)\"/i);
             gameInfoUrl = url;
+            if ($("title").text().includes("您访问的页面不存在！") &&
+                res.status) {
+                gameInfoUrl = "";
+                return err("无法获取游戏信息: 游戏可能因为某些原因被删除");
+            }
             if (!server_matched || !gamePath_matched) {
                 let u1 = $("iframe#flash22").attr("src");
                 let u2 = $("a.start-btn").attr("href");
@@ -390,6 +425,7 @@ async function getPlayUrl(url) {
                 if (u2) {
                     return getPlayUrlForWebGames(u2);
                 }
+                gameInfoUrl = "";
                 return err("正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后或 AS3)的 flash 游戏或非 h5 游戏");
             }
             try {
@@ -451,11 +487,11 @@ async function getPlayUrl(url) {
                             log("成功获取到游戏真实页面", gameUrl);
                             initHttpServer(() => {
                                 DATA = res.data;
-                                showWebviewPanel("http://localhost:" +
-                                    getCfg("port", 44399) +
-                                    gamePath, title, gamePath.includes(".swf")
+                                let u = new URL(gamePath, "http://localhost/");
+                                u.port = String(port);
+                                showWebviewPanel(u.toString(), title, gamePath.includes(".swf")
                                     ? "fl"
-                                    : undefined);
+                                    : undefined, true);
                             });
                         }
                     }
@@ -620,12 +656,21 @@ async function showGameInfo(url = gameInfoUrl) {
         err("无法获取游戏页面", String(e));
     }
 }
-function showWebviewPanel(url, title, type) {
+function showWebviewPanel(url, title, type, hasIcon) {
     // try {
     //     panel.dispose();
     // } catch (e) {}
     const customTitle = getCfg("title");
     panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 on VSCode", vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true });
+    let iconPath;
+    let setIcon = () => {
+        if (iconPath) {
+            panel.iconPath = {
+                light: iconPath,
+                dark: iconPath,
+            };
+        }
+    };
     if (type !== "fl" && getCfg("injectionScript", true)) {
         try {
             if (url.endsWith(".html") || url.endsWith(".htm")) {
@@ -636,6 +681,45 @@ function showWebviewPanel(url, title, type) {
         }
         catch (e) {
             err("无法为游戏页面注入优化脚本");
+        }
+    }
+    if (hasIcon && getCfg("showIcon", true)) {
+        try {
+            let gameId = gameInfoUrl.split(/[/.]/gi).at(-2);
+            if (gameId) {
+                if (fs.existsSync(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`))) {
+                    iconPath = vscode.Uri.file(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`));
+                    setIcon();
+                }
+                else {
+                    axios_1.default
+                        .get(`https://imga1.5054399.com/upload_pic/minilogo/${gameId}.jpg`, getReqCfg("arraybuffer"))
+                        .then((res) => {
+                        if (res.data) {
+                            fs.writeFile(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`), res.data, (e) => {
+                                if (e) {
+                                    console.error(String(e));
+                                }
+                                try {
+                                    if (fs.existsSync(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`))) {
+                                        iconPath = vscode.Uri.file(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`));
+                                        setIcon();
+                                    }
+                                }
+                                catch (e) {
+                                    console.error(String(e));
+                                }
+                            });
+                        }
+                    })
+                        .catch((e) => {
+                        console.error(String(e));
+                    });
+                }
+            }
+        }
+        catch (e) {
+            console.error(String(e));
         }
     }
     type === "fl"
@@ -991,7 +1075,18 @@ exports.activate = (ctx) => {
             err("无法读取历史记录", String(e));
         }
     }));
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.more", () => {
+        vscode.window.showQuickPick(["👜 打开数据目录"]).then((value) => {
+            if (value) {
+                if (value.includes("打开数据目录")) {
+                    open(path.join(os.userInfo().homedir, ".4ov-data"));
+                }
+            }
+        });
+    }));
     context = ctx;
+    fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data/cache/icon"), { recursive: true }, (err) => { });
+    fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data/cache/game"), { recursive: true }, (err) => { });
     console.log("4399 on VSCode is ready!");
 };
 //# sourceMappingURL=extension.js.map

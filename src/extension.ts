@@ -92,7 +92,7 @@ interface History {
     url: string;
 }
 
-var httpServer: http.Server;
+var httpServer: http.Server | undefined;
 var DATA: Buffer | string;
 var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -242,30 +242,32 @@ function initHttpServer(callback: Function) {
     if (httpServer) {
         callback();
     } else {
+        port = Number(getCfg("port", 44399));
+        if (isNaN(port)) {
+            port = 44399;
+        }
         try {
             httpServer = http
                 .createServer(onRequest)
-                .listen(
-                    Number(getCfg("port", 44399)),
-                    "localhost",
-                    function () {
-                        log("本地服务器已启动");
-                        callback();
-                    }
-                )
+                .listen(port, "localhost", function () {
+                    log("本地服务器已启动");
+                    callback();
+                })
                 .on("error", (e) => err(e.stack));
         } catch (e) {
-            httpServer = http
-                .createServer(onRequest)
-                .listen(
-                    Number(getCfg("port", 44399)) + 1,
-                    "localhost",
-                    function () {
+            try {
+                port += 1;
+                httpServer = http
+                    .createServer(onRequest)
+                    .listen(port, "localhost", function () {
                         log("本地服务器已启动");
                         callback();
-                    }
-                )
-                .on("error", (e) => err(e.stack));
+                    })
+                    .on("error", (e) => err(e.stack));
+            } catch (e) {
+                err(String(e));
+                httpServer = undefined;
+            }
         }
     }
 }
@@ -404,7 +406,7 @@ function getPlayUrlForWebGames(urlOrId: string) {
                     err("写入历史记录失败", String(e));
                 }
 
-                showWebviewPanel(data.data.game.gameUrl, title);
+                showWebviewPanel(data.data.game.gameUrl, title, "", true);
             } else {
                 err("无法登录游戏, 或者根本没有这个游戏");
             }
@@ -446,6 +448,13 @@ async function getPlayUrl(url: string) {
                 /\_strGamePath\=\".+\.(swf|htm[l]?)\"/i
             );
             gameInfoUrl = url;
+            if (
+                $("title").text().includes("您访问的页面不存在！") &&
+                res.status
+            ) {
+                gameInfoUrl = "";
+                return err("无法获取游戏信息: 游戏可能因为某些原因被删除");
+            }
             if (!server_matched || !gamePath_matched) {
                 let u1 = $("iframe#flash22").attr("src");
                 let u2 = $("a.start-btn").attr("href");
@@ -455,6 +464,7 @@ async function getPlayUrl(url: string) {
                 if (u2) {
                     return getPlayUrlForWebGames(u2);
                 }
+                gameInfoUrl = "";
                 return err(
                     "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后或 AS3)的 flash 游戏或非 h5 游戏"
                 );
@@ -546,14 +556,18 @@ async function getPlayUrl(url: string) {
 
                               initHttpServer(() => {
                                   DATA = res.data;
+                                  let u = new URL(
+                                      gamePath,
+                                      "http://localhost/"
+                                  );
+                                  u.port = String(port);
                                   showWebviewPanel(
-                                      "http://localhost:" +
-                                          port +
-                                          gamePath,
+                                      u.toString(),
                                       title,
                                       gamePath.includes(".swf")
                                           ? "fl"
-                                          : undefined
+                                          : undefined,
+                                      true
                                   );
                               });
                           }
@@ -748,7 +762,8 @@ async function showGameInfo(url = gameInfoUrl) {
 function showWebviewPanel(
     url: string,
     title: string | null,
-    type?: "fl" | "browser"
+    type?: "fl" | "",
+    hasIcon?: boolean
 ) {
     // try {
     //     panel.dispose();
@@ -762,10 +777,15 @@ function showWebviewPanel(
         { enableScripts: true, retainContextWhenHidden: true }
     );
 
-    let icon = vscode.Uri.file(
-        "https://imga1.5054399.com/upload_pic/minilogo/210650.jpg"
-    );
-    panel.iconPath = { light: icon, dark: icon };
+    let iconPath: vscode.Uri | undefined;
+    let setIcon = () => {
+        if (iconPath) {
+            panel.iconPath = {
+                light: iconPath,
+                dark: iconPath,
+            };
+        }
+    };
 
     if (type !== "fl" && getCfg("injectionScript", true)) {
         try {
@@ -778,6 +798,76 @@ function showWebviewPanel(
             }
         } catch (e) {
             err("无法为游戏页面注入优化脚本");
+        }
+    }
+    if (hasIcon && getCfg("showIcon", true)) {
+        try {
+            let gameId = gameInfoUrl.split(/[/.]/gi).at(-2);
+            if (gameId) {
+                if (
+                    fs.existsSync(
+                        path.join(
+                            os.userInfo().homedir,
+                            `.4ov-data/cache/icon/${gameId}.jpg`
+                        )
+                    )
+                ) {
+                    iconPath = vscode.Uri.file(
+                        path.join(
+                            os.userInfo().homedir,
+                            `.4ov-data/cache/icon/${gameId}.jpg`
+                        )
+                    );
+                    setIcon();
+                } else {
+                    axios
+                        .get(
+                            `https://imga1.5054399.com/upload_pic/minilogo/${gameId}.jpg`,
+                            getReqCfg("arraybuffer")
+                        )
+                        .then((res) => {
+                            if (res.data) {
+                                fs.writeFile(
+                                    path.join(
+                                        os.userInfo().homedir,
+                                        `.4ov-data/cache/icon/${gameId}.jpg`
+                                    ),
+                                    res.data,
+                                    (e) => {
+                                        if (e) {
+                                            console.error(String(e));
+                                        }
+                                        try {
+                                            if (
+                                                fs.existsSync(
+                                                    path.join(
+                                                        os.userInfo().homedir,
+                                                        `.4ov-data/cache/icon/${gameId}.jpg`
+                                                    )
+                                                )
+                                            ) {
+                                                iconPath = vscode.Uri.file(
+                                                    path.join(
+                                                        os.userInfo().homedir,
+                                                        `.4ov-data/cache/icon/${gameId}.jpg`
+                                                    )
+                                                );
+                                                setIcon();
+                                            }
+                                        } catch (e) {
+                                            console.error(String(e));
+                                        }
+                                    }
+                                );
+                            }
+                        })
+                        .catch((e) => {
+                            console.error(String(e));
+                        });
+                }
+            }
+        } catch (e) {
+            console.error(String(e));
         }
     }
 
@@ -1252,6 +1342,15 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
     );
 
     context = ctx;
-    // fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data"),{recursive:true}, (err) => {});
+    fs.mkdir(
+        path.join(os.userInfo().homedir, ".4ov-data/cache/icon"),
+        { recursive: true },
+        (err) => {}
+    );
+    fs.mkdir(
+        path.join(os.userInfo().homedir, ".4ov-data/cache/game"),
+        { recursive: true },
+        (err) => {}
+    );
     console.log("4399 on VSCode is ready!");
 };

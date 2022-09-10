@@ -63,7 +63,7 @@
                     "default": "https://www.4399.com/"
                 },
                 "4399-on-vscode.port": {
-                    "description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode",
+                    "description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode (如果端口被占用, 则端口号会自动增加 1)",
                     "type": "integer",
                     "default": 44399
                 },
@@ -80,6 +80,11 @@
                 "4399-on-vscode.injectionScript": {
                     "default": true,
                     "description": "控制是否向 Webview 注入用于优化体验以及设置 cookie 的脚本",
+                    "type": "boolean"
+                },
+                "4399-on-vscode.showIcon": {
+                    "default": true,
+                    "description": "控制是否使用游戏图标作为 Webview 的图标",
                     "type": "boolean"
                 }
             }
