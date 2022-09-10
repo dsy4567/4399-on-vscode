@@ -129,6 +129,11 @@
                 "category": "4399 on VSCode",
                 "command": "4399-on-vscode.random",
                 "title": "试试手气(有几率失败)"
+            },
+            {
+                "category": "4399 on VSCode",
+                "command": "4399-on-vscode.more",
+                "title": "更多功能"
             }
         ]
     },

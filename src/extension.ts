@@ -81,6 +81,9 @@ import * as iconv from "iconv-lite";
 import * as http from "http";
 import * as open from "open";
 import * as cookie from "cookie";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 
 interface History {
     date: string;
@@ -96,6 +99,7 @@ var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameInfoUrl = "";
 var alerted = false;
+var port = 44399;
 var panel: vscode.WebviewPanel;
 var context: vscode.ExtensionContext;
 const getScript = (cookie: string = "") => `
@@ -196,57 +200,74 @@ const GlobalStorage = (context: vscode.ExtensionContext) => {
     };
 };
 function initHttpServer(callback: Function) {
-    httpServer
-        ? callback()
-        : (httpServer = http
-              .createServer(function (request, response) {
-                  if (!request?.url) {
-                      return response.end(null);
-                  }
-                  if (request.url.includes(gamePath)) {
-                      response.writeHead(200, {
-                          "content-security-policy":
-                              "allow-pointer-lock allow-scripts",
-                          "content-type": "text/html",
-                          "access-control-allow-origin": "*",
-                      });
-                      response.end(DATA);
-                  } else {
-                      axios
-                          .get(
-                              "http://" + server + request.url,
-                              getReqCfg("arraybuffer")
-                          )
-                          .then((res) => {
-                              let headers = res.headers;
-                              headers["access-control-allow-origin"] = "*";
-                              response.writeHead(200, headers);
-                              response.end(res.data);
-                          })
-                          .catch((e) => {
-                              //   log(request, request.url);
-                              response.writeHead(500, {
-                                  "Content-Type": "text/html",
-                                  "access-control-allow-origin": "*",
-                              });
-                              response.statusMessage = e.message;
-                              response.end(e.message);
-                              if (
-                                  !String(e.message).includes(
-                                      "Request failed with status code"
-                                  )
-                              ) {
-                                  err("本地服务器出现错误: ", e.message);
-                              }
-                          });
-                      //   response.end();
-                  }
-              })
-              .listen(Number(getCfg("port", 44399)), "localhost", function () {
-                  log("本地服务器已启动");
-                  callback();
-              })
-              .on("error", (e) => err(e.stack)));
+    let onRequest: http.RequestListener = (request, response) => {
+        if (!request?.url) {
+            return response.end(null);
+        }
+        if (request.url.includes(gamePath)) {
+            response.writeHead(200, {
+                "content-security-policy": "allow-pointer-lock allow-scripts",
+                "content-type": "text/html",
+                "access-control-allow-origin": "*",
+            });
+            response.end(DATA);
+        } else {
+            axios
+                .get("http://" + server + request.url, getReqCfg("arraybuffer"))
+                .then((res) => {
+                    let headers = res.headers;
+                    headers["access-control-allow-origin"] = "*";
+                    response.writeHead(200, headers);
+                    response.end(res.data);
+                })
+                .catch((e) => {
+                    //   log(request, request.url);
+                    response.writeHead(500, {
+                        "Content-Type": "text/html",
+                        "access-control-allow-origin": "*",
+                    });
+                    response.statusMessage = e.message;
+                    response.end(e.message);
+                    if (
+                        !String(e.message).includes(
+                            "Request failed with status code"
+                        )
+                    ) {
+                        err("本地服务器出现错误: ", e.message);
+                    }
+                });
+            //   response.end();
+        }
+    };
+    if (httpServer) {
+        callback();
+    } else {
+        try {
+            httpServer = http
+                .createServer(onRequest)
+                .listen(
+                    Number(getCfg("port", 44399)),
+                    "localhost",
+                    function () {
+                        log("本地服务器已启动");
+                        callback();
+                    }
+                )
+                .on("error", (e) => err(e.stack));
+        } catch (e) {
+            httpServer = http
+                .createServer(onRequest)
+                .listen(
+                    Number(getCfg("port", 44399)) + 1,
+                    "localhost",
+                    function () {
+                        log("本地服务器已启动");
+                        callback();
+                    }
+                )
+                .on("error", (e) => err(e.stack));
+        }
+    }
 }
 function getReqCfg(responseType?: ResponseType): AxiosRequestConfig<any> {
     let c = GlobalStorage(context).get("cookie");
@@ -527,7 +548,7 @@ async function getPlayUrl(url: string) {
                                   DATA = res.data;
                                   showWebviewPanel(
                                       "http://localhost:" +
-                                          getCfg("port", 44399) +
+                                          port +
                                           gamePath,
                                       title,
                                       gamePath.includes(".swf")
@@ -740,6 +761,11 @@ function showWebviewPanel(
         vscode.ViewColumn.One,
         { enableScripts: true, retainContextWhenHidden: true }
     );
+
+    let icon = vscode.Uri.file(
+        "https://imga1.5054399.com/upload_pic/minilogo/210650.jpg"
+    );
+    panel.iconPath = { light: icon, dark: icon };
 
     if (type !== "fl" && getCfg("injectionScript", true)) {
         try {
@@ -1213,6 +1239,19 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
         })
     );
 
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.more", () => {
+            vscode.window.showQuickPick(["👜 打开数据目录"]).then((value) => {
+                if (value) {
+                    if (value.includes("打开数据目录")) {
+                        open(path.join(os.userInfo().homedir, ".4ov-data"));
+                    }
+                }
+            });
+        })
+    );
+
     context = ctx;
+    // fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data"),{recursive:true}, (err) => {});
     console.log("4399 on VSCode is ready!");
 };
