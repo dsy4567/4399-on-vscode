@@ -197,32 +197,66 @@ function initHttpServer(callback) {
         if (request.url.includes(gamePath)) {
             response.writeHead(200, {
                 "content-security-policy": "allow-pointer-lock allow-scripts",
-                "content-type": "text/html",
+                // "content-type": "text/html",
                 "access-control-allow-origin": "*",
             });
             response.end(DATA);
         }
         else {
-            axios_1.default
-                .get("http://" + server + request.url, getReqCfg("arraybuffer"))
-                .then((res) => {
-                let headers = res.headers;
-                headers["access-control-allow-origin"] = "*";
-                response.writeHead(200, headers);
-                response.end(res.data);
-            })
-                .catch((e) => {
-                //   log(request, request.url);
-                response.writeHead(500, {
-                    "Content-Type": "text/html",
-                    "access-control-allow-origin": "*",
+            let u = new URL(request.url, "http://localhost");
+            if (request.url &&
+                u.pathname.endsWith("/") &&
+                fs.existsSync(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname))) {
+                fs.readFile(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname), (e, data) => {
+                    if (e) {
+                        response.writeHead(500, {
+                            "Content-Type": "text/html",
+                            "access-control-allow-origin": "*",
+                        });
+                        response.statusMessage = e.message;
+                        response.end(e.message);
+                    }
+                    response.writeHead(200, {
+                        "content-security-policy": "allow-pointer-lock allow-scripts",
+                        // "content-type": "text/html",
+                        "access-control-allow-origin": "*",
+                    });
+                    response.end(data);
                 });
-                response.statusMessage = e.message;
-                response.end(e.message);
-                if (!String(e.message).includes("Request failed with status code")) {
-                    err("本地服务器出现错误: ", e.message);
-                }
-            });
+            }
+            else {
+                axios_1.default
+                    .get("http://" + server + request.url, getReqCfg("arraybuffer"))
+                    .then((res) => {
+                    let headers = res.headers;
+                    headers["access-control-allow-origin"] = "*";
+                    response.writeHead(200, headers);
+                    response.end(res.data);
+                    if (request.url) {
+                        let u = new URL(request.url);
+                        if (!u.pathname.endsWith("/")) {
+                            fs.mkdir(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname), (e) => {
+                                if (e) {
+                                    console.error(e);
+                                }
+                                fs.writeFileSync(path.join(os.userInfo().homedir, `.4ov-data/cache/game/`, server, u.pathname), res.data);
+                            });
+                        }
+                    }
+                })
+                    .catch((e) => {
+                    //   log(request, request.url);
+                    response.writeHead(500, {
+                        "Content-Type": "text/html",
+                        "access-control-allow-origin": "*",
+                    });
+                    response.statusMessage = e.message;
+                    response.end(e.message);
+                    if (!String(e.message).includes("Request failed with status code")) {
+                        err("本地服务器出现错误: ", e.message);
+                    }
+                });
+            }
             //   response.end();
         }
     };
