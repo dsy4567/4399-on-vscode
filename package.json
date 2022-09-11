@@ -86,6 +86,11 @@
                     "default": true,
                     "description": "控制是否使用游戏图标作为 Webview 的图标",
                     "type": "boolean"
+                },
+                "4399-on-vscode.openUrl": {
+                    "default": true,
+                    "description": "控制是否允许 Webview 打开链接",
+                    "type": "boolean"
                 }
             }
         },
@@ -134,11 +139,6 @@
                 "category": "4399 on VSCode",
                 "command": "4399-on-vscode.random",
                 "title": "试试手气(有几率失败)"
-            },
-            {
-                "category": "4399 on VSCode",
-                "command": "4399-on-vscode.more",
-                "title": "更多功能"
             }
         ]
     },

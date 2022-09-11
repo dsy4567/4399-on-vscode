@@ -79,7 +79,7 @@ const cheerio = require("cheerio");
 const axios_1 = require("axios");
 const iconv = require("iconv-lite");
 const http = require("http");
-const open = require("open");
+// import * as open from "open";
 const cookie = require("cookie");
 const fs = require("fs");
 const os = require("os");
@@ -112,9 +112,9 @@ Object.defineProperty(document, "domain", {
     value: "4399.com",
     writable: true,
 });
-// 强制在当前标签页打开
+// 打开链接
 Object.defineProperty(window, "open", {
-    value: (url) => { location.href = url; },
+    value: (url) => { vscode.postMessage({ open: new URL(url, location.href).href }) },
     writable: true,
 });
 </script>
@@ -158,11 +158,11 @@ const getWebviewHtml_flash = (url) => `
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
         <title>flash 播放器(Ruffle 引擎)</title>
         <script>
-            // 强制在当前标签页打开
+            // 打开链接
             Object.defineProperty(window, "open", {
-                value: (url) => { location.href = url; },
-                writable: false,
-            });
+                value: (url) => { vscode.postMessage({ open: new URL(url, location.href).href }) },
+                writable: true,
+        });
         </script>
         <script>
             window.play = function (url) {
@@ -298,6 +298,19 @@ function err(a, b) {
     b
         ? console.error("[4399 on VSCode]", a, b)
         : console.error("[4399 on VSCode]", a);
+}
+function createQuickPick(o) {
+    return new Promise((resolve, reject) => {
+        let qp = vscode.window.createQuickPick();
+        qp.title = o.title;
+        qp.value = o.value || "";
+        qp.placeholder = o.prompt;
+        qp.canSelectMany = false;
+        qp.matchOnDescription = true;
+        qp.matchOnDetail = true;
+        qp.ignoreFocusOut = true;
+        resolve(qp);
+    });
 }
 function getCfg(name, defaultValue = undefined) {
     return vscode.workspace
@@ -522,52 +535,113 @@ async function getPlayUrl(url) {
         err("无法获取游戏页面: ", e);
     }
 }
-function searchGames(url) {
-    axios_1.default
+function searchGames(s) {
+    /*
+    axios
         .get(url, getReqCfg("arraybuffer"))
         .then((res) => {
-        if (res.data) {
-            res.data = iconv.decode(res.data, "gb2312");
-            log("成功获取到4399搜索页面");
-            const $ = cheerio.load(res.data);
-            let gameNames = [], urls = [];
-            $("#skinbody > div.w_980.cf > div.anim > div > div > div.pop > b > a").each((i, elem) => {
-                let h = $(elem).html();
-                if (!h) {
-                    return;
+            if (res.data) {
+                res.data = iconv.decode(res.data, "gb2312");
+                log("成功获取到4399搜索页面");
+                const $ = cheerio.load(res.data);
+                let gameNames: string[] | undefined[] = [],
+                    urls: string[] | undefined[] = [];
+
+                $(
+                    "#skinbody > div.w_980.cf > div.anim > div > div > div.pop > b > a"
+                ).each((i, elem) => {
+                    let h = $(elem).html();
+                    if (!h) {
+                        return;
+                    }
+                    urls[i] = $(elem).attr("href");
+                    gameNames[i] = h
+                        .replace(/<font color=['"]?red['"]?>/, "")
+                        .replace("</font>", "");
+                });
+                if (!gameNames[0] || !urls[0]) {
+                    return err("一个游戏也没搜到");
                 }
-                urls[i] = $(elem).attr("href");
-                gameNames[i] = h
-                    .replace(/<font color=['"]?red['"]?>/, "")
-                    .replace("</font>", "");
-            });
-            if (!gameNames[0] || !urls[0]) {
-                return err("一个游戏也没搜到");
+
+                vscode.window
+                    .showQuickPick(gameNames as string[])
+                    .then((val) => {
+                        log("用户输入 ", val);
+                        if (!val) {
+                            return;
+                        }
+
+                        let index = gameNames.indexOf(val as never);
+                        if (index !== -1) {
+                            let url = urls[index];
+                            if (!url) {
+                                return err("变量 url 可能为 undefined");
+                            }
+                            if (url.startsWith("//")) {
+                                url = "http:" + url;
+                            }
+                            log("游戏页面: ", url);
+                            getPlayUrl(url);
+                        }
+                    });
             }
-            vscode.window
-                .showQuickPick(gameNames)
-                .then((val) => {
-                log("用户输入 ", val);
-                if (!val) {
-                    return;
-                }
-                let index = gameNames.indexOf(val);
-                if (index !== -1) {
-                    let url = urls[index];
-                    if (!url) {
-                        return err("变量 url 可能为 undefined");
-                    }
-                    if (url.startsWith("//")) {
-                        url = "http:" + url;
-                    }
-                    log("游戏页面: ", url);
-                    getPlayUrl(url);
-                }
-            });
-        }
-    })
+        })
         .catch((e) => {
-        err("无法获取4399首页: ", e);
+            err("无法获取4399首页: ", e);
+        });*/
+    createQuickPick({
+        value: s ? String(s) : "",
+        title: "4399 on VSCode: 搜索",
+        prompt: "输入搜索词的拼音首字母",
+    }).then((qp) => {
+        let games = {};
+        qp.onDidChangeValue((kwd) => {
+            qp.busy = true;
+            axios_1.default
+                .get("https://so2.4399.com/search/lx.php?k=" + encodeURI(kwd), getReqCfg("arraybuffer"))
+                .then((res) => {
+                res.data = iconv.decode(res.data, "gb2312");
+                let d = res.data;
+                if (!d) {
+                    return err("获取搜索建议失败");
+                }
+                console.log(d);
+                let m = d.split(" =")[1];
+                let data;
+                let items = [];
+                games = {};
+                try {
+                    if (!m) {
+                        throw new Error("");
+                    }
+                    data = JSON.parse(m.replaceAll("'", '"'));
+                }
+                catch (e) {
+                    return err("解析搜索建议失败");
+                }
+                data.forEach((g) => {
+                    items.push({
+                        label: g[0],
+                        description: "游戏 id: " + g[1],
+                        alwaysShow: true,
+                    });
+                    games[g[0]] = g[1];
+                });
+                if (items[0]) {
+                    qp.items = items;
+                }
+                qp.busy = false;
+            })
+                .catch((e) => {
+                return err("获取搜索建议失败", String(e));
+            });
+        });
+        qp.onDidAccept(() => {
+            getPlayUrl(`http://www.4399.com/flash/${games[qp.activeItems[0].label]}.htm`);
+            qp.dispose();
+            GlobalStorage(context).set("kwd", qp.value);
+        });
+        qp.show();
     });
 }
 async function showGameInfo(url = gameInfoUrl) {
@@ -606,7 +680,6 @@ async function showGameInfo(url = gameInfoUrl) {
             "🆔 游戏 id: " + gameId,
             "❤️ 添加到收藏盒",
             "🌏 在浏览器中打开详情页面",
-            "🌏 在 VSCode 中打开详情页面",
             "💬 热门评论",
         ])
             .then(async (item) => {
@@ -625,10 +698,7 @@ async function showGameInfo(url = gameInfoUrl) {
                         });
                     }
                     else if (item.includes("在浏览器中打开详情页面")) {
-                        open(url);
-                    }
-                    else if (item.includes("在 VSCode 中打开详情页面")) {
-                        showWebviewPanel(url, title + " - 游戏详情");
+                        vscode.env.openExternal(vscode.Uri.parse(url));
                     }
                     else if (item.includes("热门评论")) {
                         const html = iconv.decode((await axios_1.default.get("https://cdn.comment.4399pk.com/nhot-" +
@@ -732,6 +802,11 @@ function showWebviewPanel(url, title, type, hasIcon) {
             console.error(String(e));
         }
     }
+    panel.webview.onDidReceiveMessage(m => {
+        if (m.open && getCfg("openUrl", true)) {
+            vscode.env.openExternal(vscode.Uri.parse(m.open));
+        }
+    });
     type === "fl"
         ? (panel.webview.html = getWebviewHtml_flash(url))
         : (panel.webview.html = getWebviewHtml_h5(url));
@@ -977,24 +1052,10 @@ exports.activate = (ctx) => {
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.search", () => {
         let s = GlobalStorage(ctx).get("kwd");
-        vscode.window
-            .showInputBox({
-            value: s ? String(s) : "人生重开模拟器",
-            title: "4399 on VSCode: 搜索",
-            prompt: "输入搜索词",
-        })
-            .then((val) => {
-            if (!val) {
-                return;
-            }
-            GlobalStorage(ctx).set("kwd", val);
-            searchGames("https://so2.4399.com/search/search.php?k=" +
-                encodeURI(val) +
-                "&view=list&sort=thetime");
-        });
+        searchGames(s);
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.old-flash-games", () => {
-        searchGames("https://so2.4399.com/search/search.php?k=flash&view=list&sort=thetime");
+        searchGames("2006");
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.my", () => {
         login((c) => {
@@ -1004,6 +1065,7 @@ exports.activate = (ctx) => {
                 .showQuickPick([
                 "🆔 您的昵称: " + Pnick,
                 "❤️ 我的收藏盒",
+                "🖊 签到",
                 "🚪 退出登录",
             ])
                 .then(async (value) => {
@@ -1033,6 +1095,24 @@ exports.activate = (ctx) => {
                         }
                         catch (e) {
                             return err("无法获取我的收藏, ", String(e));
+                        }
+                    }
+                    else if (value.includes("签到")) {
+                        try {
+                            let data = (await axios_1.default.get("https://my.4399.com/plugins/sign/set-t-" +
+                                new Date().getTime(), getReqCfg("json"))).data;
+                            if (typeof data.result === "string") {
+                                vscode.window.showInformationMessage(data.result);
+                            }
+                            else if (typeof data.result === "object") {
+                                vscode.window.showInformationMessage(`签到成功, 连您已续签到${data.result.days}天`);
+                            }
+                            else {
+                                err("签到失败, 返回数据格式不正确");
+                            }
+                        }
+                        catch (e) {
+                            err("签到失败: ", String(e));
                         }
                     }
                     else if (value.includes("退出登录")) {
@@ -1085,18 +1165,8 @@ exports.activate = (ctx) => {
             err("无法读取历史记录", String(e));
         }
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.more", () => {
-        vscode.window.showQuickPick(["👜 打开数据目录"]).then((value) => {
-            if (value) {
-                if (value.includes("打开数据目录")) {
-                    open(path.join(os.userInfo().homedir, ".4ov-data"));
-                }
-            }
-        });
-    }));
     context = ctx;
     fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data/cache/icon"), { recursive: true }, (err) => { });
-    fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data/cache/game"), { recursive: true }, (err) => { });
     console.log("4399 on VSCode is ready!");
 };
 //# sourceMappingURL=extension.js.map
