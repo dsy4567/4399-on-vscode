@@ -97,6 +97,7 @@ var panel;
 var context;
 const getScript = (cookie = "") => `
 <script>
+try{ var vscode = acquireVsCodeApi(); } catch (e) {}
 // 强制设置 referrer
 Object.defineProperty(document, "referrer", {
     value: "http://www.4399.com/",
@@ -104,7 +105,7 @@ Object.defineProperty(document, "referrer", {
 });
 // 强制设置 cookie
 Object.defineProperty(document, "cookie", {
-    value: \`${GlobalStorage(context).get("cookie").replaceAll(";", "; ")}\`,
+    value: \`${cookie.replaceAll(";", "; ")}\`,
     writable: false,
 });
 // 设置 document.domain 不会报错
@@ -114,7 +115,10 @@ Object.defineProperty(document, "domain", {
 });
 // 打开链接
 Object.defineProperty(window, "open", {
-    value: (url) => { vscode.postMessage({ open: new URL(url, location.href).href }) },
+    value: (url) => {
+        console.log(url);
+        vscode.postMessage({ open: new URL(url, location.href).href })
+    },
     writable: true,
 });
 </script>
@@ -158,11 +162,15 @@ const getWebviewHtml_flash = (url) => `
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
         <title>flash 播放器(Ruffle 引擎)</title>
         <script>
+            try{ var vscode = acquireVsCodeApi(); } catch (e) {}
             // 打开链接
             Object.defineProperty(window, "open", {
-                value: (url) => { vscode.postMessage({ open: new URL(url, location.href).href }) },
+                value: (url) => {
+                    console.log(url);
+                    vscode.postMessage({ open: new URL(url, location.href).href })
+                },
                 writable: true,
-        });
+            });
         </script>
         <script>
             window.play = function (url) {
@@ -802,11 +810,12 @@ function showWebviewPanel(url, title, type, hasIcon) {
             console.error(String(e));
         }
     }
-    panel.webview.onDidReceiveMessage(m => {
+    panel.webview.onDidReceiveMessage((m) => {
+        log(m);
         if (m.open && getCfg("openUrl", true)) {
             vscode.env.openExternal(vscode.Uri.parse(m.open));
         }
-    });
+    }, undefined, context.subscriptions);
     type === "fl"
         ? (panel.webview.html = getWebviewHtml_flash(url))
         : (panel.webview.html = getWebviewHtml_h5(url));
@@ -1105,7 +1114,7 @@ exports.activate = (ctx) => {
                                 vscode.window.showInformationMessage(data.result);
                             }
                             else if (typeof data.result === "object") {
-                                vscode.window.showInformationMessage(`签到成功, 连您已续签到${data.result.days}天`);
+                                vscode.window.showInformationMessage(`签到成功, 您已连续签到${data.result.days}天`);
                             }
                             else {
                                 err("签到失败, 返回数据格式不正确");
