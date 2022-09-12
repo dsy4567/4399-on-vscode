@@ -2,7 +2,7 @@
     "name": "4399-on-vscode",
     "displayName": "4399 on VSCode",
     "description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-    "version": "0.1.9",
+    "version": "0.2.0",
     "engines": {
         "vscode": "^1.70.0"
     },
@@ -89,7 +89,12 @@
                 },
                 "4399-on-vscode.openUrl": {
                     "default": true,
-                    "description": "控制是否允许 Webview 打开链接",
+                    "description": "控制是否允许 Webview 打开外链(仅 flash 游戏)",
+                    "type": "boolean"
+                },
+                "4399-on-vscode.updateHistory": {
+                    "default": true,
+                    "description": "控制是否允许写入历史记录",
                     "type": "boolean"
                 }
             }
@@ -129,11 +134,6 @@
                 "category": "4399 on VSCode",
                 "command": "4399-on-vscode.history",
                 "title": "历史记录"
-            },
-            {
-                "category": "4399 on VSCode",
-                "command": "4399-on-vscode.old-flash-games",
-                "title": "旧的 flash 游戏"
             },
             {
                 "category": "4399 on VSCode",
