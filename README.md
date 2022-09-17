@@ -2,9 +2,9 @@
 
 <img width="128" src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
 
-<h1 align="center">4399 on vscode</h1>
+<h1 align="center">4399 on VSCode</h1>
 
-在 vscode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)
+在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)
 
 [![Visual Studio Marketplace](https://img.shields.io/badge/Visual%20Studio-Marketplace-007acc.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
 [![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/dsy4567.4399-on-vscode.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
@@ -21,7 +21,7 @@
 
 # ✨ 简介
 
-4399 on vscode 是一个牛逼他妈给牛逼开门, 牛逼到家的 vscode 扩展, 它可以让您在紧张的开发工作之余, 通过玩一会 4399 小游戏, 放松身心, 劳逸结合, 更好地开始接下来的工作 (玩游戏时不会有防沉迷这个\*\*玩意)
+4399 on VSCode 是一个牛逼他妈给牛逼开门, 牛逼到家的 VSCode 扩展, 它可以让您在紧张的开发工作之余, 通过玩一会 4399 小游戏, 放松身心, 劳逸结合, 更好地开始接下来的工作 (玩游戏时不会有防沉迷这个\*\*玩意)
 
 # 👍 功能
 
@@ -40,7 +40,7 @@
 # 🔨 使用方法
 
 按下 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
-, 输入 `4399 on vscode` 开始探索
+, 输入 `4399 on VSCode` 开始探索
 
 # 🍪 获取 cookie
 
@@ -58,13 +58,13 @@ copy(document.cookie);
 
 -   **请不要用这个扩展玩 u3d 或 2006 年 6 月以后的 flash 游戏, 此扩展不会支持这类游戏**
 -   如果焦点在游戏界面上, 快捷键可能会失效, **请确保您的鼠标或 Windows 徽标键/Command 键正常工作**
--   ~~如果需要 flash 游戏和少数 h5 游戏有声音, 请尝试 [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement)~~(vscode 1.71.0+ 用户请见 [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
+-   ~~如果需要 flash 游戏和少数 h5 游戏有声音, 请尝试 [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement)~~(VSCode 1.71.0+ 用户请见 [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
 -   请勿在任何一个游戏未完全加载完成前多开另一个游戏(页游不受限制)
 -   如果游戏显示方向不正确, 请尽可能让游戏界面变宽(比如取消拆分编辑器)
 
 # 📢 已知问题
 
--   ~~大多数 h5 游戏在 [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement) 后仍然没有声音(用 [Cocos](https://www.cocos.com/) 做的游戏 %99.99 没有声音)~~(vscode 1.71.0+ 用户请见 [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
+-   ~~大多数 h5 游戏在 [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement) 后仍然没有声音(用 [Cocos](https://www.cocos.com/) 做的游戏 %99.99 没有声音)~~(VSCode 1.71.0+ 用户请见 [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
 -   用户头像无法显示(懒得解除 referrer 限制)
 -   游戏无法锁定鼠标(尤其是射击类游戏)

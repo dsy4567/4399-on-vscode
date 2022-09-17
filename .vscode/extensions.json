@@ -1,7 +1,10 @@
 {
-	// See http://go.microsoft.com/fwlink/?LinkId=827846
-	// for the documentation about the extensions.json format
-	"recommendations": [
-		"dbaeumer.vscode-eslint"
-	]
+    // See http://go.microsoft.com/fwlink/?LinkId=827846
+    // for the documentation about the extensions.json format
+    "recommendations": [
+        "dbaeumer.vscode-eslint",
+        "dsy4567.4399-on-vscode",
+        "esbenp.prettier-vscode",
+        "intellsmi.comment-translate"
+    ]
 }
