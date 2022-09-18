@@ -98,7 +98,7 @@ var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameInfoUrls: Record<string, string> = {};
-var alerted = false;
+var alerted = false;// 第一次游戏前提示
 var port = 44399;
 var panel: vscode.WebviewPanel;
 var context: vscode.ExtensionContext;
