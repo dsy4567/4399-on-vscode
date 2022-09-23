@@ -98,7 +98,7 @@ var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameInfoUrls: Record<string, string> = {};
-var alerted = false;// 第一次游戏前提示
+var alerted = false; // 第一次游戏前提示
 var port = 44399;
 var panel: vscode.WebviewPanel;
 var context: vscode.ExtensionContext;
@@ -691,17 +691,21 @@ function searchGames(s: string) {
     let items: vscode.QuickPickItem[] = [];
     let games: Record<string, number> = {};
     let timeout: NodeJS.Timeout;
+    let pageNum = 1;
 
     createQuickPick({
         value: s ? String(s) : "",
         title: "4399 on VSCode: 搜索",
         prompt: "输入搜索词",
     }).then((qp) => {
-        const search = (s: string) => {
+        const search = (s: string,add?:boolean) => {
             qp.busy = true;
             axios
                 .get(
-                    "https://so2.4399.com/search/search.php?k=" + encodeURI(s),
+                    "https://so2.4399.com/search/search.php?k=" +
+                        encodeURI(s) +
+                        "&p=" +
+                        pageNum,
                     getReqCfg("arraybuffer")
                 )
                 .then((res) => {

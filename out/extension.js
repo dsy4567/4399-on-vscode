@@ -589,6 +589,7 @@ function searchGames(s) {
     let items = [];
     let games = {};
     let timeout;
+    let pa;
     createQuickPick({
         value: s ? String(s) : "",
         title: "4399 on VSCode: 搜索",
