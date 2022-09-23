@@ -90,7 +90,7 @@ var server = ""; // szhong.4399.com
 var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 var gameInfoUrls = {};
-var alerted = false;
+var alerted = false; // 第一次游戏前提示
 var port = 44399;
 var panel;
 var context;
@@ -237,8 +237,7 @@ function initHttpServer(callback) {
                     .catch((e) => {
                     //   log(request, request.url);
                     response.writeHead(500, {
-                        "Content-Type": "text/html",
-                        "access-control-allow-origin": "*",
+                        "Content-Type": "text/plain",
                     });
                     response.statusMessage = e.message;
                     response.end(e.message);
@@ -250,7 +249,9 @@ function initHttpServer(callback) {
             }
         }
         catch (e) {
-            response.writeHead(500, {});
+            response.writeHead(500, {
+                "Content-Type": "text/plain",
+            });
             response.end(String(e));
         }
     };

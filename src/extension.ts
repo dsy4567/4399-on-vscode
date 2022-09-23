@@ -250,8 +250,7 @@ function initHttpServer(callback: Function) {
                     .catch((e) => {
                         //   log(request, request.url);
                         response.writeHead(500, {
-                            "Content-Type": "text/html",
-                            "access-control-allow-origin": "*",
+                            "Content-Type": "text/plain",
                         });
                         response.statusMessage = e.message;
                         response.end(e.message);
@@ -266,7 +265,9 @@ function initHttpServer(callback: Function) {
                     });
             }
         } catch (e) {
-            response.writeHead(500, {});
+            response.writeHead(500, {
+                "Content-Type": "text/plain",
+            });
             response.end(String(e));
         }
     };
