@@ -698,8 +698,9 @@ function searchGames(s: string) {
         title: "4399 on VSCode: 搜索",
         prompt: "输入搜索词",
     }).then((qp) => {
-        const search = (s: string,add?:boolean) => {
+        const search = (s: string) => {
             qp.busy = true;
+            log("页码 " + pageNum);
             axios
                 .get(
                     "https://so2.4399.com/search/search.php?k=" +
@@ -743,6 +744,11 @@ function searchGames(s: string) {
                                 alwaysShow: true,
                             });
                         });
+                        items.push({
+                            label: "下一页",
+                            description: "加载下一页内容",
+                            alwaysShow: true,
+                        });
                         qp.items = items;
                         qp.busy = false;
                     }
@@ -752,6 +758,7 @@ function searchGames(s: string) {
                 });
         };
         qp.onDidChangeValue((kwd) => {
+            pageNum = 1;
             clearTimeout(timeout);
             timeout = setTimeout(() => {
                 qp.busy = true;
@@ -809,6 +816,9 @@ function searchGames(s: string) {
         });
         qp.onDidAccept(() => {
             if (qp.activeItems[0].description === "直接搜索") {
+                search(qp.value);
+            } else if (qp.activeItems[0].label === "下一页") {
+                pageNum++;
                 search(qp.value);
             } else {
                 getPlayUrl(

@@ -589,7 +589,7 @@ function searchGames(s) {
     let items = [];
     let games = {};
     let timeout;
-    let pa;
+    let pageNum = 1;
     createQuickPick({
         value: s ? String(s) : "",
         title: "4399 on VSCode: 搜索",
@@ -597,8 +597,12 @@ function searchGames(s) {
     }).then((qp) => {
         const search = (s) => {
             qp.busy = true;
+            log("页码 " + pageNum);
             axios_1.default
-                .get("https://so2.4399.com/search/search.php?k=" + encodeURI(s), getReqCfg("arraybuffer"))
+                .get("https://so2.4399.com/search/search.php?k=" +
+                encodeURI(s) +
+                "&p=" +
+                pageNum, getReqCfg("arraybuffer"))
                 .then((res) => {
                 if (res.data) {
                     res.data = iconv.decode(res.data, "gb2312");
@@ -630,6 +634,11 @@ function searchGames(s) {
                             alwaysShow: true,
                         });
                     });
+                    items.push({
+                        label: "下一页",
+                        description: "加载下一页内容",
+                        alwaysShow: true,
+                    });
                     qp.items = items;
                     qp.busy = false;
                 }
@@ -639,6 +648,7 @@ function searchGames(s) {
             });
         };
         qp.onDidChangeValue((kwd) => {
+            pageNum = 1;
             clearTimeout(timeout);
             timeout = setTimeout(() => {
                 qp.busy = true;
@@ -690,6 +700,10 @@ function searchGames(s) {
         });
         qp.onDidAccept(() => {
             if (qp.activeItems[0].description === "直接搜索") {
+                search(qp.value);
+            }
+            else if (qp.activeItems[0].label === "下一页") {
+                pageNum++;
                 search(qp.value);
             }
             else {
