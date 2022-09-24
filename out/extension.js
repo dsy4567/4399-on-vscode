@@ -111,6 +111,14 @@ Object.defineProperty(document, "domain", {
     value: "4399.com",
     writable: true,
 });
+// 打开链接
+Object.defineProperty(window, "open", {
+    value: (url) => {
+        console.log(url);
+        fetch("/openUrl/" + url);
+    },
+    writable: true,
+});
 </script>
 `;
 const getWebviewHtml_h5 = (url) => `
@@ -212,6 +220,28 @@ function initHttpServer(callback) {
                     : response.writeHead(500, {}); // 防止重复重定向
                 response.end();
             }
+            else if (request.url.startsWith("/openUrl/") &&
+                getCfg("openUrl", true)) {
+                let u;
+                try {
+                    u = new URL(request.url.substring("/openUrl/".length), "https://www.4399.com/");
+                }
+                catch (e) {
+                    openUrl(request.url.substring("/openUrl/".length));
+                    response.writeHead(200);
+                    response.end(null);
+                    return;
+                }
+                if (u.hostname.endsWith(".4399.com") &&
+                    u.pathname.startsWith("/flash/")) {
+                    getPlayUrl(u.href);
+                }
+                else if (u.hostname === "sbai.4399.com") {
+                }
+                openUrl(request.url.substring("/openUrl/".length));
+                response.writeHead(200);
+                response.end(null);
+            }
             else if (new URL(request.url, "http://localhost:" + port).pathname ===
                 gamePath) {
                 // 访问游戏入口页面直接返回数据
@@ -306,6 +336,13 @@ function getReqCfg(responseType, noCookie = false) {
         },
     };
 }
+function openUrl(url) {
+    if (!url) {
+        return;
+    }
+    let u = new URL(url, "https://www.4399.com/").href;
+    vscode.env.openExternal(vscode.Uri.parse(u));
+}
 function log(...arg) {
     if (!getCfg("outputLogs")) {
         return;
@@ -317,7 +354,7 @@ function err(...arg) {
         .showErrorMessage([...arg].join(" "), "在 GitHub 上报告问题")
         .then((val) => {
         if (val === "在 GitHub 上报告问题") {
-            vscode.env.openExternal(vscode.Uri.parse("https://github.com/dsy4567/4399-on-vscode/issues"));
+            openUrl("https://github.com/dsy4567/4399-on-vscode/issues");
         }
     });
     console.error("[4399 on VSCode]", ...arg);
@@ -779,7 +816,7 @@ async function showGameInfo(url) {
                         });
                     }
                     else if (item.includes("在浏览器中打开详情页面")) {
-                        vscode.env.openExternal(vscode.Uri.parse(url));
+                        openUrl(url);
                     }
                     else if (item.includes("热门评论")) {
                         const html = iconv.decode((await axios_1.default.get("https://cdn.comment.4399pk.com/nhot-" +
@@ -822,7 +859,7 @@ function showWebviewPanel(url, title, type, hasIcon) {
     //     panel.dispose();
     // } catch (e) {}
     const customTitle = getCfg("title");
-    panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 on VSCode", vscode.ViewColumn.One, {
+    panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle ? customTitle : title ? title : "4399 on VSCode", vscode.ViewColumn.Active, {
         enableScripts: true,
         retainContextWhenHidden: true,
     });
@@ -833,7 +870,7 @@ function showWebviewPanel(url, title, type, hasIcon) {
     panel.webview.onDidReceiveMessage((m) => {
         log(m);
         if (m.open && getCfg("openUrl", true)) {
-            vscode.env.openExternal(vscode.Uri.parse(m.open));
+            openUrl(m.open);
         }
     }, undefined, context.subscriptions);
     // 注入脚本
