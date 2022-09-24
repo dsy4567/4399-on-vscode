@@ -236,9 +236,15 @@ function initHttpServer(callback) {
                     u.pathname.startsWith("/flash/")) {
                     getPlayUrl(u.href);
                 }
-                else if (u.hostname === "sbai.4399.com") {
+                else if (u.hostname === "sbai.4399.com" &&
+                    u.searchParams.get("4399id")) {
+                    getPlayUrl("http://www.4399.com/flash/" +
+                        u.searchParams.get("4399id") +
+                        ".htm");
                 }
-                openUrl(request.url.substring("/openUrl/".length));
+                else {
+                    openUrl(request.url.substring("/openUrl/".length));
+                }
                 response.writeHead(200);
                 response.end(null);
             }

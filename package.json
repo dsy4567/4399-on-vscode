@@ -89,7 +89,7 @@
                 },
                 "4399-on-vscode.openUrl": {
                     "default": true,
-                    "description": "控制是否允许 Webview 打开外链(仅 flash 游戏)",
+                    "description": "控制是否允许 Webview 打开外链/推荐游戏",
                     "type": "boolean"
                 },
                 "4399-on-vscode.updateHistory": {
