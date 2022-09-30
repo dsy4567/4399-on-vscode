@@ -92,16 +92,17 @@ interface History {
     url: string;
 }
 
-var httpServer: http.Server | undefined;
-var DATA: Buffer | string;
-var server = ""; // szhong.4399.com
-var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
-var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
-var gameInfoUrls: Record<string, string> = {};
-var alerted = false; // 第一次游戏前提示
-var port = 44399;
-var panel: vscode.WebviewPanel;
-var context: vscode.ExtensionContext;
+let httpServer: http.Server | undefined;
+let DATA: Buffer | string;
+let server = ""; // szhong.4399.com
+let gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
+let gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
+let gameInfoUrls: Record<string, string> = {};
+let alerted = false; // 第一次游戏前提示
+let port = 44399;
+let panel: vscode.WebviewPanel;
+let context: vscode.ExtensionContext;
+let statusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(1);
 const getScript = (cookie: string = "") => `
 <script>
 // 强制设置 referrer
@@ -401,6 +402,13 @@ function err(...arg: any[]) {
             }
         });
     console.error("[4399 on VSCode]", ...arg);
+    loaded(true);
+}
+function loaded(hide: boolean) {
+    if (!statusBarItem.name) {
+        statusBarItem.name = statusBarItem.text = "$(loading)游戏加载中";
+    }
+    hide ? statusBarItem.hide() : statusBarItem.show();
 }
 function createQuickPick(o: {
     value?: string;
@@ -457,6 +465,7 @@ async function getServer(server_matched: RegExpMatchArray): Promise<string> {
 // 获取 h5 页游的真实地址
 function getPlayUrlForWebGames(urlOrId: string) {
     login(async (cookie: string) => {
+        loaded(false);
         let i = urlOrId.split("/").at(-1);
         if (i && !isNaN(Number(i))) {
             urlOrId = i;
@@ -546,6 +555,7 @@ async function getPlayUrl(url: string) {
     }
 
     try {
+        loaded(false);
         let res = await axios.get(url, getReqCfg("arraybuffer"));
 
         if (res.data) {
@@ -1155,6 +1165,8 @@ function showWebviewPanel(
             console.error(String(e));
         }
     }
+
+    loaded(true);
 }
 function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
     if (GlobalStorage(context).get("cookie")) {

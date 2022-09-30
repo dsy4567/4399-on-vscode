@@ -84,16 +84,17 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const mime = require("mime");
-var httpServer;
-var DATA;
-var server = ""; // szhong.4399.com
-var gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
-var gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
-var gameInfoUrls = {};
-var alerted = false; // 第一次游戏前提示
-var port = 44399;
-var panel;
-var context;
+let httpServer;
+let DATA;
+let server = ""; // szhong.4399.com
+let gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
+let gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
+let gameInfoUrls = {};
+let alerted = false; // 第一次游戏前提示
+let port = 44399;
+let panel;
+let context;
+let statusBarItem = vscode.window.createStatusBarItem(1);
 const getScript = (cookie = "") => `
 <script>
 // 强制设置 referrer
@@ -372,6 +373,13 @@ function err(...arg) {
         }
     });
     console.error("[4399 on VSCode]", ...arg);
+    loaded(true);
+}
+function loaded(hide) {
+    if (!statusBarItem.name) {
+        statusBarItem.name = statusBarItem.text = "$(loading)游戏加载中";
+    }
+    hide ? statusBarItem.hide() : statusBarItem.show();
 }
 function createQuickPick(o) {
     return new Promise((resolve, reject) => {
@@ -419,6 +427,7 @@ async function getServer(server_matched) {
 // 获取 h5 页游的真实地址
 function getPlayUrlForWebGames(urlOrId) {
     login(async (cookie) => {
+        loaded(false);
         let i = urlOrId.split("/").at(-1);
         if (i && !isNaN(Number(i))) {
             urlOrId = i;
@@ -493,6 +502,7 @@ async function getPlayUrl(url) {
         url = getReqCfg(undefined, true).baseURL + url;
     }
     try {
+        loaded(false);
         let res = await axios_1.default.get(url, getReqCfg("arraybuffer"));
         if (res.data) {
             res.data = iconv.decode(res.data, "gb2312");
@@ -956,6 +966,7 @@ function showWebviewPanel(url, title, type, hasIcon) {
             console.error(String(e));
         }
     }
+    loaded(true);
 }
 function login(callback, loginOnly = false) {
     if (GlobalStorage(context).get("cookie")) {
