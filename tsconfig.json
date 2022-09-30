@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
-		"target": "ES2020",
+		"module": "CommonJS",
+		"target": "ES2022",
 		"outDir": "out",
 		"lib": [
 			"ES2022"

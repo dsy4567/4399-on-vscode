@@ -137,10 +137,12 @@ const getWebviewHtml_h5 = (url) => `
                 display: none !important;
             }
 
-            body {
+            html, body {
+                overflow: hidden;
                 margin: 0;
                 padding: 0;
             }
+
 
             iframe {
                 width: 100%;
@@ -166,6 +168,12 @@ const getWebviewHtml_flash = (url) => `
         <style>
             ::-webkit-scrollbar {
                 display: none !important;
+            }
+            
+            html, body {
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
             }
         </style>
         <script>
