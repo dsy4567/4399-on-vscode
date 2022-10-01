@@ -94,6 +94,7 @@ interface History {
 
 let httpServer: http.Server | undefined;
 let DATA: Buffer | string;
+let REF: string | undefined;
 let server = ""; // szhong.4399.com
 let gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 let gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -249,7 +250,8 @@ const GlobalStorage = (context: vscode.ExtensionContext) => {
             context.globalState.update(key, JSON.stringify(value)),
     };
 };
-function initHttpServer(callback: Function) {
+function initHttpServer(callback: Function, ref?: string) {
+    REF = ref;
     let onRequest: http.RequestListener = (request, response) => {
         try {
             if (!request?.url) {
@@ -308,7 +310,7 @@ function initHttpServer(callback: Function) {
                 response.writeHead(200, {
                     "content-security-policy":
                         "allow-pointer-lock allow-scripts",
-                    "content-type": t,
+                    "content-type": t + "; charset=utf-8",
                     "access-control-allow-origin": "*",
                 });
                 response.end(DATA);
@@ -317,7 +319,7 @@ function initHttpServer(callback: Function) {
                 axios
                     .get(
                         "http://" + server + request.url,
-                        getReqCfg("arraybuffer")
+                        getReqCfg("arraybuffer", false, REF)
                     )
                     .then((res) => {
                         let headers = res.headers;
@@ -326,7 +328,7 @@ function initHttpServer(callback: Function) {
                         response.end(res.data);
                     })
                     .catch((e) => {
-                        //   log(request, request.url);
+                        log(request, request.url);
                         response.writeHead(500, {
                             "Content-Type": "text/plain",
                         });
@@ -388,7 +390,8 @@ function initHttpServer(callback: Function) {
 }
 function getReqCfg(
     responseType?: ResponseType,
-    noCookie: boolean = false
+    noCookie: boolean = false,
+    ref?: string
 ): AxiosRequestConfig<any> {
     let c;
     if (!noCookie) {
@@ -399,7 +402,7 @@ function getReqCfg(
         responseType: responseType,
         headers: {
             "user-agent": getCfg("user-agent"),
-            referer: getCfg("referer"),
+            referer: ref ? ref : getCfg("referer"),
             cookie: c && !noCookie ? c : "",
         },
     };
@@ -533,26 +536,45 @@ async function geThreads(id: number) {
                     if (!title) {
                         err("无法获取帖子页面: 标题为空");
                     }
-                    $(".host_content.user_content.j-thread-content")
-                        .children()
-                        .each((i, elem) => {
-                            let s = $(elem)
-                                .attr("src")
-                                ?.replace("//p.img4399.com/", "/");
+
+                    $("img").each((i, elem) => {
+                        let s = $(elem).attr("src");
+                        if (s && !s.startsWith("http")) {
+                            s = s.replace("//", "http://");
                             $(elem).attr("src", s);
-                        });
+                        }
+                    });
+                    $("img").each((i, elem) => {
+                        let s = $(elem)
+                            .attr("src")
+                            ?.replace(
+                                "//p.img4399.com/",
+                                "//localhost:" + port + "/"
+                            );
+                        $(elem).attr("src", s);
+                    });
+                    $(".host_content.user_content.j-thread-content").css();
+                    // $("a").attr(
+                    //     "onclick",
+                    //     "fetch('/openUrl/' + this.href); return false;"
+                    // );
                     let html =
+                        "<style>* {color: #888;}</style>" +
+                        String($($(".post_author_name_text")[0]).text()) +
+                        " " +
                         String($(".host_title").html()) +
+                        " " +
                         String(
                             $(
                                 ".host_content.user_content.j-thread-content"
                             ).html()
                         );
                     initHttpServer(() => {
-                        gamePath = "/thread.html";
-                        DATA = html;
-                        let u = new URL(gamePath, "http://localhost/");
-                        u.port = String(port);
+                        server = "p.img4399.com";
+                        // gamePath = "/thread.html";
+                        // DATA = html;
+                        // let u = new URL(gamePath, "http://localhost/");
+                        // u.port = String(port);
 
                         panel = vscode.window.createWebviewPanel(
                             "4399OnVscode",
@@ -560,8 +582,8 @@ async function geThreads(id: number) {
                             vscode.ViewColumn.Active,
                             {}
                         );
-                        panel.webview.html = getWebviewHtml_h5(u.href);
-                    });
+                        panel.webview.html = html;
+                    }, "http://my.4399.com/");
                 } else {
                     err("无法获取帖子页面");
                 }
