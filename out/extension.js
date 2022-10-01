@@ -96,7 +96,22 @@ let port = 44399;
 let panel;
 let context;
 let statusBarItem = vscode.window.createStatusBarItem(1);
-const getScript = (cookie = "") => `
+const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
+const getScript = (cookie = "") => {
+    let s = "", f = getCfg("scripts", "").split(", ");
+    f.forEach((file) => {
+        if (file) {
+            try {
+                s += fs
+                    .readFileSync(path.join(DATA_DIR, "scripts/", file))
+                    .toString();
+            }
+            catch (e) {
+                err(`读取 HTML 代码片段文件${path.join(DATA_DIR, "scripts/", file)}时出错`, e);
+            }
+        }
+    });
+    return (`
 <script>
 // 强制设置 referrer
 Object.defineProperty(document, "referrer", {
@@ -122,7 +137,8 @@ Object.defineProperty(window, "open", {
     writable: true,
 });
 </script>
-`;
+` + s);
+};
 const getWebviewHtml_h5 = (url) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -942,8 +958,8 @@ function showWebviewPanel(url, title, type, hasIcon) {
         try {
             let gameId = gameInfoUrls[title].split(/[/.]/gi).at(-2);
             if (gameId) {
-                if (fs.existsSync(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`))) {
-                    iconPath = vscode.Uri.file(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`));
+                if (fs.existsSync(path.join(DATA_DIR, `cache/icon/${gameId}.jpg`))) {
+                    iconPath = vscode.Uri.file(path.join(DATA_DIR, `cache/icon/${gameId}.jpg`));
                     setIcon();
                 }
                 else {
@@ -951,13 +967,13 @@ function showWebviewPanel(url, title, type, hasIcon) {
                         .get(`https://imga1.5054399.com/upload_pic/minilogo/${gameId}.jpg`, getReqCfg("arraybuffer"))
                         .then((res) => {
                         if (res.data) {
-                            fs.writeFile(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`), res.data, (e) => {
+                            fs.writeFile(path.join(DATA_DIR, `cache/icon/${gameId}.jpg`), res.data, (e) => {
                                 if (e) {
                                     console.error(String(e));
                                 }
                                 try {
-                                    if (fs.existsSync(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`))) {
-                                        iconPath = vscode.Uri.file(path.join(os.userInfo().homedir, `.4ov-data/cache/icon/${gameId}.jpg`));
+                                    if (fs.existsSync(path.join(DATA_DIR, `cache/icon/${gameId}.jpg`))) {
+                                        iconPath = vscode.Uri.file(path.join(DATA_DIR, `cache/icon/${gameId}.jpg`));
                                         setIcon();
                                     }
                                 }
@@ -1344,7 +1360,42 @@ function activate(ctx) {
         }
     }));
     context = ctx;
-    fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data/cache/icon"), { recursive: true }, (err) => { });
+    fs.mkdir(path.join(DATA_DIR, "cache/icon"), { recursive: true }, (err) => { });
+    fs.mkdir(path.join(DATA_DIR, "scripts"), { recursive: true }, (err) => { });
+    if (!fs.existsSync(path.join(DATA_DIR, "scripts/example.html"))) {
+        fs.writeFile(path.join(DATA_DIR, "scripts/example.html"), `\
+<!-- 由 4399 on VSCode 创建的示例 HTML 代码片段 -->
+<script>
+    // 打开链接
+    // fetch("/openUrl/https://www.4399.com/flash/227465.htm")
+    // 屏蔽广告
+    /*
+    window.addEventListener("load", () => {
+        h5api.playAd = function (cb) {
+            cb({
+                code: 10001,
+                message: "播放结束",
+            });
+        };
+        h5api.canPlayAd = function (cb) {
+            cb({
+                canPlayAd: true,
+                remain: 99999,
+            });
+            return true;
+        };
+    });
+    */
+</script>
+<style>
+    /*
+    .myDiv{
+        color: #fff;
+    }
+    */
+</style>
+`, (err) => { });
+    }
     console.log("4399 on VSCode is ready!");
 }
 exports.activate = activate;
