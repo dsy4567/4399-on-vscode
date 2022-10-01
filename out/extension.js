@@ -383,10 +383,13 @@ function log(...arg) {
 }
 function err(...arg) {
     vscode.window
-        .showErrorMessage([...arg].join(" "), "在 GitHub 上报告问题")
+        .showErrorMessage([...arg].join(" "), "切换开发人员工具(Ctrl+Shift+I)", "在 GitHub 上报告问题")
         .then((val) => {
         if (val === "在 GitHub 上报告问题") {
             openUrl("https://github.com/dsy4567/4399-on-vscode/issues");
+        }
+        else if (val === "切换开发人员工具(Ctrl+Shift+I)") {
+            vscode.commands.executeCommand("workbench.action.webview.openDeveloperTools");
         }
     });
     console.error("[4399 on VSCode]", ...arg);
