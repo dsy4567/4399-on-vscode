@@ -406,7 +406,7 @@ function err(...arg: any[]) {
 }
 function loaded(hide: boolean) {
     if (!statusBarItem.name) {
-        statusBarItem.name = statusBarItem.text = "$(loading)游戏加载中";
+        statusBarItem.text = "$(loading~spin) " + "游戏加载中";
     }
     hide ? statusBarItem.hide() : statusBarItem.show();
 }
@@ -1370,7 +1370,7 @@ function objectToQuery(obj: any, prefix?: string) {
     }, "");
 }
 
-exports.activate = (ctx: vscode.ExtensionContext) => {
+export function activate(ctx: vscode.ExtensionContext) {
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.random", () => {
             getPlayUrl(
@@ -1665,4 +1665,4 @@ exports.activate = (ctx: vscode.ExtensionContext) => {
         (err) => {}
     );
     console.log("4399 on VSCode is ready!");
-};
+}

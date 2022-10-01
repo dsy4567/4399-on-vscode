@@ -74,6 +74,7 @@ LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
 */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.activate = void 0;
 const vscode = require("vscode");
 const cheerio = require("cheerio");
 const axios_1 = require("axios");
@@ -377,7 +378,7 @@ function err(...arg) {
 }
 function loaded(hide) {
     if (!statusBarItem.name) {
-        statusBarItem.name = statusBarItem.text = "$(loading)游戏加载中";
+        statusBarItem.text = "$(loading~spin) " + "游戏加载中";
     }
     hide ? statusBarItem.hide() : statusBarItem.show();
 }
@@ -1124,7 +1125,7 @@ function objectToQuery(obj, prefix) {
         return query;
     }, "");
 }
-exports.activate = (ctx) => {
+function activate(ctx) {
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", () => {
         getPlayUrl("https://www.4399.com/flash/" +
             String(Math.floor(Math.random() * 10000) + 200000) +
@@ -1335,5 +1336,6 @@ exports.activate = (ctx) => {
     context = ctx;
     fs.mkdir(path.join(os.userInfo().homedir, ".4ov-data/cache/icon"), { recursive: true }, (err) => { });
     console.log("4399 on VSCode is ready!");
-};
+}
+exports.activate = activate;
 //# sourceMappingURL=extension.js.map
