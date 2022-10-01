@@ -495,6 +495,82 @@ async function getServer(server_matched: RegExpMatchArray): Promise<string> {
         );
     }
 }
+async function geThreads(id: number) {
+    let d: Buffer = (
+        await axios.get(
+            `https://my.4399.com/forums/mtag-${id}`,
+            getReqCfg("arraybuffer")
+        )
+    ).data;
+    if (d) {
+        const $ = cheerio.load(d);
+        let threads: Record<string, number> = {}; // 帖子
+        let titles: string[] = [];
+        $("div.listtitle > div.title").each((i, elem) => {
+            let $title = $(elem).children("a.thread_link");
+            let id: number = Number($title.attr("href")?.split("-").at(-1));
+            let title = $title.text();
+            let type = $(elem).children("a.type").text();
+            if (!id || isNaN(id) || !title) {
+                return;
+            }
+            type = type ? type : "[顶] ";
+            title = type + title;
+            titles.push(title);
+            threads[title] = id;
+        });
+        vscode.window.showQuickPick(titles).then(async (val) => {
+            if (val) {
+                let d: Buffer = (
+                    await axios.get(
+                        `https://my.4399.com/forums/thread-${threads[val]}`,
+                        getReqCfg("arraybuffer")
+                    )
+                ).data;
+                if (d) {
+                    const $ = cheerio.load(d);
+                    let title = $("div.host_main_title > a").text();
+                    if (!title) {
+                        err("无法获取帖子页面: 标题为空");
+                    }
+                    $(".host_content.user_content.j-thread-content")
+                        .children()
+                        .each((i, elem) => {
+                            let s = $(elem)
+                                .attr("src")
+                                ?.replace("//p.img4399.com/", "/");
+                            $(elem).attr("src", s);
+                        });
+                    let html =
+                        String($(".host_title").html()) +
+                        String(
+                            $(
+                                ".host_content.user_content.j-thread-content"
+                            ).html()
+                        );
+                    initHttpServer(() => {
+                        gamePath = "/thread.html";
+                        DATA = html;
+                        let u = new URL(gamePath, "http://localhost/");
+                        u.port = String(port);
+
+                        panel = vscode.window.createWebviewPanel(
+                            "4399OnVscode",
+                            title ? title : "4399 on VSCode",
+                            vscode.ViewColumn.Active,
+                            {}
+                        );
+                        panel.webview.html = getWebviewHtml_h5(u.href);
+                    });
+                } else {
+                    err("无法获取帖子页面");
+                }
+            }
+        });
+    } else {
+        err("无法获取群组页面");
+    }
+}
 // 获取 h5 页游的真实地址
 function getPlayUrlForWebGames(urlOrId: string) {
     login(async (cookie: string) => {
@@ -877,11 +953,11 @@ function searchGames(s: string) {
                         getReqCfg("arraybuffer")
                     )
                     .then((res) => {
-                        res.data = iconv.decode(res.data, "gb2312");
-                        let d: string = res.data;
-                        if (!d) {
+                        if (!res.data) {
                             return err("获取搜索建议失败");
                         }
+                        res.data = iconv.decode(res.data, "gb2312");
+                        let d: string = res.data;
                         log(d);
 
                         let m = d.split(" =")[1];
@@ -1698,8 +1774,105 @@ export function activate(ctx: vscode.ExtensionContext) {
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.forums", () => {
             try {
-            } catch (e) {
-            }
+                let data: [string, number][];
+                let items: vscode.QuickPickItem[] = [];
+                let forums: Record<string, number> = {};
+                let timeout: NodeJS.Timeout;
+                let pageNum = 1;
+                let k = GlobalStorage(ctx).get("kwd-forums");
+
+                createQuickPick({
+                    value: k ? k : "",
+                    title: "4399 on VSCode: 逛群组",
+                    prompt: "搜索群组",
+                }).then((qp) => {
+                    const search = (kwd: string) => {
+                        clearTimeout(timeout);
+                        log("页码: " + pageNum);
+                        timeout = setTimeout(() => {
+                            qp.busy = true;
+                            axios
+                                .get(
+                                    "http://my.4399.com/forums/index-getMtags?type=game&keyword=" +
+                                        encodeURI(kwd ? kwd : "") +
+                                        "&page=" +
+                                        pageNum,
+                                    getReqCfg("arraybuffer")
+                                )
+                                .then((res) => {
+                                    if (!res.data) {
+                                        return err("获取搜索建议失败");
+                                    }
+                                    res.data = iconv.decode(res.data, "utf8");
+                                    let d: string = res.data;
+                                    const $ = cheerio.load(d);
+                                    forums = {};
+                                    data = [];
+                                    items = [];
+
+                                    $("ul > li > a > span.title").each(
+                                        (i, elem) => {
+                                            let g = $(elem).text();
+                                            let id:
+                                                | string
+                                                | undefined
+                                                | number = $(elem)
+                                                .parent()
+                                                .attr("href")
+                                                ?.split("-")
+                                                ?.at(-1);
+                                            if (!id || isNaN(Number(id))) {
+                                                return;
+                                            }
+                                            id = Number(id);
+                                            data.push([g, id]);
+                                            forums[g] = id;
+                                        }
+                                    );
+
+                                    data.forEach((g) => {
+                                        items.push({
+                                            label: g[0],
+                                            description: "群组 id: " + g[1],
+                                            alwaysShow: true,
+                                        });
+                                        forums[g[0]] = g[1];
+                                    });
+                                    items.push({
+                                        label: "下一页",
+                                        description: "加载下一页内容",
+                                        alwaysShow: true,
+                                    });
+
+                                    if (items[0]) {
+                                        qp.items = items;
+                                    }
+                                    qp.busy = false;
+                                })
+                                .catch((e) => {
+                                    return err("获取搜索建议失败", String(e));
+                                });
+                        }, 1000);
+                    };
+                    qp.onDidChangeValue((kwd) => {
+                        pageNum = 1;
+                        search(kwd);
+                    });
+
+                    qp.onDidAccept(() => {
+                        if (qp.activeItems[0].label === "下一页") {
+                            pageNum++;
+                            search(qp.value);
+                        } else {
+                            geThreads(forums[qp.activeItems[0].label]);
+                            qp.dispose();
+                            GlobalStorage(context).set("kwd-forums", qp.value);
+                        }
+                    });
+                    qp.show();
+                    search("");
+                });
+            } catch (e) {}
         })
     );
 
