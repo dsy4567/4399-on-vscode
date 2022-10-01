@@ -584,7 +584,7 @@ async function getPlayUrl(url: string) {
 
             let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
             let gamePath_matched = html.match(
-                /\_strGamePath\=\".+\.(swf|htm[l]?)\"/i
+                /\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\"/i
             );
             title = title ? title : url;
             if (
@@ -605,11 +605,26 @@ async function getPlayUrl(url: string) {
                 if (u2) {
                     return getPlayUrlForWebGames(u2);
                 }
+
                 delete gameInfoUrls[title];
                 err(
                     "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后或 AS3)的 flash 游戏或非 h5 游戏, 已自动为您跳转至游戏详情页面"
                 );
                 return showWebviewPanel(url, title);
+            }
+            gamePath =
+                "/4399swf" +
+                (gamePath_matched as RegExpMatchArray)[0]
+                    .replace("_strGamePath=", "")
+                    .replace(/["]/g, "");
+            if (gamePath.includes("gameId=")) {
+                try {
+                    let u = new URL(gamePath, "http://www.4399.com/");
+                    let i = u.searchParams.get("gameId");
+                    if (i && !isNaN(Number(i))) {
+                        return getPlayUrlForWebGames(i);
+                    }
+                } catch (e) {}
             }
             try {
                 let D = new Date();
@@ -650,11 +665,6 @@ async function getPlayUrl(url: string) {
                 return;
             }
             server = s;
-            gamePath =
-                "/4399swf" +
-                (gamePath_matched as RegExpMatchArray)[0]
-                    .replace("_strGamePath=", "")
-                    .replace(/["]/g, "");
             gameUrl = "http://" + s + gamePath;
 
             gameUrl
@@ -1040,7 +1050,7 @@ function showWebviewPanel(
         vscode.ViewColumn.Active,
         {
             enableScripts: true,
-            retainContextWhenHidden: true,
+            retainContextWhenHidden: getCfg("background",true),
         }
     );
 

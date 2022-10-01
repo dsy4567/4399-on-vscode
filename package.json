@@ -96,6 +96,11 @@
                     "default": true,
                     "description": "控制是否允许写入历史记录",
                     "type": "boolean"
+                },
+                "4399-on-vscode.background": {
+                    "default": true,
+                    "description": "控制是否允许游戏后台运行",
+                    "type": "boolean"
                 }
             }
         },
