@@ -945,7 +945,7 @@ function showWebviewPanel(url, title, type, hasIcon) {
         : (panel.webview.html = getWebviewHtml_h5(url));
     if (!alerted) {
         alerted = true;
-        vscode.window.showInformationMessage("温馨提示: **请在使用快捷键前使游戏失去焦点**, 道路千万条, 谨慎第一条, 摸鱼不适度, 工资两行泪");
+        vscode.window.showInformationMessage("温馨提示: 请在使用快捷键前使游戏失去焦点");
     }
     // 获取游戏图标
     let iconPath;

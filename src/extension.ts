@@ -1124,7 +1124,7 @@ function showWebviewPanel(
     if (!alerted) {
         alerted = true;
         vscode.window.showInformationMessage(
-            "温馨提示: **请在使用快捷键前使游戏失去焦点**, 道路千万条, 谨慎第一条, 摸鱼不适度, 工资两行泪"
+            "温馨提示: 请在使用快捷键前使游戏失去焦点"
         );
     }
 
@@ -1691,6 +1691,14 @@ export function activate(ctx: vscode.ExtensionContext) {
                 });
             } catch (e) {
                 err("无法读取历史记录", String(e));
+            }
+        })
+    );
+
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.forums", () => {
+            try {
+            } catch (e) {
             }
         })
     );
