@@ -228,7 +228,7 @@ const getWebviewHtml_flash = (url) => `
 `;
 const GlobalStorage = (context) => {
     return {
-        get: (key) => JSON.parse(context.globalState.get(key) || "null"),
+        get: (key) => JSON.parse(context.globalState.get(key) || "{}"),
         set: (key, value) => context.globalState.update(key, JSON.stringify(value)),
     };
 };

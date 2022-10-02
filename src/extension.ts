@@ -244,8 +244,7 @@ const getWebviewHtml_flash = (url: string) => `
 `;
 const GlobalStorage = (context: vscode.ExtensionContext) => {
     return {
-        get: (key: string) =>
-            JSON.parse(context.globalState.get(key) || "null"),
+        get: (key: string) => JSON.parse(context.globalState.get(key) || "{}"),
         set: (key: string, value: any) =>
             context.globalState.update(key, JSON.stringify(value)),
     };
