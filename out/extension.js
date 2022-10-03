@@ -85,18 +85,32 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const mime = require("mime");
-let httpServer;
-let DATA;
-let REF;
+let HTTP_SERVER;
+let DATA; // 游戏入口文件
+let REF; // 覆盖用户设置的 referer, 仅用于本地服务器
+let PORT = 44399;
 let server = ""; // szhong.4399.com
 let gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 let gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 let gameInfoUrls = {};
 let alerted = false; // 第一次游戏前提示
-let port = 44399;
 let panel;
 let context;
-let statusBarItem = vscode.window.createStatusBarItem(1);
+let statusBarItem = vscode.window.createStatusBarItem(1); // 加载提示
+let threadQp;
+let threadQpItems = [];
+let threadSearchValue; // 搜索词
+let threadPage;
+let threadData;
+let threads = {};
+let threadTimeout; // 延迟获取搜索建议
+let searchQp;
+let searchQpItems = [];
+let searchValue; // 搜索词
+let searchPage;
+let searchData;
+let searchedGames = {};
+let searchTimeout; // 延迟获取搜索建议
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 const getScript = (cookie = "") => {
     let s = "", f = getCfg("scripts", "").split(", ");
@@ -228,7 +242,7 @@ const getWebviewHtml_flash = (url) => `
 `;
 const GlobalStorage = (context) => {
     return {
-        get: (key) => JSON.parse(context.globalState.get(key) || "{}"),
+        get: (key) => JSON.parse(context.globalState.get(key) || '""'),
         set: (key, value) => context.globalState.update(key, JSON.stringify(value)),
     };
 };
@@ -276,7 +290,7 @@ function initHttpServer(callback, ref) {
                 response.writeHead(200);
                 response.end(null);
             }
-            else if (new URL(request.url, "http://localhost:" + port).pathname ===
+            else if (new URL(request.url, "http://localhost:" + PORT).pathname ===
                 gamePath) {
                 // 访问游戏入口页面直接返回数据
                 let t = mime.getType(request.url ? request.url : "");
@@ -319,39 +333,39 @@ function initHttpServer(callback, ref) {
             response.end(String(e));
         }
     };
-    if (httpServer) {
+    if (HTTP_SERVER) {
         callback();
     }
     else {
-        port = Number(getCfg("port", 44399));
-        if (isNaN(port)) {
-            port = 44399;
+        PORT = Number(getCfg("port", 44399));
+        if (isNaN(PORT)) {
+            PORT = 44399;
         }
         try {
-            httpServer = http
+            HTTP_SERVER = http
                 .createServer(onRequest)
-                .listen(port, "localhost", function () {
+                .listen(PORT, "localhost", function () {
                 log("本地服务器已启动");
                 callback();
             })
                 .on("error", (e) => {
                 err("本地服务器启动时出错(第一次出现端口占用问题请忽略): ", e.stack);
-                port += 1; // 端口第一次被占用时自动 +1
-                httpServer = http
+                PORT += 1; // 端口第一次被占用时自动 +1
+                HTTP_SERVER = http
                     .createServer(onRequest)
-                    .listen(port, "localhost", function () {
+                    .listen(PORT, "localhost", function () {
                     log("本地服务器已启动");
                     callback();
                 })
                     .on("error", (e) => {
                     err(e.stack);
-                    httpServer = undefined;
+                    HTTP_SERVER = undefined;
                 });
             });
         }
         catch (e) {
             err(String(e));
-            httpServer = undefined;
+            HTTP_SERVER = undefined;
         }
     }
 }
@@ -444,78 +458,6 @@ async function getServer(server_matched) {
             .split('"')[1]
             .replace("/js/server", "")
             .replace(".js", "") + ".4399.com");
-    }
-}
-async function geThreads(id) {
-    let d = (await axios_1.default.get(`https://my.4399.com/forums/mtag-${id}`, getReqCfg("arraybuffer"))).data;
-    if (d) {
-        const $ = cheerio.load(d);
-        let threads = {}; // 帖子
-        let titles = [];
-        $("div.listtitle > div.title").each((i, elem) => {
-            let $title = $(elem).children("a.thread_link");
-            let id = Number($title.attr("href")?.split("-").at(-1));
-            let title = $title.text();
-            let type = $(elem).children("a.type").text();
-            if (!id || isNaN(id) || !title) {
-                return;
-            }
-            type = type ? type : "[顶] ";
-            title = type + title;
-            titles.push(title);
-            threads[title] = id;
-        });
-        vscode.window.showQuickPick(titles).then(async (val) => {
-            if (val) {
-                let d = (await axios_1.default.get(`https://my.4399.com/forums/thread-${threads[val]}`, getReqCfg("arraybuffer"))).data;
-                if (d) {
-                    const $ = cheerio.load(d);
-                    let title = $("div.host_main_title > a").text();
-                    if (!title) {
-                        err("无法获取帖子页面: 标题为空");
-                    }
-                    $("img").each((i, elem) => {
-                        let s = $(elem).attr("src");
-                        if (s && !s.startsWith("http")) {
-                            s = s.replace("//", "http://");
-                            $(elem).attr("src", s);
-                        }
-                    });
-                    $("img").each((i, elem) => {
-                        let s = $(elem)
-                            .attr("src")
-                            ?.replace("//p.img4399.com/", "//localhost:" + port + "/");
-                        $(elem).attr("src", s);
-                    });
-                    $(".host_content.user_content.j-thread-content").css();
-                    // $("a").attr(
-                    //     "onclick",
-                    //     "fetch('/openUrl/' + this.href); return false;"
-                    // );
-                    let html = "<style>* {color: #888;}</style>" +
-                        String($($(".post_author_name_text")[0]).text()) +
-                        " " +
-                        String($(".host_title").html()) +
-                        " " +
-                        String($(".host_content.user_content.j-thread-content").html());
-                    initHttpServer(() => {
-                        server = "p.img4399.com";
-                        // gamePath = "/thread.html";
-                        // DATA = html;
-                        // let u = new URL(gamePath, "http://localhost/");
-                        // u.port = String(port);
-                        panel = vscode.window.createWebviewPanel("4399OnVscode", title ? title : "4399 on VSCode", vscode.ViewColumn.Active, {});
-                        panel.webview.html = html;
-                    }, "http://my.4399.com/");
-                }
-                else {
-                    err("无法获取帖子页面");
-                }
-            }
-        });
-    }
-    else {
-        err("无法获取群组页面");
     }
 }
 // 获取 h5 页游的真实地址
@@ -724,7 +666,7 @@ async function getPlayUrl(url) {
                             initHttpServer(() => {
                                 DATA = res.data;
                                 let u = new URL(gamePath, "http://localhost/");
-                                u.port = String(port);
+                                u.port = String(PORT);
                                 title = title ? title : url;
                                 showWebviewPanel(u.toString(), title, gamePath.includes(".swf")
                                     ? "fl"
@@ -749,136 +691,141 @@ async function getPlayUrl(url) {
         err("无法获取游戏页面: ", e);
     }
 }
-function searchGames(s) {
-    let data;
-    let items = [];
-    let games = {};
-    let timeout;
-    let pageNum = 1;
-    createQuickPick({
+async function searchGames(s) {
+    if (searchQp) {
+        searchQp.show();
+    }
+    // let data: [string, number][];
+    // let items: vscode.QuickPickItem[] = [];
+    // let games: Record<string, number> = {};
+    // let timeout: NodeJS.Timeout;
+    // let pageNum = 1;
+    searchQp = await createQuickPick({
         value: s ? String(s) : "",
         title: "4399 on VSCode: 搜索",
         prompt: "输入搜索词",
-    }).then((qp) => {
-        const search = (s) => {
-            qp.busy = true;
-            log("页码 " + pageNum);
-            axios_1.default
-                .get("https://so2.4399.com/search/search.php?k=" +
-                encodeURI(s) +
-                "&p=" +
-                pageNum, getReqCfg("arraybuffer"))
-                .then((res) => {
-                if (res.data) {
-                    res.data = iconv.decode(res.data, "gb2312");
-                    log("成功获取到4399搜索页面");
-                    const $ = cheerio.load(res.data);
-                    games = {};
-                    data = [];
-                    items = [];
-                    $("#skinbody > div.w_980.cf > div.anim > div > div > div.pop > b > a").each((i, elem) => {
-                        let h = $(elem).html();
-                        let u = $(elem).attr("href");
-                        if (!h || !u) {
-                            return;
-                        }
-                        let id = Number(u.split(/[/.]/gi).at(-2));
-                        let n = h
-                            .replace(/<font color=['"]?red['"]?>/, "")
-                            .replace("</font>", "");
-                        if (!id || isNaN(id) || !n) {
-                            return;
-                        }
-                        data.push([n, id]);
-                        games[n] = id;
-                    });
-                    data.forEach((g) => {
-                        items.push({
-                            label: g[0],
-                            description: "游戏 id: " + g[1],
-                            alwaysShow: true,
-                        });
-                    });
-                    items.push({
-                        label: "下一页",
-                        description: "加载下一页内容",
+    });
+    const search = (s) => {
+        searchQp.busy = true;
+        log("页码 " + searchPage);
+        axios_1.default
+            .get("https://so2.4399.com/search/search.php?k=" +
+            encodeURI(s) +
+            "&p=" +
+            searchPage, getReqCfg("arraybuffer"))
+            .then((res) => {
+            if (res.data) {
+                res.data = iconv.decode(res.data, "gb2312");
+                log("成功获取到4399搜索页面");
+                const $ = cheerio.load(res.data);
+                searchedGames = {};
+                searchData = [];
+                searchQpItems = [];
+                $("#skinbody > div.w_980.cf > div.anim > div > div > div.pop > b > a").each((i, elem) => {
+                    let h = $(elem).html();
+                    let u = $(elem).attr("href");
+                    if (!h || !u) {
+                        return;
+                    }
+                    let id = Number(u.split(/[/.]/gi).at(-2));
+                    let n = h
+                        .replace(/<font color=['"]?red['"]?>/, "")
+                        .replace("</font>", "");
+                    if (!id || isNaN(id) || !n) {
+                        return;
+                    }
+                    searchData.push([n, id]);
+                    searchedGames[n] = id;
+                });
+                searchData.forEach((g) => {
+                    searchQpItems.push({
+                        label: g[0],
+                        description: "游戏 id: " + g[1],
                         alwaysShow: true,
                     });
-                    qp.items = items;
-                    qp.busy = false;
+                });
+                searchQpItems.push({
+                    label: "下一页",
+                    description: "加载下一页内容",
+                    alwaysShow: true,
+                });
+                searchQp.items = searchQpItems;
+                searchQp.busy = false;
+            }
+        })
+            .catch((e) => {
+            err("无法获取4399首页: ", e);
+        });
+    };
+    searchQp.onDidChangeValue((kwd) => {
+        if (kwd === searchValue) {
+            return (searchQp.items = searchQpItems);
+        }
+        searchValue = kwd;
+        searchPage = 1;
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchQp.busy = true;
+            axios_1.default
+                .get("https://so2.4399.com/search/lx.php?k=" + encodeURI(kwd), getReqCfg("arraybuffer"))
+                .then((res) => {
+                if (!res.data) {
+                    return err("获取搜索建议失败");
                 }
+                res.data = iconv.decode(res.data, "gb2312");
+                let d = res.data;
+                log(d);
+                let m = d.split(" =")[1];
+                searchedGames = {};
+                searchData = [];
+                searchQpItems = [];
+                try {
+                    if (!m) {
+                        throw new Error("");
+                    }
+                    searchData = JSON.parse(m.replaceAll("'", '"'));
+                }
+                catch (e) {
+                    return err("解析搜索建议失败");
+                }
+                searchQpItems.push({
+                    label: searchQp.value,
+                    description: "直接搜索",
+                    alwaysShow: true,
+                });
+                searchData.forEach((g) => {
+                    searchQpItems.push({
+                        label: g[0],
+                        description: "游戏 id: " + g[1],
+                        alwaysShow: true,
+                    });
+                    searchedGames[g[0]] = g[1];
+                });
+                if (searchQpItems[0]) {
+                    searchQp.items = searchQpItems;
+                }
+                searchQp.busy = false;
             })
                 .catch((e) => {
-                err("无法获取4399首页: ", e);
+                return err("获取搜索建议失败", String(e));
             });
-        };
-        qp.onDidChangeValue((kwd) => {
-            pageNum = 1;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                qp.busy = true;
-                axios_1.default
-                    .get("https://so2.4399.com/search/lx.php?k=" +
-                    encodeURI(kwd), getReqCfg("arraybuffer"))
-                    .then((res) => {
-                    if (!res.data) {
-                        return err("获取搜索建议失败");
-                    }
-                    res.data = iconv.decode(res.data, "gb2312");
-                    let d = res.data;
-                    log(d);
-                    let m = d.split(" =")[1];
-                    games = {};
-                    data = [];
-                    items = [];
-                    try {
-                        if (!m) {
-                            throw new Error("");
-                        }
-                        data = JSON.parse(m.replaceAll("'", '"'));
-                    }
-                    catch (e) {
-                        return err("解析搜索建议失败");
-                    }
-                    items.push({
-                        label: qp.value,
-                        description: "直接搜索",
-                        alwaysShow: true,
-                    });
-                    data.forEach((g) => {
-                        items.push({
-                            label: g[0],
-                            description: "游戏 id: " + g[1],
-                            alwaysShow: true,
-                        });
-                        games[g[0]] = g[1];
-                    });
-                    if (items[0]) {
-                        qp.items = items;
-                    }
-                    qp.busy = false;
-                })
-                    .catch((e) => {
-                    return err("获取搜索建议失败", String(e));
-                });
-            }, 1000);
-        });
-        qp.onDidAccept(() => {
-            if (qp.activeItems[0].description === "直接搜索") {
-                search(qp.value);
-            }
-            else if (qp.activeItems[0].label === "下一页") {
-                pageNum++;
-                search(qp.value);
-            }
-            else {
-                getPlayUrl(`http://www.4399.com/flash/${games[qp.activeItems[0].label]}.htm`);
-                qp.dispose();
-                GlobalStorage(context).set("kwd", qp.value);
-            }
-        });
-        qp.show();
+        }, 1000);
     });
+    searchQp.onDidAccept(() => {
+        if (searchQp.activeItems[0].description === "直接搜索") {
+            search(searchQp.value);
+        }
+        else if (searchQp.activeItems[0].label === "下一页") {
+            searchPage++;
+            search(searchQp.value);
+        }
+        else {
+            getPlayUrl(`http://www.4399.com/flash/${searchedGames[searchQp.activeItems[0].label]}.htm`);
+            searchQp.hide();
+            GlobalStorage(context).set("kwd", searchQp.value);
+        }
+    });
+    searchQp.show();
 }
 async function showGameInfo(url) {
     let u = Object.keys(gameInfoUrls);
@@ -1073,6 +1020,7 @@ function showWebviewPanel(url, title, type, hasIcon) {
     loaded(true);
 }
 function login(callback, loginOnly = false) {
+    loaded(true);
     if (GlobalStorage(context).get("cookie")) {
         if (loginOnly) {
             return vscode.window
@@ -1311,7 +1259,7 @@ function activate(ctx) {
         });
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.search", () => {
-        let s = GlobalStorage(ctx).get("kwd");
+        let s = GlobalStorage(ctx).get("kwd"); // 上次搜索词
         searchGames(s);
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.my", () => {
@@ -1436,96 +1384,203 @@ function activate(ctx) {
             err("无法读取历史记录", String(e));
         }
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.forums", () => {
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.forums", async () => {
         try {
-            let data;
-            let items = [];
-            let forums = {};
-            let timeout;
-            let pageNum = 1;
-            let k = GlobalStorage(ctx).get("kwd-forums");
-            createQuickPick({
+            if (threadQp) {
+                threadQp.show();
+            }
+            // let threadData: [string, number][];
+            // let threadQpItems: vscode.QuickPickItem[] = [];
+            // let forums: Record<string, number> = {};
+            // let threadTimeout: NodeJS.Timeout;
+            // let threadPage = 1;
+            let k = GlobalStorage(ctx).get("kwd-forums"); // 上次搜索词
+            threadQp = await createQuickPick({
                 value: k ? k : "",
                 title: "4399 on VSCode: 逛群组",
                 prompt: "搜索群组",
-            }).then((qp) => {
-                const search = (kwd) => {
-                    clearTimeout(timeout);
-                    log("页码: " + pageNum);
-                    timeout = setTimeout(() => {
-                        qp.busy = true;
-                        axios_1.default
-                            .get("http://my.4399.com/forums/index-getMtags?type=game&keyword=" +
-                            encodeURI(kwd ? kwd : "") +
-                            "&page=" +
-                            pageNum, getReqCfg("arraybuffer"))
-                            .then((res) => {
-                            if (!res.data) {
-                                return err("获取搜索建议失败");
+            });
+            const geThreads = async (id) => {
+                threads = {};
+                threadData = [];
+                threadQpItems = [];
+                threadQp.busy = true;
+                log("帖子 id: " + id);
+                let d = (await axios_1.default.get(`https://my.4399.com/forums/mtag-${id}`, getReqCfg("arraybuffer"))).data;
+                if (d) {
+                    const $ = cheerio.load(d);
+                    threads = {};
+                    threadData = [];
+                    // 获取标题和类型
+                    $("div.listtitle > div.title").each((i, elem) => {
+                        let $title = $(elem).children("a.thread_link");
+                        let id = Number($title.attr("href")?.split("-").at(-1));
+                        let title = $title.text();
+                        let type = $(elem).children("a.type").text();
+                        if (!id || isNaN(id) || !title) {
+                            return;
+                        }
+                        type = type ? type : "[顶] ";
+                        title = type + title;
+                        threadData.push([title, id]);
+                        threads[title] = id;
+                    });
+                    threadData.forEach((g) => {
+                        threadQpItems.push({
+                            label: g[0],
+                            description: "进入帖子",
+                            alwaysShow: true,
+                        });
+                        threads[g[0]] = g[1];
+                    });
+                    threadQpItems.push({
+                        label: "到底了",
+                        description: "只展示第一页内容",
+                        alwaysShow: true,
+                    });
+                    if (threadQpItems[0]) {
+                        threadQp.items = threadQpItems;
+                    }
+                    threadQp.busy = false;
+                }
+                else {
+                    err("无法获取群组页面");
+                }
+            };
+            const search = (kwd) => {
+                clearTimeout(threadTimeout);
+                log("页码: " + threadPage);
+                threadTimeout = setTimeout(() => {
+                    threadQp.busy = true;
+                    axios_1.default
+                        .get("http://my.4399.com/forums/index-getMtags?type=game&keyword=" +
+                        encodeURI(kwd ? kwd : "") +
+                        "&page=" +
+                        threadPage, getReqCfg("arraybuffer"))
+                        .then((res) => {
+                        if (!res.data) {
+                            return err("获取搜索建议失败");
+                        }
+                        res.data = iconv.decode(res.data, "utf8");
+                        let d = res.data;
+                        const $ = cheerio.load(d);
+                        threads = {};
+                        threadData = [];
+                        threadQpItems = [];
+                        $("ul > li > a > span.title").each((i, elem) => {
+                            let g = $(elem).text();
+                            let id = $(elem)
+                                .parent()
+                                .attr("href")
+                                ?.split("-")
+                                ?.at(-1);
+                            if (!id || isNaN(Number(id))) {
+                                return;
                             }
-                            res.data = iconv.decode(res.data, "utf8");
-                            let d = res.data;
-                            const $ = cheerio.load(d);
-                            forums = {};
-                            data = [];
-                            items = [];
-                            $("ul > li > a > span.title").each((i, elem) => {
-                                let g = $(elem).text();
-                                let id = $(elem)
-                                    .parent()
-                                    .attr("href")
-                                    ?.split("-")
-                                    ?.at(-1);
-                                if (!id || isNaN(Number(id))) {
-                                    return;
-                                }
-                                id = Number(id);
-                                data.push([g, id]);
-                                forums[g] = id;
-                            });
-                            data.forEach((g) => {
-                                items.push({
-                                    label: g[0],
-                                    description: "群组 id: " + g[1],
-                                    alwaysShow: true,
-                                });
-                                forums[g[0]] = g[1];
-                            });
-                            items.push({
-                                label: "下一页",
-                                description: "加载下一页内容",
+                            id = Number(id);
+                            threadData.push([g, id]);
+                            threads[g] = id;
+                        });
+                        threadData.forEach((g) => {
+                            threadQpItems.push({
+                                label: g[0],
+                                description: "群组 id: " + g[1],
                                 alwaysShow: true,
                             });
-                            if (items[0]) {
-                                qp.items = items;
-                            }
-                            qp.busy = false;
-                        })
-                            .catch((e) => {
-                            return err("获取搜索建议失败", String(e));
+                            threads[g[0]] = g[1];
                         });
-                    }, 1000);
-                };
-                qp.onDidChangeValue((kwd) => {
-                    pageNum = 1;
-                    search(kwd);
-                });
-                qp.onDidAccept(() => {
-                    if (qp.activeItems[0].label === "下一页") {
-                        pageNum++;
-                        search(qp.value);
-                    }
-                    else {
-                        geThreads(forums[qp.activeItems[0].label]);
-                        qp.dispose();
-                        GlobalStorage(context).set("kwd-forums", qp.value);
-                    }
-                });
-                qp.show();
-                search("");
+                        threadQpItems.push({
+                            label: "下一页",
+                            description: "加载下一页内容",
+                            alwaysShow: true,
+                        });
+                        if (threadQpItems[0]) {
+                            threadQp.items = threadQpItems;
+                        }
+                        threadQp.busy = false;
+                    })
+                        .catch((e) => {
+                        return err("获取搜索建议失败", String(e));
+                    });
+                }, 1000);
+            };
+            threadQp.onDidChangeValue((kwd) => {
+                if (kwd === threadSearchValue) {
+                    return (threadQp.items = threadQpItems);
+                }
+                threadSearchValue = kwd;
+                threadPage = 1;
+                search(kwd);
             });
+            threadQp.onDidAccept(async () => {
+                if (threadQp.activeItems[0].label === "下一页") {
+                    threadPage++;
+                    search(threadQp.value);
+                }
+                else if (threadQp.activeItems[0].description?.includes("群组 id")) {
+                    geThreads(threads[threadQp.activeItems[0].label]);
+                    GlobalStorage(context).set("kwd-forums", threadQp.value);
+                }
+                else if (threadQp.activeItems[0].description === "进入帖子") {
+                    try {
+                        if (threadQp.activeItems[0].label) {
+                            threadQp.hide();
+                            let d = (await axios_1.default.get(`https://my.4399.com/forums/thread-${threads[threadQp.activeItems[0].label]}`, getReqCfg("arraybuffer"))).data;
+                            if (d) {
+                                const $ = cheerio.load(d);
+                                let title = $("div.host_main_title > a").text();
+                                if (!title) {
+                                    err("无法获取帖子页面: 标题为空");
+                                }
+                                // 强制使用 http
+                                $("img").each((i, elem) => {
+                                    let s = $(elem).attr("src");
+                                    if (s && !s.startsWith("http")) {
+                                        s = s.replace("//", "http://");
+                                        $(elem).attr("src", s);
+                                    }
+                                });
+                                // 解除防盗链限制
+                                $("img").each((i, elem) => {
+                                    let s = $(elem)
+                                        .attr("src")
+                                        ?.replace("//p.img4399.com/", "//localhost:" + PORT + "/");
+                                    $(elem).attr("src", s);
+                                });
+                                $(".host_content.user_content.j-thread-content").css();
+                                let html = "<style>* {color: #888;}</style>" +
+                                    String($($(".post_author_name_text")[0]).text()) +
+                                    " " +
+                                    String($(".host_title").html()) +
+                                    " " +
+                                    String($(".host_content.user_content.j-thread-content").html());
+                                initHttpServer(() => {
+                                    server = "p.img4399.com";
+                                    panel =
+                                        vscode.window.createWebviewPanel("4399OnVscode", title
+                                            ? title
+                                            : "4399 on VSCode", vscode.ViewColumn.Active, {});
+                                    panel.webview.html = html;
+                                }, "http://my.4399.com/");
+                            }
+                            else {
+                                err("无法获取帖子页面");
+                            }
+                        }
+                    }
+                    catch (e) {
+                        err("无法获取帖子页面", String(e));
+                    }
+                }
+            });
+            threadQp.show();
+            if (!threadSearchValue) {
+                search(k ? k : "");
+            }
         }
-        catch (e) { }
+        catch (e) {
+            err("无法获取群组页面", String(e));
+        }
     }));
     context = ctx;
     fs.mkdir(path.join(DATA_DIR, "cache/icon"), { recursive: true }, (err) => { });

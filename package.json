@@ -65,6 +65,7 @@
                 "4399-on-vscode.port": {
                     "description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode (如果端口被占用, 则端口号会自动增加 1)",
                     "type": "integer",
+                    "scope": "machine",
                     "default": 44399
                 },
                 "4399-on-vscode.outputLogs": {
@@ -104,6 +105,7 @@
                 },
                 "4399-on-vscode.scripts": {
                     "default": "",
+                    "scope": "machine",
                     "markdownDescription": "要向 h5 小游戏入口页面注入的自定义 HTML 代码片段的文件名, 文件存放在`(主目录)/.4ov-data/scripts/`, 多个文件应使用英文逗号 + 空格(`, `)隔开, 例如`addStyle.htm, addScript.html`",
                     "type": "string"
                 }
