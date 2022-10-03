@@ -33,12 +33,15 @@ jobs:
           git config --global user.email dsy4567@outlook.com
           git config --global user.name dsy4567
           git add .
-          git commit -m "auto run vsce package" -a
+          git commit -m "run vsce package" -a
       - name: GitHub Push
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: vsce publish
-        uses: sigma/vsce-publish-action@v0.0.2
-        with:
-          vsce_token: ${{ secrets.vsce }}
+#       - name: Publish VS Code Extension
+#         uses: HaaLeo/publish-vscode-extension@v1
+#         with:
+#           # Personal access token
+#           pat: 
+#           # Path to the vsix file to be published. Cannot be used together with packagePath.
+#           extensionFile: 
