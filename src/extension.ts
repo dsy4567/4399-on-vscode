@@ -171,6 +171,16 @@ Object.defineProperty(window, "open", {
     },
     writable: true,
 });
+// 用户头像
+setInterval(() => {
+    document
+        .querySelectorAll("img[src*='//a.img4399.com/']")
+        ?.forEach((elem) => {
+            if (!elem.src.includes("/proxy/")) {
+                elem.src = "/proxy/" + elem.src;
+            }
+        });
+}, 3000);
 </script>
 ` + s
     );
@@ -282,6 +292,40 @@ function initHttpServer(callback: Function, ref?: string) {
                       })
                     : response.writeHead(500, {}); // 防止重复重定向
                 response.end();
+            } else if (request.url.startsWith("/proxy/")) {
+                let u = request.url.substring("/proxy/".length);
+                let h = new URL(u, "https://www.4399.com/").hostname;
+                if (h === "127.0.0.1" || h === "localhost") {
+                    u = "";
+                }
+                if (u) {
+                    axios
+                        .get(u, getReqCfg("arraybuffer", true, REF))
+                        .then((res) => {
+                            let headers = res.headers;
+                            response.writeHead(res.status, headers);
+                            response.statusMessage = res.statusText;
+                            response.end(res.data);
+                        })
+                        .catch((e) => {
+                            log(request, request.url);
+                            response.writeHead(500, {
+                                "Content-Type": "text/plain",
+                            });
+                            response.statusMessage = e.message;
+                            response.end(e.message);
+                            if (
+                                !String(e.message).includes(
+                                    "Request failed with status code"
+                                )
+                            ) {
+                                // 忽略 4xx, 5xx 错误
+                                err("本地服务器出现错误: ", e.message);
+                            }
+                        });
+                } else {
+                    response.end(null);
+                }
             } else if (
                 request.url.startsWith("/openUrl/") &&
                 getCfg("openUrl", true)
@@ -342,7 +386,8 @@ function initHttpServer(callback: Function, ref?: string) {
                     .then((res) => {
                         let headers = res.headers;
                         headers["access-control-allow-origin"] = "*";
-                        response.writeHead(200, headers);
+                        response.writeHead(res.status, headers);
+                        response.statusMessage = res.statusText;
                         response.end(res.data);
                     })
                     .catch((e) => {
@@ -1899,13 +1944,10 @@ export function activate(ctx: vscode.ExtensionContext) {
                         try {
                             if (threadQp.activeItems[0].label) {
                                 threadQp.hide();
+                                let id = threads[threadQp.activeItems[0].label];
                                 let d: Buffer = (
                                     await axios.get(
-                                        `https://my.4399.com/forums/thread-${
-                                            threads[
-                                                threadQp.activeItems[0].label
-                                            ]
-                                        }`,
+                                        `https://my.4399.com/forums/thread-${id}`,
                                         getReqCfg("arraybuffer")
                                     )
                                 ).data;
@@ -1928,12 +1970,11 @@ export function activate(ctx: vscode.ExtensionContext) {
                                     });
                                     // 解除防盗链限制
                                     $("img").each((i, elem) => {
-                                        let s = $(elem)
-                                            .attr("src")
-                                            ?.replace(
-                                                "//p.img4399.com/",
-                                                "//localhost:" + PORT + "/"
-                                            );
+                                        let s =
+                                            "http://localhost:" +
+                                            PORT +
+                                            "/proxy/" +
+                                            $(elem).attr("src");
                                         $(elem).attr("src", s);
                                     });
                                     $(
@@ -1941,7 +1982,10 @@ export function activate(ctx: vscode.ExtensionContext) {
                                     ).css();
 
                                     let html =
-                                        "<style>* {color: #888;}</style>" +
+                                        `
+                                        <style>* {color: #888;}</style>
+                                        <h1>${title}</h1>
+                                        <a href="https://my.4399.com/forums/thread-${id}">在浏览器中打开</a> ` +
                                         String(
                                             $(
                                                 $(".post_author_name_text")[0]
@@ -1956,8 +2000,6 @@ export function activate(ctx: vscode.ExtensionContext) {
                                             ).html()
                                         );
                                     initHttpServer(() => {
-                                        server = "p.img4399.com";
-
                                         panel =
                                             vscode.window.createWebviewPanel(
                                                 "4399OnVscode",

@@ -42,20 +42,11 @@
 按下 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
 , 输入 `4399 on VSCode` 开始探索
 
-# 🍪 获取 cookie
-
-cookie 用于登录 h5 页游以及使用更多需要登录的功能
-
-请使用基于 chromium 内核的浏览器登录 4399, 然后在 [ptlogin.4399.com](https://ptlogin.4399.com) 下打开开发者工具(按 F12), 在控制台(console)下输入以下代码即可(cookie 将复制到剪贴板)
-
-```javascript
-copy(document.cookie);
-```
-
 > 请确保 cookie 里包含 `Pauth` 值
 
 # ⚠️ 注意事项
 
+-   **建议登陆后使用, 这样可以避免许多奇奇怪怪的问题**
 -   **请不要用这个扩展玩 u3d 或 2006 年 6 月以后的 flash 游戏, 此扩展不会支持这类游戏**
 -   如果焦点在游戏界面上, 快捷键可能会失效, **请确保您的鼠标或 Windows 徽标键/Command 键正常工作**
 -   ~~如果需要 flash 游戏和少数 h5 游戏有声音, 请尝试 [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement)~~(VSCode 1.71.0+ 用户请见 [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
@@ -66,8 +57,17 @@ copy(document.cookie);
 
 -   ~~大多数 h5 游戏在 [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement) 后仍然没有声音(用 [Cocos](https://www.cocos.com/) 做的游戏 %99.99 没有声音)~~(VSCode 1.71.0+ 用户请见 [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
--   用户头像无法显示(懒得解除 referrer 限制)
 -   游戏无法锁定鼠标(尤其是射击类游戏)
+
+# 🍪 获取 cookie
+
+cookie 用于登录 h5 页游以及使用更多需要登录的功能
+
+请使用基于 chromium 内核的浏览器登录 4399, 然后在 [ptlogin.4399.com](https://ptlogin.4399.com) 下打开开发者工具(按 F12), 在控制台(console)下输入以下代码即可(cookie 将复制到剪贴板)
+
+```javascript
+copy(document.cookie);
+```
 
 # 🤝 特别感谢
 
