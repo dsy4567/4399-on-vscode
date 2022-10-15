@@ -85,10 +85,6 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const mime = require("mime");
-let HTTP_SERVER;
-let DATA; // 游戏入口文件
-let REF; // 覆盖用户设置的 referer, 仅用于本地服务器
-let PORT = 44399;
 let server = ""; // szhong.4399.com
 let gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 let gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -111,6 +107,10 @@ let searchPage;
 let searchData;
 let searchedGames = {};
 let searchTimeout; // 延迟获取搜索建议
+let HTTP_SERVER;
+let DATA; // 游戏入口文件
+let REF; // 覆盖用户设置的 referer, 仅用于本地服务器
+let PORT = 44399;
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 const getScript = (cookie = "") => {
     let s = "", f = getCfg("scripts", "").split(", ");
@@ -212,7 +212,7 @@ const getWebviewHtml_flash = (url) => `
             ::-webkit-scrollbar {
                 display: none !important;
             }
-            
+
             html, body {
                 overflow: hidden;
                 margin: 0;
@@ -479,11 +479,11 @@ function getCfg(name, defaultValue = undefined) {
         .getConfiguration()
         .get("4399-on-vscode." + name, defaultValue);
 }
-function setCfg(name, val) {
-    return vscode.workspace
-        .getConfiguration()
-        .update("4399-on-vscode." + name, val, true);
-}
+// function setCfg(name: string, val: any) {
+//     return vscode.workspace
+//         .getConfiguration()
+//         .update("4399-on-vscode." + name, val, true);
+// }
 async function getServer(server_matched) {
     try {
         let res = await axios_1.default.get("http://www.4399.com" + server_matched[0].split('"')[1], getReqCfg("text", true));
@@ -505,31 +505,14 @@ async function getServer(server_matched) {
 }
 // 获取 h5 页游的真实地址
 function getPlayUrlForWebGames(urlOrId) {
-    login(async (cookie) => {
+    login(async (c) => {
         loaded(false);
-        let i = urlOrId.split("/").at(-1);
-        if (i && !isNaN(Number(i))) {
-            urlOrId = i;
-        }
-        else {
-            let i = urlOrId.split("gameId=").at(-1);
-            if (i && !isNaN(Number(i))) {
-                urlOrId = i;
-            }
-            else {
-                return err("h5 页游链接格式不正确");
-            }
-        }
-        let gameId = Number(urlOrId);
-        if (isNaN(gameId)) {
+        let gameId = parseId(urlOrId);
+        if (!gameId || isNaN(gameId)) {
             return err("h5 页游链接格式不正确");
         }
         try {
-            let m = cookie.match(/Pauth=.+;/i);
-            let cookieValue = "";
-            if (m) {
-                cookieValue = m[0].split("=")[1].split(";")[0];
-            }
+            let cookieValue = cookie.parse(c)["Pauth"];
             if (!cookieValue) {
                 return err("cookie 没有 Pauth 的值");
             }
@@ -539,7 +522,7 @@ function getPlayUrlForWebGames(urlOrId) {
                 cookieValue, getReqCfg("json"))).data;
             if (data.data?.game?.gameUrl &&
                 data.data.game.gameUrl !== "&addiction=0") {
-                let url = "https://www.zxwyouxi.com/g/" + urlOrId;
+                let url = "https://www.zxwyouxi.com/g/" + gameId;
                 let title = decodeURI(data.data.game.gameName);
                 title = title ? title : url;
                 try {
@@ -578,7 +561,7 @@ async function getPlayUrl(url) {
         url = "http:" + url;
     }
     else if (url.startsWith("/")) {
-        url = getReqCfg(undefined, true).baseURL + url;
+        url = "http://www.4399.com" + url;
     }
     try {
         loaded(false);
@@ -598,16 +581,22 @@ async function getPlayUrl(url) {
                 title = $("title").html();
             }
             else {
-                title = m[0]
-                    .replace(/<\/?title>/gi, "")
-                    .split(/[-_ |，,¦]/gi)[0]
-                    .replaceAll(/[\n ]/gi, "");
+                try {
+                    title = m[0]
+                        .replace(/<\/?title>/gi, "")
+                        .split(/[-_ |，,¦]/gi)[0]
+                        .replaceAll(/[\n ]/gi, "");
+                }
+                catch (e) {
+                    title = $("title").html();
+                    err("无法匹配游戏标题:", e);
+                }
             }
             let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
             let gamePath_matched = html.match(/\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\"/i);
             title = title ? title : url;
-            if ($("title").text().includes("您访问的页面不存在！") &&
-                res.status) {
+            if ($("title").text().includes("您访问的页面不存在！")) {
+                // status: 3xx
                 delete gameInfoUrls[title];
                 return err("无法获取游戏信息: 游戏可能因为某些原因被删除");
             }
@@ -882,11 +871,14 @@ async function showGameInfo(url) {
         url = gameInfoUrls[n ? n : ""];
     }
     if (!url) {
-        return err("无法显示这个游戏的详细信息, 或者未在玩游戏");
+        return;
     }
     try {
-        if (url.startsWith("/") && !url.startsWith("//")) {
-            url = getReqCfg(undefined, true).baseURL + url;
+        if (url.startsWith("//")) {
+            url = "http:" + url;
+        }
+        else if (url.startsWith("/")) {
+            url = "http://www.4399.com" + url;
         }
         const html = iconv.decode((await axios_1.default.get(url, getReqCfg("arraybuffer"))).data, "gb2312");
         if (!html) {
@@ -906,7 +898,7 @@ async function showGameInfo(url) {
             .text()
             .split(/[-_ |，,¦]/gi)[0]
             .replaceAll(/[\n ]/gi, "");
-        let gameId = url.split(/[/.]/gi).at(-2);
+        let gameId = String(parseId(url));
         title = title ? title : "未知";
         gameId = !gameId || isNaN(Number(gameId)) ? "未知" : gameId;
         vscode.window
@@ -1219,6 +1211,15 @@ function objectToQuery(obj, prefix) {
         return query;
     }, "");
 }
+function parseId(url) {
+    if (!isNaN(Number(url))) {
+        return url;
+    }
+    let u = new URL(url, "https://www.4399.com/");
+    let id = u.searchParams.get("gameId") ||
+        path.parse(u.pathname).name.split(/[\_\-\.\/]/g)[0];
+    return Number(id);
+}
 function activate(ctx) {
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", () => {
         getPlayUrl("https://www.4399.com/flash/" +
@@ -1231,11 +1232,12 @@ function activate(ctx) {
             .showInputBox({
             value: i ? String(i) : "222735",
             title: "4399 on VSCode: 输入游戏 id",
-            prompt: "输入 http(s)://www.4399.com/flash/ 后面的数字(游戏 id)",
+            prompt: "输入游戏链接或 http(s)://www.4399.com/flash/ 后面的数字(游戏 id)",
         })
             .then((id) => {
             if (id) {
                 log("用户输入 ", id);
+                id = parseId(id);
                 GlobalStorage(ctx).set("id1", id);
                 getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
             }
@@ -1247,11 +1249,12 @@ function activate(ctx) {
             .showInputBox({
             value: i ? String(i) : "100060323",
             title: "4399 on VSCode: 输入游戏 id",
-            prompt: "输入 http(s)://www.zxwyouxi.com/g/ 后面的数字(游戏 id)",
+            prompt: "输入游戏链接或 http(s)://www.zxwyouxi.com/g/ 后面的数字(游戏 id)",
         })
             .then((id) => {
             if (id) {
                 log("用户输入 ", id);
+                id = parseId(id);
                 GlobalStorage(ctx).set("id2", id);
                 getPlayUrlForWebGames("https://www.zxwyouxi.com/g/" + id);
             }
@@ -1370,7 +1373,7 @@ function activate(ctx) {
                                 vscode.window.showInformationMessage(`签到成功, 您已连续签到${data.result.days}天`);
                             }
                             else {
-                                err("签到失败, 返回数据格式不正确");
+                                err("签到失败, 返回数据非法");
                             }
                         }
                         catch (e) {
