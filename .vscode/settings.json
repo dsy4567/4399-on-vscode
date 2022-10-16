@@ -1,14 +1,45 @@
-// Place your settings in this file to overwrite default and user settings.
 {
-    "files.exclude": {
-        "out": false // set this to true to hide the "out" folder with the compiled JS files
+    "4399-on-vscode.outputLogs": true,
+    "[css]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    "search.exclude": {
-        "out": true // set this to false to include "out" folder in search results
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
-    "typescript.tsc.autoDetect": "off",
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
     "commentTranslate.source": "Bing",
     "commentTranslate.targetLanguage": "zh-CN",
+    "files.exclude": {
+        "out": false
+    },
+    "prettier.arrowParens": "avoid",
+    "prettier.bracketSpacing": true,
+    "prettier.endOfLine": "auto",
+    "prettier.printWidth": 80,
+    "prettier.proseWrap": "always",
+    "prettier.quoteProps": "as-needed",
+    "prettier.semi": true,
+    "prettier.singleQuote": false,
+    "prettier.tabWidth": 4,
+    "prettier.trailingComma": "es5",
+    "prettier.useTabs": false,
+    "search.exclude": {
+        "out": true
+    },
+    "typescript.tsc.autoDetect": "off",
     "typescript.tsdk": "node_modules/typescript/lib"
 }
