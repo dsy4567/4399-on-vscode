@@ -91,6 +91,15 @@ interface History {
     name: string;
     url: string;
 }
+interface GlobalStorage {
+    get(key: "history"): History[];
+    get(key: "cookie" | "kwd" | "kwd-forums"): string;
+    get(key: "id1" | "id2"): number | string;
+
+    set(key: "history", value: History[]): Thenable<void>;
+    set(key: "cookie" | "kwd" | "kwd-forums", value: string): Thenable<void>;
+    set(key: "id1" | "id2", value: number | string): Thenable<void>;
+}
 
 let HTTP_SERVER: http.Server | undefined;
 let DATA: Buffer | string; // 游戏入口文件
@@ -271,7 +280,7 @@ const getWebviewHtml_flash = (url: string) => `
     </body>
 </html>
 `;
-const GlobalStorage = (context: vscode.ExtensionContext) => {
+const globalStorage = (context: vscode.ExtensionContext): GlobalStorage => {
     return {
         get: (key: string) => JSON.parse(context.globalState.get(key) || '""'),
         set: (key: string, value: any) =>
@@ -458,7 +467,7 @@ function getReqCfg(
 ): AxiosRequestConfig<any> {
     let c;
     if (!noCookie) {
-        c = GlobalStorage(context).get("cookie");
+        c = globalStorage(context).get("cookie");
     }
     return {
         baseURL: "http://www.4399.com",
@@ -996,7 +1005,7 @@ async function searchGames(s: string) {
                 }.htm`
             );
             searchQp.hide();
-            GlobalStorage(context).set("kwd", searchQp.value);
+            globalStorage(context).set("kwd", searchQp.value);
         }
     });
     searchQp.show();
@@ -1170,7 +1179,7 @@ function showWebviewPanel(
             if (url.endsWith(".html") || (url.endsWith(".htm") && DATA)) {
                 const $ = cheerio.load(iconv.decode(DATA as Buffer, "utf8"));
                 $("head").append(
-                    getScript(GlobalStorage(context).get("cookie"))
+                    getScript(globalStorage(context).get("cookie"))
                 );
                 DATA = $.html();
             }
@@ -1268,20 +1277,20 @@ function showWebviewPanel(
 }
 function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
     loaded(true);
-    if (GlobalStorage(context).get("cookie")) {
+    if (globalStorage(context).get("cookie")) {
         if (loginOnly) {
             return vscode.window
                 .showInformationMessage("是否退出登录?", "是", "否")
                 .then(value => {
                     if (value === "是") {
-                        GlobalStorage(context).set("cookie", "");
+                        globalStorage(context).set("cookie", "");
                         vscode.window.showInformationMessage("退出登录成功");
                     }
                 });
         }
-        return callback(GlobalStorage(context).get("cookie"));
+        return callback(globalStorage(context).get("cookie"));
     }
-    if (!GlobalStorage(context).get("cookie")) {
+    if (!globalStorage(context).get("cookie")) {
         if (!loginOnly) {
             vscode.window.showInformationMessage("请登录后继续");
         }
@@ -1303,7 +1312,7 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
                                             "登录失败, cookie 没有 Pauth 值"
                                         );
                                     }
-                                    GlobalStorage(context).set(
+                                    globalStorage(context).set(
                                         "cookie",
                                         encodeURI(c)
                                     );
@@ -1395,7 +1404,7 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
                                                             "登录失败, cookie 没有 Pauth 值"
                                                         );
                                                     }
-                                                    GlobalStorage(context).set(
+                                                    globalStorage(context).set(
                                                         "cookie",
                                                         encodeURI(cookies)
                                                     );
@@ -1434,12 +1443,12 @@ function updateHistory(history: History) {
     if (!getCfg("updateHistory", true)) {
         return;
     }
-    let h: History[] = GlobalStorage(context).get("history");
+    let h: History[] = globalStorage(context).get("history");
     if (!h || (typeof h === "object" && !h[0])) {
         h = [];
     }
     h.unshift(history);
-    GlobalStorage(context).set("history", h);
+    globalStorage(context).set("history", h);
 }
 function objectToQuery(obj: any, prefix?: string) {
     if (typeof obj !== "object") {
@@ -1482,7 +1491,7 @@ export function activate(ctx: vscode.ExtensionContext) {
 
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.get", () => {
-            let i = GlobalStorage(ctx).get("id1");
+            let i = globalStorage(ctx).get("id1");
             vscode.window
                 .showInputBox({
                     value: i ? String(i) : "222735",
@@ -1492,7 +1501,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                 .then(id => {
                     if (id) {
                         log("用户输入 ", id);
-                        GlobalStorage(ctx).set("id1", id);
+                        globalStorage(ctx).set("id1", id);
                         getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
                     }
                 });
@@ -1503,7 +1512,7 @@ export function activate(ctx: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             "4399-on-vscode.get-h5-web-game",
             () => {
-                let i = GlobalStorage(ctx).get("id2");
+                let i = globalStorage(ctx).get("id2");
                 vscode.window
                     .showInputBox({
                         value: i ? String(i) : "100060323",
@@ -1513,7 +1522,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                     .then(id => {
                         if (id) {
                             log("用户输入 ", id);
-                            GlobalStorage(ctx).set("id2", id);
+                            globalStorage(ctx).set("id2", id);
                             getPlayUrlForWebGames(
                                 "https://www.zxwyouxi.com/g/" + id
                             );
@@ -1579,7 +1588,7 @@ export function activate(ctx: vscode.ExtensionContext) {
 
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.search", () => {
-            let s = GlobalStorage(ctx).get("kwd"); // 上次搜索词
+            let s = globalStorage(ctx).get("kwd"); // 上次搜索词
 
             searchGames(s);
         })
@@ -1718,7 +1727,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     ctx.subscriptions.push(
         vscode.commands.registerCommand("4399-on-vscode.history", () => {
             try {
-                let h: History[] = GlobalStorage(ctx).get("history");
+                let h: History[] = globalStorage(ctx).get("history");
                 if (!h || (typeof h === "object" && !h[0])) {
                     h = [];
                 }
@@ -1735,7 +1744,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                 });
                 vscode.window.showQuickPick(quickPickList).then(gameName => {
                     if (gameName === "🧹 清空历史记录") {
-                        return GlobalStorage(ctx).set("history", []);
+                        return globalStorage(ctx).set("history", []);
                     }
                     if (gameName) {
                         for (let index = 0; index < h.length; index++) {
@@ -1770,7 +1779,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                 // let threadTimeout: NodeJS.Timeout;
                 // let threadPage = 1;
 
-                let k = GlobalStorage(ctx).get("kwd-forums"); // 上次搜索词
+                let k = globalStorage(ctx).get("kwd-forums"); // 上次搜索词
 
                 threadQp = await createQuickPick({
                     value: k || "",
@@ -1800,9 +1809,10 @@ export function activate(ctx: vscode.ExtensionContext) {
                         // 获取标题和类型
                         $("div.listtitle > div.title").each((i, elem) => {
                             let $title = $(elem).children("a.thread_link");
-                            let id: number = Number(
+                            let id = Number(
                                 $title.attr("href")?.split("-").at(-1)
                             );
+                            let gid = $("div.toplink > a[href*='']");
                             let title = $title.text();
                             let type = $(elem).children("a.type").text();
                             if (!id || isNaN(id) || !title) {
@@ -1921,7 +1931,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                         threadQp.activeItems[0].description?.includes("群组 id")
                     ) {
                         geThreads(threads[threadQp.activeItems[0].label]);
-                        GlobalStorage(context).set(
+                        globalStorage(context).set(
                             "kwd-forums",
                             threadQp.value
                         );

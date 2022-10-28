@@ -250,7 +250,7 @@ const getWebviewHtml_flash = (url) => `
     </body>
 </html>
 `;
-const GlobalStorage = (context) => {
+const globalStorage = (context) => {
     return {
         get: (key) => JSON.parse(context.globalState.get(key) || '""'),
         set: (key, value) => context.globalState.update(key, JSON.stringify(value)),
@@ -415,7 +415,7 @@ function initHttpServer(callback, ref) {
 function getReqCfg(responseType, noCookie = false, ref) {
     let c;
     if (!noCookie) {
-        c = GlobalStorage(context).get("cookie");
+        c = globalStorage(context).get("cookie");
     }
     return {
         baseURL: "http://www.4399.com",
@@ -858,7 +858,7 @@ async function searchGames(s) {
         else {
             getPlayUrl(`http://www.4399.com/flash/${searchedGames[searchQp.activeItems[0].label]}.htm`);
             searchQp.hide();
-            GlobalStorage(context).set("kwd", searchQp.value);
+            globalStorage(context).set("kwd", searchQp.value);
         }
     });
     searchQp.show();
@@ -990,7 +990,7 @@ function showWebviewPanel(url, title, type, hasIcon) {
         try {
             if (url.endsWith(".html") || (url.endsWith(".htm") && DATA)) {
                 const $ = cheerio.load(iconv.decode(DATA, "utf8"));
-                $("head").append(getScript(GlobalStorage(context).get("cookie")));
+                $("head").append(getScript(globalStorage(context).get("cookie")));
                 DATA = $.html();
             }
         }
@@ -1058,20 +1058,20 @@ function showWebviewPanel(url, title, type, hasIcon) {
 }
 function login(callback, loginOnly = false) {
     loaded(true);
-    if (GlobalStorage(context).get("cookie")) {
+    if (globalStorage(context).get("cookie")) {
         if (loginOnly) {
             return vscode.window
                 .showInformationMessage("是否退出登录?", "是", "否")
                 .then(value => {
                 if (value === "是") {
-                    GlobalStorage(context).set("cookie", "");
+                    globalStorage(context).set("cookie", "");
                     vscode.window.showInformationMessage("退出登录成功");
                 }
             });
         }
-        return callback(GlobalStorage(context).get("cookie"));
+        return callback(globalStorage(context).get("cookie"));
     }
-    if (!GlobalStorage(context).get("cookie")) {
+    if (!globalStorage(context).get("cookie")) {
         if (!loginOnly) {
             vscode.window.showInformationMessage("请登录后继续");
         }
@@ -1091,7 +1091,7 @@ function login(callback, loginOnly = false) {
                             if (!parsedCookie["Pauth"]) {
                                 return err("登录失败, cookie 没有 Pauth 值");
                             }
-                            GlobalStorage(context).set("cookie", encodeURI(c));
+                            globalStorage(context).set("cookie", encodeURI(c));
                             let welcomeMsg = "";
                             if (parsedCookie["Pnick"]) {
                                 welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
@@ -1149,7 +1149,7 @@ function login(callback, loginOnly = false) {
                                         if (!parsedCookie["Pauth"]) {
                                             return err("登录失败, cookie 没有 Pauth 值");
                                         }
-                                        GlobalStorage(context).set("cookie", encodeURI(cookies));
+                                        globalStorage(context).set("cookie", encodeURI(cookies));
                                         let welcomeMsg = "";
                                         if (parsedCookie["Pnick"]) {
                                             welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
@@ -1177,12 +1177,12 @@ function updateHistory(history) {
     if (!getCfg("updateHistory", true)) {
         return;
     }
-    let h = GlobalStorage(context).get("history");
+    let h = globalStorage(context).get("history");
     if (!h || (typeof h === "object" && !h[0])) {
         h = [];
     }
     h.unshift(history);
-    GlobalStorage(context).set("history", h);
+    globalStorage(context).set("history", h);
 }
 function objectToQuery(obj, prefix) {
     if (typeof obj !== "object") {
@@ -1220,7 +1220,7 @@ function activate(ctx) {
             ".htm");
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get", () => {
-        let i = GlobalStorage(ctx).get("id1");
+        let i = globalStorage(ctx).get("id1");
         vscode.window
             .showInputBox({
             value: i ? String(i) : "222735",
@@ -1230,13 +1230,13 @@ function activate(ctx) {
             .then(id => {
             if (id) {
                 log("用户输入 ", id);
-                GlobalStorage(ctx).set("id1", id);
+                globalStorage(ctx).set("id1", id);
                 getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
             }
         });
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get-h5-web-game", () => {
-        let i = GlobalStorage(ctx).get("id2");
+        let i = globalStorage(ctx).get("id2");
         vscode.window
             .showInputBox({
             value: i ? String(i) : "100060323",
@@ -1246,7 +1246,7 @@ function activate(ctx) {
             .then(id => {
             if (id) {
                 log("用户输入 ", id);
-                GlobalStorage(ctx).set("id2", id);
+                globalStorage(ctx).set("id2", id);
                 getPlayUrlForWebGames("https://www.zxwyouxi.com/g/" + id);
             }
         });
@@ -1296,7 +1296,7 @@ function activate(ctx) {
         });
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.search", () => {
-        let s = GlobalStorage(ctx).get("kwd"); // 上次搜索词
+        let s = globalStorage(ctx).get("kwd"); // 上次搜索词
         searchGames(s);
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.my", () => {
@@ -1383,7 +1383,7 @@ function activate(ctx) {
     }));
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.history", () => {
         try {
-            let h = GlobalStorage(ctx).get("history");
+            let h = globalStorage(ctx).get("history");
             if (!h || (typeof h === "object" && !h[0])) {
                 h = [];
             }
@@ -1399,7 +1399,7 @@ function activate(ctx) {
             });
             vscode.window.showQuickPick(quickPickList).then(gameName => {
                 if (gameName === "🧹 清空历史记录") {
-                    return GlobalStorage(ctx).set("history", []);
+                    return globalStorage(ctx).set("history", []);
                 }
                 if (gameName) {
                     for (let index = 0; index < h.length; index++) {
@@ -1431,7 +1431,7 @@ function activate(ctx) {
             // let forums: Record<string, number> = {};
             // let threadTimeout: NodeJS.Timeout;
             // let threadPage = 1;
-            let k = GlobalStorage(ctx).get("kwd-forums"); // 上次搜索词
+            let k = globalStorage(ctx).get("kwd-forums"); // 上次搜索词
             threadQp = await createQuickPick({
                 value: k || "",
                 title: "4399 on VSCode: 逛群组",
@@ -1556,7 +1556,7 @@ function activate(ctx) {
                 }
                 else if (threadQp.activeItems[0].description?.includes("群组 id")) {
                     geThreads(threads[threadQp.activeItems[0].label]);
-                    GlobalStorage(context).set("kwd-forums", threadQp.value);
+                    globalStorage(context).set("kwd-forums", threadQp.value);
                 }
                 else if (threadQp.activeItems[0].description === "进入帖子") {
                     try {
