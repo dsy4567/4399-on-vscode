@@ -840,7 +840,7 @@ async function showGameInfo(url) {
             .replaceAll(/[\n ]/gi, "");
         let gameId = url.split(/[/.]/gi).at(-2);
         title = title || "未知";
-        gameId = !gameId || isNaN(Number(gameId)) ? "未知" : gameId;
+        gameId = (isNaN(Number(gameId)) ? "未知" : gameId) || "未知";
         vscode.window
             .showQuickPick([
             "🎮 游戏名: " + title,
@@ -1260,7 +1260,9 @@ function activate(ctx) {
                         try {
                             let data = (await axios_1.default.get("https://my.4399.com/plugins/sign/set-t-" +
                                 new Date().getTime(), getReqCfg("json"))).data;
-                            if (typeof data.result === "string")
+                            if (data.result == null)
+                                err("签到失败, 其他错误: " + data.msg);
+                            else if (typeof data.result === "string")
                                 vscode.window.showInformationMessage(data.result);
                             else if (typeof data.result === "object")
                                 vscode.window.showInformationMessage(`签到成功, 您已连续签到${data.result.days}天`);

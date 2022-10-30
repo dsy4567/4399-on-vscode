@@ -998,7 +998,7 @@ async function showGameInfo(url?: string) {
             .replaceAll(/[\n ]/gi, "");
         let gameId = url.split(/[/.]/gi).at(-2);
         title = title || "未知";
-        gameId = !gameId || isNaN(Number(gameId)) ? "未知" : gameId;
+        gameId = (isNaN(Number(gameId)) ? "未知" : gameId) || "未知";
         vscode.window
             .showQuickPick([
                 "🎮 游戏名: " + title,
@@ -1588,13 +1588,13 @@ export function activate(ctx: vscode.ExtensionContext) {
                             else if (value.includes("签到"))
                                 try {
                                     let data: {
-                                        code: number;
-                                        result:
+                                        code?: number;
+                                        result?:
                                             | null
                                             | string
                                             | {
-                                                  days: number;
-                                                  credit: number;
+                                                  days?: number;
+                                                  credit?: number;
                                               };
                                         msg: string;
                                     } = (
@@ -1604,7 +1604,9 @@ export function activate(ctx: vscode.ExtensionContext) {
                                             getReqCfg("json")
                                         )
                                     ).data;
-                                    if (typeof data.result === "string")
+                                    if (data.result == null)
+                                        err("签到失败, 其他错误: " + data.msg);
+                                    else if (typeof data.result === "string")
                                         vscode.window.showInformationMessage(
                                             data.result
                                         );
