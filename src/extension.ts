@@ -194,7 +194,11 @@ setInterval(() => {
 ` + s
     );
 };
-const getWebviewHtml_h5 = (url: string) => `
+const getWebviewHtml_h5 = (
+    url: string,
+    w: string | number = "100%",
+    h: string | number = "100vh"
+) => `
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -218,8 +222,10 @@ const getWebviewHtml_h5 = (url: string) => `
 
 
             iframe {
-                width: 100%;
-                height: 100vh;
+                width: ${typeof w === "string" ? w : w + "%"};
+                height: ${
+                    typeof h === "string" ? h.replace("%", "vh") : h + "vh"
+                };
             }
         </style>
         <iframe id="ifr" src="${url}" frameborder="0"></iframe>
@@ -227,7 +233,11 @@ const getWebviewHtml_h5 = (url: string) => `
 </html>
 
 `;
-const getWebviewHtml_flash = (url: string) => `
+const getWebviewHtml_flash = (
+    url: string,
+    w: string | number = "100%",
+    h: string | number = "100%"
+) => `
 <!DOCTYPE html>
 <html style="height: 100%;margin: 0;padding: 0;">
     <head>
@@ -267,7 +277,11 @@ const getWebviewHtml_flash = (url: string) => `
                     url +
                     '" /><embed id="flashgame1" name="flashgame" src="' +
                     url +
-                    '" quality="high" pluginspage="//www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="100%" height="100%" /> <param name="quality" value="high" /></object>';
+                    '" quality="high" pluginspage="//www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="${
+                        typeof w === "string" ? w : w + "%"
+                    }" height="${
+    typeof h === "string" ? h : h + "%"
+}" /> <param name="quality" value="high" /></object>';
                 document.body.innerHTML =html
             };
         </script>
@@ -527,11 +541,11 @@ function getCfg(name: string, defaultValue: any = undefined): any {
         .getConfiguration()
         .get("4399-on-vscode." + name, defaultValue);
 }
-// function setCfg(name: string, val: any) {
-//     return vscode.workspace
-//         .getConfiguration()
-//         .update("4399-on-vscode." + name, val, true);
-// }
+function setCfg(name: string, val: any) {
+    return vscode.workspace
+        .getConfiguration()
+        .update("4399-on-vscode." + name, val, true);
+}
 async function getServer(server_matched: RegExpMatchArray): Promise<string> {
     try {
         let res = await axios.get(
@@ -654,7 +668,9 @@ async function getPlayUrl(url: string) {
                     err("无法匹配游戏标题:", e);
                 }
 
-            let server_matched = html.match(/src\=\"\/js\/server.*\.js\"/i);
+            let server_matched = html
+                .replaceAll(" ", "")
+                .match(/src\=\"\/js\/server.*\.js\"/i);
             let gamePath_matched = html.match(
                 /\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\"/i
             );
@@ -684,6 +700,7 @@ async function getPlayUrl(url: string) {
             gamePath =
                 "/4399swf" +
                 (gamePath_matched as RegExpMatchArray)[0]
+                    .replaceAll(" ", "")
                     .replace("_strGamePath=", "")
                     .replace(/["]/g, "");
             if (gamePath.includes("gameId="))
@@ -1004,6 +1021,7 @@ async function showGameInfo(url?: string) {
                 "🎮 游戏名: " + title,
                 "📜 简介: " + desc,
                 "🆔 游戏 id: " + gameId,
+                "ℹ️ " + $("div.cls").text(),
                 "❤️ 添加到收藏盒",
                 "🌏 在浏览器中打开详情页面",
                 "💬 热门评论",
@@ -1121,11 +1139,14 @@ function showWebviewPanel(
     type === "fl"
         ? (panel.webview.html = getWebviewHtml_flash(url))
         : (panel.webview.html = getWebviewHtml_h5(url));
-    if (!alerted) {
+    if (!alerted && getCfg("alert", true)) {
         alerted = true;
-        vscode.window.showInformationMessage(
-            "温馨提示: 请在使用快捷键前使游戏失去焦点"
-        );
+        vscode.window
+            .showInformationMessage(
+                "温馨提示: 请在使用快捷键前使游戏失去焦点",
+                "不再提示"
+            )
+            .then(val => setCfg("alert", false));
     }
 
     // 获取游戏图标

@@ -108,6 +108,11 @@
                     "scope": "machine",
                     "markdownDescription": "要向 h5 小游戏入口页面注入的自定义 HTML 代码片段的文件名, 文件存放在`(主目录)/.4ov-data/scripts/`, 多个文件应使用英文逗号 + 空格(`, `)隔开, 例如`addStyle.htm, addScript.html`",
                     "type": "string"
+                },
+                "4399-on-vscode.alert": {
+                    "default": true,
+                    "description": "控制是否在游戏开始前显示温馨提示",
+                    "type": "boolean"
                 }
             }
         },
