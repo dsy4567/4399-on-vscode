@@ -693,7 +693,7 @@ async function getPlayUrl(url: string) {
 
                 delete gameInfoUrls[title];
                 err(
-                    "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏是页游, 较新(约2006年6月以后或 AS3)的 flash 游戏或非 h5 游戏, 已自动为您跳转至游戏详情页面"
+                    "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏类型不受支持, 已自动为您跳转至游戏详情页面"
                 );
                 return showWebviewPanel(url, title);
             }
