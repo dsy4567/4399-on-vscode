@@ -1680,6 +1680,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                                     let data: {
                                         code: number;
                                         result:
+                                            | null
                                             | string
                                             | {
                                                   days: number;
@@ -2046,7 +2047,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     // fetch("/openUrl/https://www.4399.com/flash/227465.htm")
     // 屏蔽广告
     /*
-    window.addEventListener("load", () => {
+    window.addEventListener("load", function () {
         h5api.playAd = function (cb) {
             cb({
                 code: 10001,
