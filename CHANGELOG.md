@@ -2,6 +2,10 @@
 
 ## v0.2.5
 
+-   🛠️ 修复一些已知问题
+
+## v0.2.5
+
 -   🚀 优化逛群组功能
 -   🛠️ 修复悬浮球内用户头像无法显示的问题
 
@@ -71,7 +75,8 @@
 
 -   ✨ 支持在受限的工作区内运行
 -   🚀 优化代码结构
--   🚀 优化游戏真实地址匹配规则, 以支持更多 flash 游戏([ruffle](https://github.com/ruffle-rs/ruffle) 暂时不能支持这些游戏)
+-   🚀 优化游戏真实地址匹配规则, 以支持更多 flash 游戏
+    ([ruffle](https://github.com/ruffle-rs/ruffle) 暂时不能支持这些游戏)
 
 ## v0.1.3
 
@@ -80,7 +85,8 @@
 
 ## v0.1.2
 
--   ✨ 为旧的 flash 游戏添加支持(感谢 [ruffle](https://github.com/ruffle-rs/ruffle))
+-   ✨ 为旧的 flash 游戏添加支持(感谢
+    [ruffle](https://github.com/ruffle-rs/ruffle))
 -   ✨ 允许多开游戏
 
 ## v0.1.0, v0.1.1

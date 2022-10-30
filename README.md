@@ -4,8 +4,6 @@
 
 <h1 align="center">4399 on VSCode</h1>
 
-在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)
-
 [![Visual Studio Marketplace](https://img.shields.io/badge/Visual%20Studio-Marketplace-007acc.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
 [![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/dsy4567.4399-on-vscode.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
 [![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/dsy4567.4399-on-vscode.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
@@ -38,7 +36,6 @@
 -   💬 逛群组
 -   ❔ 随机游戏
 -   📚 注入自定义 HTML 代码片段
--   🛠️ 更多功能开发中......
 
 # 🔨 使用方法
 
@@ -49,7 +46,7 @@
 
 # ⚠️ 注意事项
 
--   **如果您遇到一些奇奇怪怪的问题, 请尝试登录账号(如已登录请重新登录)**
+-   **建议登陆后使用, 这样可以避免许多奇奇怪怪的问题**
 -   **请不要用这个扩展玩 u3d 或 2006 年 6 月以后的 flash 游戏, 此扩展不会支持这
     类游戏**
 -   如果焦点在游戏界面上, 快捷键可能会失效, **请确保您的鼠标或 Windows 徽标键
@@ -82,6 +79,8 @@ cookie 用于登录 h5 页游以及使用更多需要登录的功能
 ```javascript
 copy(document.cookie);
 ```
+
+> 请确保 cookie 里包含 `Pauth` 值
 
 # 🤝 特别感谢
 
