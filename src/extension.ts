@@ -1617,7 +1617,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                                                   days?: number;
                                                   credit?: number;
                                               };
-                                        msg: string;
+                                        msg?: string;
                                     } = (
                                         await axios.get(
                                             "https://my.4399.com/plugins/sign/set-t-" +
