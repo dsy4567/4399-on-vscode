@@ -116,7 +116,7 @@
                 },
                 "4399-on-vscode.use-credential-manager": {
                     "default": false,
-                    "markdownDescription": "(Beta) 控制是否使用系统提供的凭据管理器保存 cookie, 修改后建议重新登录 (由 [keytar](https://www.npmjs.com/package/keytar) 提供支持, 在 Debian/Ubuntu 上, 您必须事先运行 `sudo apt install libsecret-1-dev`)",
+                    "markdownDescription": "(Beta) 控制是否使用系统提供的凭据管理器保存 cookie, 修改后建议重新登录 (由 [keytar](https://www.npmjs.com/package/keytar) 提供支持, 在 Debian/Ubuntu 上, 您可能需要事先运行 `sudo apt install libsecret-1-dev`)",
                     "type": "boolean"
                 }
             }

@@ -271,11 +271,12 @@ const globalStorage = (context) => {
 function initHttpServer(callback, ref) {
     REF = ref;
     let onRequest = (request, response) => {
+        log(request.url, request);
         try {
             if (!request?.url)
                 response.end(null);
             else if (request.url === "/") {
-                // 访问根目录直接跳转到游戏
+                log("访问根目录直接跳转到游戏入口页面");
                 gamePath !== "/"
                     ? response.writeHead(302, {
                         Location: gamePath,
@@ -284,6 +285,7 @@ function initHttpServer(callback, ref) {
                 response.end();
             }
             else if (request.url.startsWith("/proxy/")) {
+                log("代理请求", REF);
                 let u = request.url.substring("/proxy/".length);
                 let h = new URL(u, "https://www.4399.com/").hostname;
                 if (h === "127.0.0.1" || h === "localhost")
@@ -298,7 +300,6 @@ function initHttpServer(callback, ref) {
                         response.end(res.data);
                     })
                         .catch(e => {
-                        log(request, request.url);
                         response.writeHead(500, {
                             "Content-Type": "text/plain",
                         });
@@ -313,6 +314,7 @@ function initHttpServer(callback, ref) {
             }
             else if (request.url.startsWith("/openUrl/") &&
                 getCfg("openUrl", true)) {
+                log("打开外链/推荐游戏");
                 let u;
                 try {
                     u = new URL(request.url.substring("/openUrl/".length), "https://www.4399.com/");
@@ -338,7 +340,7 @@ function initHttpServer(callback, ref) {
             }
             else if (new URL(request.url, "http://localhost:" + PORT).pathname ===
                 gamePath) {
-                // 访问游戏入口页面直接返回数据
+                log("访问游戏入口页面直接返回数据");
                 let t = mime.getType(request.url || "");
                 t = t || "text/html";
                 response.writeHead(200, {
@@ -348,8 +350,8 @@ function initHttpServer(callback, ref) {
                 });
                 response.end(DATA);
             }
-            // 向 4399 服务器请求游戏文件
-            else
+            else {
+                log("向 4399 服务器请求游戏文件");
                 axios_1.default
                     .get("http://" + server + request.url, getReqCfg("arraybuffer", false, REF))
                     .then(res => {
@@ -370,6 +372,7 @@ function initHttpServer(callback, ref) {
                         // 忽略 4xx, 5xx 错误
                         err("本地服务器出现错误: ", e.message);
                 });
+            }
         }
         catch (e) {
             response.writeHead(500, {
@@ -627,6 +630,7 @@ async function getPlayUrl(url) {
                 err("写入历史记录失败", String(e));
             }
             let s = await getServer(server_matched);
+            log("服务器", s);
             let isFlashPage = false;
             // 简单地判断域名是否有效
             if (s === "127.0.0.1" || s === "localhost" || /[/:?#\\=&]/g.test(s))
@@ -706,6 +710,7 @@ async function searchGames(s) {
         prompt: "输入搜索词",
     });
     const search = (s) => {
+        searchQp.title = s + " 的搜索结果";
         searchQp.busy = true;
         log("页码 " + searchPage);
         axios_1.default
@@ -759,6 +764,7 @@ async function searchGames(s) {
         if (kwd === searchValue)
             return (searchQp.items = searchQpItems);
         searchValue = kwd;
+        searchQp.title = "4399 on VSCode: 搜索";
         searchPage = 1;
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
@@ -1416,7 +1422,7 @@ function activate(ctx) {
                 title: "4399 on VSCode: 逛群组",
                 prompt: "搜索群组",
             });
-            const geThreads = async (id) => {
+            const getThreads = async (id, title) => {
                 threads = {};
                 threadData = [];
                 threadQpItems = [];
@@ -1454,8 +1460,10 @@ function activate(ctx) {
                         description: "只展示第一页内容",
                         alwaysShow: true,
                     });
-                    if (threadQpItems[0])
+                    if (threadQpItems[0]) {
                         threadQp.items = threadQpItems;
+                        threadQp.title = "群组: " + title;
+                    }
                     threadQp.busy = false;
                 }
                 else
@@ -1518,6 +1526,7 @@ function activate(ctx) {
             threadQp.onDidChangeValue(kwd => {
                 if (kwd === threadSearchValue)
                     return (threadQp.items = threadQpItems);
+                threadQp.title = "4399 on VSCode: 逛群组";
                 threadSearchValue = kwd;
                 threadPage = 1;
                 search(kwd);
@@ -1528,7 +1537,7 @@ function activate(ctx) {
                     search(threadQp.value);
                 }
                 else if (threadQp.activeItems[0].description?.includes("群组 id")) {
-                    geThreads(threads[threadQp.activeItems[0].label]);
+                    getThreads(threads[threadQp.activeItems[0].label], threadQp.activeItems[0].label);
                     globalStorage(context).set("kwd-forums", threadQp.value);
                 }
                 else if (threadQp.activeItems[0].description === "进入帖子")

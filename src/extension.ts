@@ -317,10 +317,11 @@ const globalStorage = (context: vscode.ExtensionContext): GlobalStorage => {
 function initHttpServer(callback: Function, ref?: string) {
     REF = ref;
     let onRequest: http.RequestListener = (request, response) => {
+        log(request.url, request);
         try {
             if (!request?.url) response.end(null);
             else if (request.url === "/") {
-                // 访问根目录直接跳转到游戏
+                log("访问根目录直接跳转到游戏入口页面");
                 gamePath !== "/"
                     ? response.writeHead(302, {
                           Location: gamePath,
@@ -328,6 +329,7 @@ function initHttpServer(callback: Function, ref?: string) {
                     : response.writeHead(500, {}); // 防止重复重定向
                 response.end();
             } else if (request.url.startsWith("/proxy/")) {
+                log("代理请求", REF);
                 let u = request.url.substring("/proxy/".length);
                 let h = new URL(u, "https://www.4399.com/").hostname;
                 if (h === "127.0.0.1" || h === "localhost") u = "";
@@ -342,7 +344,6 @@ function initHttpServer(callback: Function, ref?: string) {
                             response.end(res.data);
                         })
                         .catch(e => {
-                            log(request, request.url);
                             response.writeHead(500, {
                                 "Content-Type": "text/plain",
                             });
@@ -361,6 +362,7 @@ function initHttpServer(callback: Function, ref?: string) {
                 request.url.startsWith("/openUrl/") &&
                 getCfg("openUrl", true)
             ) {
+                log("打开外链/推荐游戏");
                 let u;
                 try {
                     u = new URL(
@@ -396,7 +398,7 @@ function initHttpServer(callback: Function, ref?: string) {
                 new URL(request.url, "http://localhost:" + PORT).pathname ===
                 gamePath
             ) {
-                // 访问游戏入口页面直接返回数据
+                log("访问游戏入口页面直接返回数据");
                 let t = mime.getType(request.url || "");
                 t = t || "text/html";
                 response.writeHead(200, {
@@ -406,9 +408,8 @@ function initHttpServer(callback: Function, ref?: string) {
                     "access-control-allow-origin": "*",
                 });
                 response.end(DATA);
-            }
-            // 向 4399 服务器请求游戏文件
-            else
+            } else {
+                log("向 4399 服务器请求游戏文件");
                 axios
                     .get(
                         "http://" + server + request.url,
@@ -436,6 +437,7 @@ function initHttpServer(callback: Function, ref?: string) {
                             // 忽略 4xx, 5xx 错误
                             err("本地服务器出现错误: ", e.message);
                     });
+            }
         } catch (e) {
             response.writeHead(500, {
                 "Content-Type": "text/plain",
@@ -754,6 +756,7 @@ async function getPlayUrl(url: string) {
             }
 
             let s = await getServer(server_matched);
+            log("服务器", s);
             let isFlashPage = false;
 
             // 简单地判断域名是否有效
@@ -868,6 +871,7 @@ async function searchGames(s: string) {
     });
 
     const search = (s: string) => {
+        searchQp.title = s + " 的搜索结果";
         searchQp.busy = true;
         log("页码 " + searchPage);
         axios
@@ -928,6 +932,7 @@ async function searchGames(s: string) {
         if (kwd === searchValue) return (searchQp.items = searchQpItems);
 
         searchValue = kwd;
+        searchQp.title = "4399 on VSCode: 搜索";
 
         searchPage = 1;
         clearTimeout(searchTimeout);
@@ -1788,7 +1793,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                     prompt: "搜索群组",
                 });
 
-                const geThreads = async (id: number) => {
+                const getThreads = async (id: number, title: string) => {
                     threads = {};
                     threadData = [];
                     threadQpItems = [];
@@ -1838,7 +1843,10 @@ export function activate(ctx: vscode.ExtensionContext) {
                             alwaysShow: true,
                         });
 
-                        if (threadQpItems[0]) threadQp.items = threadQpItems;
+                        if (threadQpItems[0]) {
+                            threadQp.items = threadQpItems;
+                            threadQp.title = "群组: " + title;
+                        }
 
                         threadQp.busy = false;
                     } else err("无法获取群组页面");
@@ -1912,6 +1920,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                     if (kwd === threadSearchValue)
                         return (threadQp.items = threadQpItems);
 
+                    threadQp.title = "4399 on VSCode: 逛群组";
                     threadSearchValue = kwd;
 
                     threadPage = 1;
@@ -1925,7 +1934,10 @@ export function activate(ctx: vscode.ExtensionContext) {
                     } else if (
                         threadQp.activeItems[0].description?.includes("群组 id")
                     ) {
-                        geThreads(threads[threadQp.activeItems[0].label]);
+                        getThreads(
+                            threads[threadQp.activeItems[0].label],
+                            threadQp.activeItems[0].label
+                        );
                         globalStorage(context).set(
                             "kwd-forums",
                             threadQp.value
