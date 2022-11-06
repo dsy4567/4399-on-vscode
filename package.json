@@ -2,7 +2,7 @@
     "name": "4399-on-vscode",
     "displayName": "4399 on VSCode",
     "description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-    "version": "0.2.7",
+    "version": "0.2.8",
     "engines": {
         "vscode": "^1.70.0"
     },
@@ -179,7 +179,7 @@
     },
     "devDependencies": {
         "@types/cookie": "^0.5.1",
-        "@types/glob": "^7.2.0",
+        "@types/glob": "^8.0.0",
         "@types/mime": "^3.0.1",
         "@types/mocha": "^9.1.1",
         "@types/node": "16.x",
@@ -187,10 +187,10 @@
         "@typescript-eslint/eslint-plugin": "^5.31.0",
         "@typescript-eslint/parser": "^5.31.0",
         "@vscode/test-electron": "^2.1.5",
-        "eslint": "^8.20.0",
+        "eslint": "^8.27.0",
         "glob": "^8.0.3",
         "mocha": "^10.0.0",
-        "typescript": "^4.7.4"
+        "typescript": "^4.8.4"
     },
     "keywords": [
         "小霸王",
