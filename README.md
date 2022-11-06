@@ -97,5 +97,17 @@ copy(document.cookie);
 
 # ⚖️ 许可证
 
-MIT License with "Anti 996" License 游戏由 [4399](http://www.4399.com) 提供, 游
-戏的版权归各自游戏作者所有
+4399 on vscode 在 MIT 许可证、反“996”许可证 和 “死妈的防沉迷”许可证 下获得许可，
+有关详细信息，请查阅随源代码提供的文件：
+
+-   LICENSE-MIT
+-   LICENSE-ANTI996
+-   LICENSE-MFAIL
+
+或者通过以下链接在线阅读：
+
+-   https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE-MIT
+-   https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE-ANTI996
+-   https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE-MFAIL
+
+游戏由 [4399](http://www.4399.com) 提供, 游戏的版权归各自游戏作者所有
