@@ -84,6 +84,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as mime from "mime";
+import * as keytar from "keytar";
 
 interface History {
     date: string;
@@ -101,10 +102,11 @@ interface GlobalStorage {
     set(key: "id1" | "id2", value: number | string): Thenable<void>;
 }
 
-let HTTP_SERVER: http.Server | undefined;
+let COOKIE: string;
 let DATA: Buffer | string; // 游戏入口文件
-let REF: string | undefined; // 覆盖用户设置的 referer, 仅用于本地服务器
+let HTTP_SERVER: http.Server | undefined;
 let PORT = 44399;
+let REF: string | undefined; // 覆盖用户设置的 referer, 仅用于本地服务器
 
 let server = ""; // szhong.4399.com
 let gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -132,6 +134,8 @@ let searchData: [string /* 游戏名 */, number /* 游戏 id */][];
 let searchedGames: Record<string /* 游戏名 */, number /* 游戏 id */> = {};
 let searchTimeout: NodeJS.Timeout; // 延迟获取搜索建议
 
+const KEYTAR_SERVICE = "4399-on-vscode";
+const KEYTAR_ACCOUNT = "4399-cookie";
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 const getScript = (cookie: string = "") => {
     let s: string = "",
@@ -471,7 +475,7 @@ function getReqCfg(
     ref?: string
 ): AxiosRequestConfig<any> {
     let c;
-    if (!noCookie) c = globalStorage(context).get("cookie");
+    if (!noCookie) c = getCookieSync();
 
     return {
         baseURL: "http://www.4399.com",
@@ -536,7 +540,23 @@ function createQuickPick(o: {
     });
 }
 // 获取工作区配置
-function getCfg(name: string, defaultValue: any = undefined): any {
+function getCfg(
+    name:
+        | "user-agent"
+        | "referer"
+        | "port"
+        | "outputLogs"
+        | "title"
+        | "injectionScript"
+        | "showIcon"
+        | "openUrl"
+        | "updateHistory"
+        | "background"
+        | "scripts"
+        | "alert"
+        | "use-credential-manager",
+    defaultValue: any = undefined
+): any {
     return vscode.workspace
         .getConfiguration()
         .get("4399-on-vscode." + name, defaultValue);
@@ -1086,7 +1106,7 @@ async function showGameInfo(url?: string) {
         err("无法获取游戏页面", String(e));
     }
 }
-function showWebviewPanel(
+async function showWebviewPanel(
     url: string,
     title: string,
     type?: "fl" | false | "",
@@ -1127,9 +1147,7 @@ function showWebviewPanel(
         try {
             if (url.endsWith(".html") || (url.endsWith(".htm") && DATA)) {
                 const $ = cheerio.load(iconv.decode(DATA as Buffer, "utf8"));
-                $("head").append(
-                    getScript(globalStorage(context).get("cookie"))
-                );
+                $("head").append(getScript(getCookieSync()));
                 DATA = $.html();
             }
         } catch (e) {
@@ -1220,24 +1238,77 @@ function showWebviewPanel(
 
     loaded(true);
 }
+async function setCookie(c: string = ""): Promise<void> {
+    COOKIE = c;
+    return new Promise(async (resolve, reject) => {
+        if (getCfg("use-credential-manager", false))
+            try {
+                globalStorage(context).set("cookie", "");
+                keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, c);
+                resolve();
+            } catch (e) {
+                err("无法设置 cookie", e);
+                reject(e);
+            }
+        else
+            try {
+                globalStorage(context).set("cookie", c);
+                keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, "");
+                resolve();
+            } catch (e) {
+                err("无法设置 cookie", e);
+                reject(e);
+            }
+    });
+}
+async function getCookie(): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+        if (getCfg("use-credential-manager", false))
+            try {
+                let c, c2;
+                c = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
+                if (!c) {
+                    c2 = globalStorage(context).get("cookie");
+                    if (!c2) c2 = "";
+                    keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, c2);
+                }
+                resolve((COOKIE = c || c2 || ""));
+            } catch (e) {
+                err("无法获取 cookie", e);
+                reject(e);
+            }
+        else
+            try {
+                resolve((COOKIE = globalStorage(context).get("cookie") || ""));
+            } catch (e) {
+                err("无法获取 cookie", e);
+                reject(e);
+            }
+    });
+}
+function getCookieSync() {
+    if (typeof COOKIE === "undefined") {
+        getCookie();
+        return "";
+    }
+    return COOKIE;
+}
 function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
     loaded(true);
-    if (globalStorage(context).get("cookie")) {
+    let c = getCookieSync();
+    if (c) {
         if (loginOnly)
             return vscode.window
                 .showInformationMessage("是否退出登录?", "是", "否")
-                .then(value => {
+                .then(async value => {
                     if (value === "是") {
-                        globalStorage(context).set("cookie", "");
+                        await setCookie();
                         vscode.window.showInformationMessage("退出登录成功");
                     }
                 });
-
-        return callback(globalStorage(context).get("cookie"));
-    }
-    if (!globalStorage(context).get("cookie")) {
+        return callback(getCookieSync());
+    } else {
         if (!loginOnly) vscode.window.showInformationMessage("请登录后继续");
-
         vscode.window
             .showQuickPick(["🆔 使用账号密码登录", "🍪 使用 cookie 登录"])
             .then(value => {
@@ -1247,7 +1318,7 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
                             title: "4399 on VSCode: 登录(使用 cookie)",
                             prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游或者使用其它需要登录的功能",
                         })
-                        .then(c => {
+                        .then(async c => {
                             if (c)
                                 try {
                                     let parsedCookie = cookie.parse(c);
@@ -1256,10 +1327,8 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
                                             "登录失败, cookie 没有 Pauth 值"
                                         );
 
-                                    globalStorage(context).set(
-                                        "cookie",
-                                        encodeURI(c)
-                                    );
+                                    c = encodeURI(c);
+                                    await setCookie(c);
 
                                     let welcomeMsg = "";
                                     if (parsedCookie["Pnick"])
@@ -1269,7 +1338,7 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
                                         welcomeMsg +
                                             "登录成功, 请注意定期更新 cookie"
                                     );
-                                    callback(encodeURI(c));
+                                    callback(c);
                                 } catch (e) {
                                     return err("登录失败, 其它原因", String(e));
                                 }
@@ -1345,10 +1414,9 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
                                                             "登录失败, cookie 没有 Pauth 值"
                                                         );
 
-                                                    globalStorage(context).set(
-                                                        "cookie",
-                                                        encodeURI(cookies)
-                                                    );
+                                                    cookies =
+                                                        encodeURI(cookies);
+                                                    await setCookie(cookies);
 
                                                     let welcomeMsg = "";
                                                     if (parsedCookie["Pnick"])
@@ -1358,9 +1426,7 @@ function login(callback: (cookie: string) => void, loginOnly: boolean = false) {
                                                         welcomeMsg +
                                                             "登录成功, 请注意定期重新登录"
                                                     );
-                                                    callback(
-                                                        encodeURI(cookies)
-                                                    );
+                                                    callback(cookies);
                                                 } else
                                                     return err(
                                                         "登录失败, 响应头没有 set-cookie"
@@ -1625,7 +1691,7 @@ export function activate(ctx: vscode.ExtensionContext) {
                                             getReqCfg("json")
                                         )
                                     ).data;
-                                    if (data.result == null)
+                                    if (data.result === null)
                                         err("签到失败, 其他错误: " + data.msg);
                                     else if (typeof data.result === "string")
                                         vscode.window.showInformationMessage(
@@ -1985,6 +2051,6 @@ export function activate(ctx: vscode.ExtensionContext) {
 `,
             err => {}
         );
-
+    getCookieSync();
     console.log("4399 on VSCode is ready!");
 }

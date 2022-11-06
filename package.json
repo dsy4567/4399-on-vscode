@@ -113,6 +113,11 @@
                     "default": true,
                     "description": "控制是否在游戏开始前显示温馨提示",
                     "type": "boolean"
+                },
+                "4399-on-vscode.use-credential-manager": {
+                    "default": false,
+                    "markdownDescription": "控制是否使用系统提供的凭据管理器保存 cookie (由 [keytar](https://www.npmjs.com/package/keytar) 提供支持, 在 Debian/Ubuntu 上, 您必须事先运行 `sudo apt install libsecret-1-dev`)",
+                    "type": "boolean"
                 }
             }
         },
@@ -201,6 +206,7 @@
         "cheerio": "^1.0.0-rc.12",
         "cookie": "^0.5.0",
         "iconv-lite": "^0.6.3",
+        "keytar": "^7.9.0",
         "mime": "^3.0.0"
     },
     "icon": "icon.png",
