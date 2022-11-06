@@ -2,74 +2,83 @@
 
 MIT License
 
-Copyright (c) 2022 dsy4567(https://github.com/dsy4567/ ; dsy4567@outlook.com)
+Copyright (c) 2022 dsy4567 (https://github.com/dsy4567/ ; dsy4567@outlook.com)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ----------
 
-Copyright (c) 2022 dsy4567(https://github.com/dsy4567/ ; dsy4567@outlook.com)
+版权所有（c）2022 dsy4567（https://github.com/dsy4567/ ; dsy4567@outlook.com）
 
-"Anti 996" License Version 1.0 (Draft)
+反996许可证版本1.0
 
-Permission is hereby granted to any individual or legal entity
-obtaining a copy of this licensed work (including the source code,
-documentation and/or related items, hereinafter collectively referred
-to as the "licensed work"), free of charge, to deal with the licensed
-work for any purpose, including without limitation, the rights to use,
-reproduce, modify, prepare derivative works of, distribute, publish
-and sublicense the licensed work, subject to the following conditions:
+在符合下列条件的情况下，特此免费向任何得到本授权作品的副本（包括源代码、文件和/或相关内容，以
+下统称为“授权作品”）的个人和法人实体授权：被授权个人或法人实体有权以任何目的处置授权作品，包括
+但不限于使用、复制，修改，衍生利用、散布，发布和再许可：
 
-1. The individual or the legal entity must conspicuously display,
-without modification, this License and the notice on each redistributed
-or derivative copy of the Licensed Work.
+1. 个人或法人实体必须在许可作品的每个再散布或衍生副本上包含以上版权声明和本许可证，不得自行修
+改。
+2. 个人或法人实体必须严格遵守与个人实际所在地或个人出生地或归化地、或法人实体注册地或经营地（
+以较严格者为准）的司法管辖区所有适用的与劳动和就业相关法律、法规、规则和标准。如果该司法管辖区
+没有此类法律、法规、规章和标准或其法律、法规、规章和标准不可执行，则个人或法人实体必须遵守国际
+劳工标准的核心公约。
+3. 个人或法人不得以任何方式诱导、暗示或强迫其全职或兼职员工或其独立承包人以口头或书面形式同意
+直接或间接限制、削弱或放弃其所拥有的，受相关与劳动和就业有关的法律、法规、规则和标准保护的权利
+或补救措施，无论该等书面或口头协议是否被该司法管辖区的法律所承认，该等个人或法人实体也不得以任
+何方法限制其雇员或独立承包人向版权持有人或监督许可证合规情况的有关当局报告或投诉上述违反许可证
+的行为的权利。
 
-2. The individual or the legal entity must strictly comply with all
-applicable laws, regulations, rules and standards of the jurisdiction
-relating to labor and employment where the individual is physically
-located or where the individual was born or naturalized; or where the
-legal entity is registered or is operating (whichever is stricter). In
-case that the jurisdiction has no such laws, regulations, rules and
-standards or its laws, regulations, rules and standards are
-unenforceable, the individual or the legal entity are required to
-comply with Core International Labor Standards.
+该授权作品是"按原样"提供，不做任何明示或暗示的保证，包括但不限于对适销性、特定用途适用性和非侵
+权性的保证。在任何情况下，无论是在合同诉讼、侵权诉讼或其他诉讼中，版权持有人均不承担因本软件或
+本软件的使用或其他交易而产生、引起或与之相关的任何索赔、损害或其他责任。
 
-3. The individual or the legal entity shall not induce, suggest or force
-its employee(s), whether full-time or part-time, or its independent
-contractor(s), in any methods, to agree in oral or written form, to
-directly or indirectly restrict, weaken or relinquish his or her
-rights or remedies under such laws, regulations, rules and standards
-relating to labor and employment as mentioned above, no matter whether
-such written or oral agreements are enforceable under the laws of the
-said jurisdiction, nor shall such individual or the legal entity
-limit, in any methods, the rights of its employee(s) or independent
-contractor(s) from reporting or complaining to the copyright holder or
-relevant authorities monitoring the compliance of the license about
-its violation(s) of the said license.
+----------
 
-THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-OTHERWISE, ARISING FROM, OUT OF OR IN ANY WAY CONNECTION WITH THE
-LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
+“死妈的防沉迷”许可证 第一版（草案）
+
+版权所有 （c） 2022 dsy4567
+
+    在符合下列条件的情况下，特此免费向任何得到本授权作品的副本（包括源代码、文件和/或相关内容
+，以下统称为“授权作品”）的个人和法人实体授权：被授权个人或法人实体有权以任何目的处置授权作品，
+包括但不限于使用、复制，修改，衍生利用、散布，发布和再许可：
+
+
+    1. 个人或法人实体必须在授权作品的每个再散布或衍生副本上包含以上版权声明和本许可证，不得自
+    行修改。
+
+    2. 个人或法人实体不得实施《国家新闻出版署关于进一步严格管理 切实防止未成年人沉迷网络游戏
+    的通知》<https://www.nppa.gov.cn/nppa/contents/279/98792.shtml>（国新出发〔2021〕
+    14号）内的任何要求。
+
+    3. 个人或法人实体不得为国家新闻出版署防止未成年人沉迷网络游戏举报平台
+    <https://jubao.chinaso.com/>（以下简称为“举报平台”）和网络游戏防沉迷实名认证系统
+    <https://wlc.nppa.gov.cn/fcm_company/index.html)（以下简称为“实名认证系统”）的宣传、访
+    问、使用和正常运营提供便利，也不得组织和/或参与举报平台和实名认证系统的运营活动，以及宣传
+    、访问和使用举报平台和实名认证系统。
+
+    4. 个人或法人实体不得与不满足以上条件的其他个人或法人实体有合作、隶属、投资或被投资关系。
+
+
+    该授权作品是"按原样"提供，不做任何明示或暗示的保证，包括但不限于对适销性、特定用途适用性
+和非侵权性的保证。在任何情况下，无论是在合同诉讼、侵权诉讼或其他诉讼中，版权持有人均不承担因
+本软件或本软件的使用或其他交易而产生、引起或与之相关的任何索赔、损害或其他责任。
+
+    条款和条件结束。
 
 */
 "use strict";
@@ -85,10 +94,12 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const mime = require("mime");
-let HTTP_SERVER;
+const keytar = require("keytar");
+let COOKIE;
 let DATA; // 游戏入口文件
-let REF; // 覆盖用户设置的 referer, 仅用于本地服务器
+let HTTP_SERVER;
 let PORT = 44399;
+let REF; // 覆盖用户设置的 referer, 仅用于本地服务器
 let server = ""; // szhong.4399.com
 let gamePath = ""; // /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
 let gameUrl = ""; // http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html
@@ -111,6 +122,8 @@ let searchPage;
 let searchData;
 let searchedGames = {};
 let searchTimeout; // 延迟获取搜索建议
+const KEYTAR_SERVICE = "4399-on-vscode";
+const KEYTAR_ACCOUNT = "4399-cookie";
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 const getScript = (cookie = "") => {
     let s = "", f = getCfg("scripts", "").split(", ");
@@ -402,7 +415,7 @@ function initHttpServer(callback, ref) {
 function getReqCfg(responseType, noCookie = false, ref) {
     let c;
     if (!noCookie)
-        c = globalStorage(context).get("cookie");
+        c = getCookieSync();
     return {
         baseURL: "http://www.4399.com",
         responseType: responseType,
@@ -902,7 +915,7 @@ async function showGameInfo(url) {
         err("无法获取游戏页面", String(e));
     }
 }
-function showWebviewPanel(url, title, type, hasIcon) {
+async function showWebviewPanel(url, title, type, hasIcon) {
     // try {
     //     panel.dispose();
     // } catch (e) {}
@@ -926,7 +939,7 @@ function showWebviewPanel(url, title, type, hasIcon) {
         try {
             if (url.endsWith(".html") || (url.endsWith(".htm") && DATA)) {
                 const $ = cheerio.load(iconv.decode(DATA, "utf8"));
-                $("head").append(getScript(globalStorage(context).get("cookie")));
+                $("head").append(getScript(getCookieSync()));
                 DATA = $.html();
             }
         }
@@ -987,21 +1000,84 @@ function showWebviewPanel(url, title, type, hasIcon) {
         }
     loaded(true);
 }
+async function setCookie(c = "") {
+    COOKIE = c;
+    return new Promise(async (resolve, reject) => {
+        if (getCfg("use-credential-manager", false))
+            try {
+                globalStorage(context).set("cookie", "");
+                c === ""
+                    ? keytar.deletePassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT)
+                    : keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, c);
+                resolve();
+            }
+            catch (e) {
+                err("无法设置 cookie", e);
+                reject(e);
+            }
+        else
+            try {
+                globalStorage(context).set("cookie", c);
+                keytar.deletePassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
+                resolve();
+            }
+            catch (e) {
+                err("无法设置 cookie", e);
+                reject(e);
+            }
+    });
+}
+async function getCookie() {
+    return new Promise(async (resolve, reject) => {
+        if (getCfg("use-credential-manager", false))
+            try {
+                let c, c2;
+                c = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
+                if (!c) {
+                    c2 = globalStorage(context).get("cookie");
+                    if (!c2)
+                        c2 = "";
+                    keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, c2);
+                }
+                resolve((COOKIE = c || c2 || ""));
+            }
+            catch (e) {
+                err("无法获取 cookie", e);
+                reject(e);
+            }
+        else
+            try {
+                resolve((COOKIE = globalStorage(context).get("cookie") || ""));
+            }
+            catch (e) {
+                err("无法获取 cookie", e);
+                reject(e);
+            }
+    });
+}
+function getCookieSync() {
+    if (typeof COOKIE === "undefined") {
+        getCookie();
+        return "";
+    }
+    return COOKIE;
+}
 function login(callback, loginOnly = false) {
     loaded(true);
-    if (globalStorage(context).get("cookie")) {
+    let c = getCookieSync();
+    if (c) {
         if (loginOnly)
             return vscode.window
                 .showInformationMessage("是否退出登录?", "是", "否")
-                .then(value => {
+                .then(async (value) => {
                 if (value === "是") {
-                    globalStorage(context).set("cookie", "");
+                    await setCookie();
                     vscode.window.showInformationMessage("退出登录成功");
                 }
             });
-        return callback(globalStorage(context).get("cookie"));
+        return callback(getCookieSync());
     }
-    if (!globalStorage(context).get("cookie")) {
+    else {
         if (!loginOnly)
             vscode.window.showInformationMessage("请登录后继续");
         vscode.window
@@ -1013,19 +1089,20 @@ function login(callback, loginOnly = false) {
                     title: "4399 on VSCode: 登录(使用 cookie)",
                     prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游或者使用其它需要登录的功能",
                 })
-                    .then(c => {
+                    .then(async (c) => {
                     if (c)
                         try {
                             let parsedCookie = cookie.parse(c);
                             if (!parsedCookie["Pauth"])
                                 return err("登录失败, cookie 没有 Pauth 值");
-                            globalStorage(context).set("cookie", encodeURI(c));
+                            c = encodeURI(c);
+                            await setCookie(c);
                             let welcomeMsg = "";
                             if (parsedCookie["Pnick"])
                                 welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
                             vscode.window.showInformationMessage(welcomeMsg +
                                 "登录成功, 请注意定期更新 cookie");
-                            callback(encodeURI(c));
+                            callback(c);
                         }
                         catch (e) {
                             return err("登录失败, 其它原因", String(e));
@@ -1072,13 +1149,15 @@ function login(callback, loginOnly = false) {
                                         let parsedCookie = cookie.parse(cookies);
                                         if (!parsedCookie["Pauth"])
                                             return err("登录失败, cookie 没有 Pauth 值");
-                                        globalStorage(context).set("cookie", encodeURI(cookies));
+                                        cookies =
+                                            encodeURI(cookies);
+                                        await setCookie(cookies);
                                         let welcomeMsg = "";
                                         if (parsedCookie["Pnick"])
                                             welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
                                         vscode.window.showInformationMessage(welcomeMsg +
                                             "登录成功, 请注意定期重新登录");
-                                        callback(encodeURI(cookies));
+                                        callback(cookies);
                                     }
                                     else
                                         return err("登录失败, 响应头没有 set-cookie");
@@ -1266,7 +1345,7 @@ function activate(ctx) {
                         try {
                             let data = (await axios_1.default.get("https://my.4399.com/plugins/sign/set-t-" +
                                 new Date().getTime(), getReqCfg("json"))).data;
-                            if (data.result == null)
+                            if (data.result === null)
                                 err("签到失败, 其他错误: " + data.msg);
                             else if (typeof data.result === "string")
                                 vscode.window.showInformationMessage(data.result);
@@ -1552,6 +1631,7 @@ function activate(ctx) {
     */
 </style>
 `, err => { });
+    getCookieSync();
     console.log("4399 on VSCode is ready!");
 }
 exports.activate = activate;
