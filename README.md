@@ -27,7 +27,7 @@
 # 👍 功能
 
 -   🖊 登录账号
--   🎮 玩 h5 页游(需要登录)和小游戏
+-   🎮 玩 h5 页游(需要登录)和普通的小游戏(h5 和旧 flash 游戏)
 -   🔍 搜索游戏
 -   ✨ 推荐游戏
 -   👆 手动输入游戏 id
@@ -42,29 +42,19 @@
 按下 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> , 输入 `4399 on VSCode`
 开始探索
 
-> 请确保 cookie 里包含 `Pauth` 值
-
 # ⚠️ 注意事项
 
 -   **建议登陆后使用, 这样可以避免许多奇奇怪怪的问题**
--   **请不要用这个扩展玩 u3d 或 2006 年 6 月以后的 flash 游戏, 此扩展不会支持这
-    类游戏**
--   如果焦点在游戏界面上, 快捷键可能会失效, **请确保您的鼠标或 Windows 徽标键
-    /Command 键正常工作**
--   ~~如果需要 flash 游戏和少数 h5 游戏有声音, 请尝试
-    [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement)~~(VSCode
-    1.71.0+ 用户请见
-    [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
--   请勿在任何一个游戏未完全加载完成前多开另一个游戏(页游不受限制)
+-   **请不要用这个扩展玩 u3d 或新的 flash 游戏, 此扩展不会支持这类游戏**
+-   VSCode 版本为 1.71.0 以下的用户需要
+    [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement) 才
+    能使少数游戏有声音
 -   如果游戏显示方向不正确, 请尽可能让游戏界面变宽(比如取消拆分编辑器)
 
 # 📢 已知问题
 
--   ~~大多数 h5 游戏在
-    [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement) 后
-    仍然没有声音(用 [Cocos](https://www.cocos.com/) 做的游戏 %99.99 没有声音
-    )~~(VSCode 1.71.0+ 用户请见
-    [ffmpeg-codecs-support](https://code.visualstudio.com/updates/v1_71#_ffmpeg-codecs-support))
+-   不能在任何一个游戏未完全加载完成前多开另一个游戏(页游不受限制)
+-   如果焦点在游戏界面上, 大多数 VSCode 内的快捷键可能会失效
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
 -   游戏无法锁定鼠标(尤其是射击类游戏)
 
