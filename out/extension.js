@@ -538,7 +538,7 @@ function getPlayUrlForWebGames(urlOrId) {
                 catch (e) {
                     err("写入历史记录失败", String(e));
                 }
-                showWebviewPanel(data.data.game.gameUrl, title, "", true);
+                showWebviewPanel(data.data.game.gameUrl, title, "", true, true);
             }
             else
                 err("无法登录游戏, 或者根本没有这个游戏");
@@ -921,7 +921,7 @@ async function showGameInfo(url) {
         err("无法获取游戏页面", String(e));
     }
 }
-async function showWebviewPanel(url, title, type, hasIcon) {
+async function showWebviewPanel(url, title, type, hasIcon, noPortMapping) {
     // try {
     //     panel.dispose();
     // } catch (e) {}
@@ -930,6 +930,9 @@ async function showWebviewPanel(url, title, type, hasIcon) {
         enableScripts: true,
         retainContextWhenHidden: getCfg("background", true),
         localResourceRoots: [],
+        portMapping: noPortMapping
+            ? []
+            : [{ webviewPort: PORT, extensionHostPort: PORT }],
     });
     panel.onDidDispose(() => {
         delete gameInfoUrls[title];
@@ -1584,6 +1587,12 @@ function activate(ctx) {
                                         vscode.window.createWebviewPanel("4399OnVscode", title || "4399 on VSCode", vscode.ViewColumn.Active, {
                                             enableScripts: false,
                                             localResourceRoots: [],
+                                            portMapping: [
+                                                {
+                                                    webviewPort: PORT,
+                                                    extensionHostPort: PORT,
+                                                },
+                                            ],
                                         });
                                     panel.webview.html = html;
                                 }, "http://my.4399.com/");

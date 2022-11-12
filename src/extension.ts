@@ -657,7 +657,7 @@ function getPlayUrlForWebGames(urlOrId: string) {
                     err("写入历史记录失败", String(e));
                 }
 
-                showWebviewPanel(data.data.game.gameUrl, title, "", true);
+                showWebviewPanel(data.data.game.gameUrl, title, "", true, true);
             } else err("无法登录游戏, 或者根本没有这个游戏");
         } catch (e) {
             err("无法获取游戏页面", String(e));
@@ -1124,7 +1124,8 @@ async function showWebviewPanel(
     url: string,
     title: string,
     type?: "fl" | false | "",
-    hasIcon?: boolean
+    hasIcon?: boolean,
+    noPortMapping?: boolean
 ) {
     // try {
     //     panel.dispose();
@@ -1139,6 +1140,9 @@ async function showWebviewPanel(
             enableScripts: true,
             retainContextWhenHidden: getCfg("background", true),
             localResourceRoots: [],
+            portMapping: noPortMapping
+                ? []
+                : [{ webviewPort: PORT, extensionHostPort: PORT }],
         }
     );
 
@@ -2016,6 +2020,13 @@ export function activate(ctx: vscode.ExtensionContext) {
                                                 {
                                                     enableScripts: false,
                                                     localResourceRoots: [],
+                                                    portMapping: [
+                                                        {
+                                                            webviewPort: PORT,
+                                                            extensionHostPort:
+                                                                PORT,
+                                                        },
+                                                    ],
                                                 }
                                             );
                                         panel.webview.html = html;
