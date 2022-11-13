@@ -44,7 +44,8 @@
 
 # ⚠️ 注意事项
 
--   **建议登陆后使用, 这样可以避免许多奇奇怪怪的问题**
+-   **未登录/国外 IP (比如使用 GitHub CodeSpaces 或梯子)可能会出现许多奇奇怪怪的
+    问题**
 -   **请不要用这个扩展玩 u3d 或新的 flash 游戏, 此扩展不会支持这类游戏**
 -   VSCode 版本为 1.71.0 以下的用户需要
     [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement) 才
@@ -53,7 +54,7 @@
 
 # 📢 已知问题
 
--   一些依赖本地服务器的功能无法在 GitHub CodeSpaces 上使用（比如玩小游戏）
+-   Flash 游戏可能无法在 GitHub CodeSpaces 上玩
 -   不能在任何一个游戏未完全加载完成前多开另一个游戏(页游不受限制)
 -   如果焦点在游戏界面上, 大多数 VSCode 内的快捷键可能会失效
 -   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)

@@ -125,7 +125,7 @@ let searchTimeout; // 延迟获取搜索建议
 const KEYTAR_SERVICE = "4399-on-vscode";
 const KEYTAR_ACCOUNT = "4399-cookie";
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
-const getScript = (cookie = "") => {
+const getScript = (cookie = "", fullWebServerUri) => {
     let s = "", f = getCfg("scripts", "").split(", ");
     f.forEach(file => {
         if (file)
@@ -140,6 +140,7 @@ const getScript = (cookie = "") => {
     });
     return (`
 <script>
+const FULL_WEB_SERVER_URI = "${fullWebServerUri}";
 // 强制设置 referrer
 Object.defineProperty(document, "referrer", {
     value: "http://www.4399.com/",
@@ -176,7 +177,7 @@ setInterval(() => {
 </script>
 ` + s);
 };
-const getWebviewHtml_h5 = (url, w = "100%", h = "100vh") => `
+const getWebviewHtml_h5 = (fullWebServerUri, cspSource, w = "100%", h = "100vh") => `
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -204,12 +205,17 @@ const getWebviewHtml_h5 = (url, w = "100%", h = "100vh") => `
                 height: ${typeof h === "string" ? h.replace("%", "vh") : h + "vh"};
             }
         </style>
-        <iframe id="ifr" src="${url}" frameborder="0"></iframe>
+        <iframe id="ifr" src="" frameborder="0"></iframe>
+        <script>
+            const IFR_FULL_WEB_SERVER_URI = "${String(fullWebServerUri)}".replaceAll("%3D","=").replaceAll("%26","&")
+            console.log(IFR_FULL_WEB_SERVER_URI);
+            ifr.src = IFR_FULL_WEB_SERVER_URI;
+        </script>
     </body>
 </html>
 
 `;
-const getWebviewHtml_flash = (url, w = "100%", h = "100%") => `
+const getWebviewHtml_flash = (fullWebServerUri, cspSource, w = "100%", h = "100%") => `
 <!DOCTYPE html>
 <html style="height: 100%;margin: 0;padding: 0;">
     <head>
@@ -257,7 +263,9 @@ const getWebviewHtml_flash = (url, w = "100%", h = "100%") => `
     </head>
     <body style="height: 100%;margin: 0;padding: 0;">
         <script>
-            window.play("${url}");
+            const IFR_FULL_WEB_SERVER_URI = "${String(fullWebServerUri)}".replaceAll("%3D","=").replaceAll("%26","&")
+            console.log(IFR_FULL_WEB_SERVER_URI);
+            window.play(IFR_FULL_WEB_SERVER_URI);
         </script>
     </body>
 </html>
@@ -271,6 +279,7 @@ const globalStorage = (context) => {
 function initHttpServer(callback, ref) {
     REF = ref;
     let onRequest = (request, response) => {
+        function log(...p) { } // NOTE: 在需要输出网络请求相关日志时需要注释掉这行代码
         log(request.url, request);
         try {
             if (!request?.url)
@@ -516,6 +525,7 @@ function getPlayUrlForWebGames(urlOrId) {
                 cookieValue, getReqCfg("json"))).data;
             if (data.data?.game?.gameUrl &&
                 data.data.game.gameUrl !== "&addiction=0") {
+                log(data);
                 let url = "https://www.zxwyouxi.com/g/" + gameId;
                 let title = decodeURI(data.data.game.gameName);
                 title = title || url;
@@ -538,7 +548,7 @@ function getPlayUrlForWebGames(urlOrId) {
                 catch (e) {
                     err("写入历史记录失败", String(e));
                 }
-                showWebviewPanel(data.data.game.gameUrl, title, "", true, true);
+                showWebviewPanel(data.data.game.gameUrl, title, "", false);
             }
             else
                 err("无法登录游戏, 或者根本没有这个游戏");
@@ -860,7 +870,7 @@ async function showGameInfo(url) {
             .text()
             .split(/[-_ |，,¦]/gi)[0]
             .replaceAll(/[\n ]/gi, "");
-        let gameId = url.split(/[/.]/gi).at(-2);
+        let gameId = String(parseId(url));
         title = title || "未知";
         gameId = (isNaN(Number(gameId)) ? "未知" : gameId) || "未知";
         vscode.window
@@ -921,7 +931,7 @@ async function showGameInfo(url) {
         err("无法获取游戏页面", String(e));
     }
 }
-async function showWebviewPanel(url, title, type, hasIcon, noPortMapping) {
+async function showWebviewPanel(url, title, type, hasIcon, asExternalUri = true) {
     // try {
     //     panel.dispose();
     // } catch (e) {}
@@ -930,9 +940,6 @@ async function showWebviewPanel(url, title, type, hasIcon, noPortMapping) {
         enableScripts: true,
         retainContextWhenHidden: getCfg("background", true),
         localResourceRoots: [],
-        portMapping: noPortMapping
-            ? []
-            : [{ webviewPort: PORT, extensionHostPort: PORT }],
     });
     panel.onDidDispose(() => {
         delete gameInfoUrls[title];
@@ -948,7 +955,7 @@ async function showWebviewPanel(url, title, type, hasIcon, noPortMapping) {
         try {
             if (url.endsWith(".html") || (url.endsWith(".htm") && DATA)) {
                 const $ = cheerio.load(iconv.decode(DATA, "utf8"));
-                $("head").append(getScript(getCookieSync()));
+                $("head").append(getScript(getCookieSync(), await vscode.env.asExternalUri(vscode.Uri.parse(`http://localhost:${PORT}`))));
                 DATA = $.html();
             }
         }
@@ -956,8 +963,12 @@ async function showWebviewPanel(url, title, type, hasIcon, noPortMapping) {
             err("无法为游戏页面注入优化脚本", String(e));
         }
     type === "fl"
-        ? (panel.webview.html = getWebviewHtml_flash(url))
-        : (panel.webview.html = getWebviewHtml_h5(url));
+        ? (panel.webview.html = getWebviewHtml_flash(asExternalUri
+            ? await vscode.env.asExternalUri(vscode.Uri.parse(url))
+            : url, panel.webview.cspSource))
+        : (panel.webview.html = getWebviewHtml_h5(asExternalUri
+            ? await vscode.env.asExternalUri(vscode.Uri.parse(url))
+            : url, panel.webview.cspSource));
     if (!alerted && getCfg("alert", true)) {
         alerted = true;
         vscode.window
@@ -1216,6 +1227,7 @@ function parseId(url) {
     let u = new URL(url, "https://www.4399.com/");
     let id = u.searchParams.get("gameId") ||
         path.parse(u.pathname).name.split(/[\_\-\.\/]/g)[0];
+    log(url, " -> ", id);
     return Number(id);
 }
 function activate(ctx) {
@@ -1410,208 +1422,202 @@ function activate(ctx) {
             err("无法读取历史记录", String(e));
         }
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.forums", async () => {
-        try {
-            if (threadQp)
-                threadQp.show();
-            // let threadData: [string, number][];
-            // let threadQpItems: vscode.QuickPickItem[] = [];
-            // let forums: Record<string, number> = {};
-            // let threadTimeout: NodeJS.Timeout;
-            // let threadPage = 1;
-            let k = globalStorage(ctx).get("kwd-forums"); // 上次搜索词
-            threadQp = await createQuickPick({
-                value: k || "",
-                title: "4399 on VSCode: 逛群组",
-                prompt: "搜索群组",
-            });
-            const getThreads = async (id, title) => {
-                threads = {};
-                threadData = [];
-                threadQpItems = [];
-                threadQp.busy = true;
-                log("帖子 id: " + id);
-                let d = (await axios_1.default.get(`https://my.4399.com/forums/mtag-${id}`, getReqCfg("arraybuffer"))).data;
-                if (d) {
-                    const $ = cheerio.load(d);
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.forums", () => {
+        login(async () => {
+            try {
+                if (threadQp)
+                    threadQp.show();
+                // let threadData: [string, number][];
+                // let threadQpItems: vscode.QuickPickItem[] = [];
+                // let forums: Record<string, number> = {};
+                // let threadTimeout: NodeJS.Timeout;
+                // let threadPage = 1;
+                let k = globalStorage(ctx).get("kwd-forums"); // 上次搜索词
+                threadQp = await createQuickPick({
+                    value: k || "",
+                    title: "4399 on VSCode: 逛群组",
+                    prompt: "搜索群组",
+                });
+                const getThreads = async (id, title) => {
                     threads = {};
                     threadData = [];
-                    // 获取标题和类型
-                    $("div.listtitle > div.title").each((i, elem) => {
-                        let $title = $(elem).children("a.thread_link");
-                        let id = Number($title.attr("href")?.split("-").at(-1));
-                        let gid = $("div.toplink > a[href*='']");
-                        let title = $title.text();
-                        let type = $(elem).children("a.type").text();
-                        if (!id || isNaN(id) || !title)
-                            return;
-                        type = type || "[顶] ";
-                        title = type + title;
-                        threadData.push([title, id]);
-                        threads[title] = id;
-                    });
-                    threadData.forEach(g => {
-                        threadQpItems.push({
-                            label: g[0],
-                            description: "进入帖子",
-                            alwaysShow: true,
-                        });
-                        threads[g[0]] = g[1];
-                    });
-                    threadQpItems.push({
-                        label: "到底了",
-                        description: "只展示第一页内容",
-                        alwaysShow: true,
-                    });
-                    if (threadQpItems[0]) {
-                        threadQp.items = threadQpItems;
-                        threadQp.title = "群组: " + title;
-                    }
-                    threadQp.busy = false;
-                }
-                else
-                    err("无法获取群组页面");
-            };
-            const search = (kwd) => {
-                clearTimeout(threadTimeout);
-                log("页码: " + threadPage);
-                threadTimeout = setTimeout(() => {
+                    threadQpItems = [];
                     threadQp.busy = true;
-                    axios_1.default
-                        .get("http://my.4399.com/forums/index-getMtags?type=game&keyword=" +
-                        encodeURI(kwd || "") +
-                        "&page=" +
-                        threadPage, getReqCfg("arraybuffer"))
-                        .then(res => {
-                        if (!res.data)
-                            return err("获取搜索建议失败");
-                        res.data = iconv.decode(res.data, "utf8");
-                        let d = res.data;
+                    log("帖子 id: " + id);
+                    let d = (await axios_1.default.get(`https://my.4399.com/forums/mtag-${id}`, getReqCfg("arraybuffer"))).data;
+                    if (d) {
                         const $ = cheerio.load(d);
                         threads = {};
                         threadData = [];
-                        threadQpItems = [];
-                        $("ul > li > a > span.title").each((i, elem) => {
-                            let g = $(elem).text();
-                            let id = $(elem)
-                                .parent()
-                                .attr("href")
-                                ?.split("-")
-                                ?.at(-1);
-                            if (!id || isNaN(Number(id)))
+                        // 获取标题和类型
+                        $("div.listtitle > div.title").each((i, elem) => {
+                            let $title = $(elem).children("a.thread_link");
+                            let id = Number($title.attr("href")?.split("-").at(-1));
+                            let gid = $("div.toplink > a[href*='']");
+                            let title = $title.text();
+                            let type = $(elem).children("a.type").text();
+                            if (!id || isNaN(id) || !title)
                                 return;
-                            id = Number(id);
-                            threadData.push([g, id]);
-                            threads[g] = id;
+                            type = type || "[顶] ";
+                            title = type + title;
+                            threadData.push([title, id]);
+                            threads[title] = id;
                         });
                         threadData.forEach(g => {
                             threadQpItems.push({
                                 label: g[0],
-                                description: "群组 id: " + g[1],
+                                description: "进入帖子",
                                 alwaysShow: true,
                             });
                             threads[g[0]] = g[1];
                         });
                         threadQpItems.push({
-                            label: "下一页",
-                            description: "加载下一页内容",
+                            label: "到底了",
+                            description: "只展示第一页内容",
                             alwaysShow: true,
                         });
-                        if (threadQpItems[0])
+                        if (threadQpItems[0]) {
                             threadQp.items = threadQpItems;
+                            threadQp.title = "群组: " + title;
+                        }
                         threadQp.busy = false;
-                    })
-                        .catch(e => {
-                        return err("获取搜索建议失败", String(e));
-                    });
-                }, 1000);
-            };
-            threadQp.onDidChangeValue(kwd => {
-                if (kwd === threadSearchValue)
-                    return (threadQp.items = threadQpItems);
-                threadQp.title = "4399 on VSCode: 逛群组";
-                threadSearchValue = kwd;
-                threadPage = 1;
-                search(kwd);
-            });
-            threadQp.onDidAccept(async () => {
-                if (threadQp.activeItems[0].label === "下一页") {
-                    threadPage++;
-                    search(threadQp.value);
-                }
-                else if (threadQp.activeItems[0].description?.includes("群组 id")) {
-                    getThreads(threads[threadQp.activeItems[0].label], threadQp.activeItems[0].label);
-                    globalStorage(context).set("kwd-forums", threadQp.value);
-                }
-                else if (threadQp.activeItems[0].description === "进入帖子")
-                    try {
-                        if (threadQp.activeItems[0].label) {
-                            threadQp.hide();
-                            let id = threads[threadQp.activeItems[0].label];
-                            let d = (await axios_1.default.get(`https://my.4399.com/forums/thread-${id}`, getReqCfg("arraybuffer"))).data;
-                            if (d) {
-                                const $ = cheerio.load(d);
-                                let title = $("div.host_main_title > a").text();
-                                if (!title)
-                                    err("无法获取帖子页面: 标题为空");
-                                // 强制使用 http
-                                $("img").each((i, elem) => {
-                                    let s = $(elem).attr("src");
-                                    if (s && !s.startsWith("http")) {
-                                        s = s.replace("//", "http://");
-                                        $(elem).attr("src", s);
-                                    }
+                    }
+                    else
+                        err("无法获取群组页面");
+                };
+                const search = (kwd) => {
+                    clearTimeout(threadTimeout);
+                    log("页码: " + threadPage);
+                    threadTimeout = setTimeout(() => {
+                        threadQp.busy = true;
+                        axios_1.default
+                            .get("http://my.4399.com/forums/index-getMtags?type=game&keyword=" +
+                            encodeURI(kwd || "") +
+                            "&page=" +
+                            threadPage, getReqCfg("arraybuffer"))
+                            .then(res => {
+                            if (!res.data)
+                                return err("获取搜索建议失败");
+                            res.data = iconv.decode(res.data, "utf8");
+                            let d = res.data;
+                            const $ = cheerio.load(d);
+                            threads = {};
+                            threadData = [];
+                            threadQpItems = [];
+                            $("ul > li > a > span.title").each((i, elem) => {
+                                let g = $(elem).text();
+                                let id = $(elem)
+                                    .parent()
+                                    .attr("href")
+                                    ?.split("-")
+                                    ?.at(-1);
+                                if (!id || isNaN(Number(id)))
+                                    return;
+                                id = Number(id);
+                                threadData.push([g, id]);
+                                threads[g] = id;
+                            });
+                            threadData.forEach(g => {
+                                threadQpItems.push({
+                                    label: g[0],
+                                    description: "群组 id: " + g[1],
+                                    alwaysShow: true,
                                 });
-                                // 解除防盗链限制
-                                $("img").each((i, elem) => {
-                                    let s = "http://localhost:" +
-                                        PORT +
-                                        "/proxy/" +
-                                        $(elem).attr("src");
-                                    $(elem).attr("src", s);
-                                });
-                                $(".host_content.user_content.j-thread-content").css();
-                                let html = `
+                                threads[g[0]] = g[1];
+                            });
+                            threadQpItems.push({
+                                label: "下一页",
+                                description: "加载下一页内容",
+                                alwaysShow: true,
+                            });
+                            if (threadQpItems[0])
+                                threadQp.items = threadQpItems;
+                            threadQp.busy = false;
+                        })
+                            .catch(e => {
+                            return err("获取搜索建议失败", String(e));
+                        });
+                    }, 1000);
+                };
+                threadQp.onDidChangeValue(kwd => {
+                    if (kwd === threadSearchValue)
+                        return (threadQp.items = threadQpItems);
+                    threadQp.title = "4399 on VSCode: 逛群组";
+                    threadSearchValue = kwd;
+                    threadPage = 1;
+                    search(kwd);
+                });
+                threadQp.onDidAccept(async () => {
+                    if (threadQp.activeItems[0].label === "下一页") {
+                        threadPage++;
+                        search(threadQp.value);
+                    }
+                    else if (threadQp.activeItems[0].description?.includes("群组 id")) {
+                        getThreads(threads[threadQp.activeItems[0].label], threadQp.activeItems[0].label);
+                        globalStorage(context).set("kwd-forums", threadQp.value);
+                    }
+                    else if (threadQp.activeItems[0].description === "进入帖子")
+                        try {
+                            if (threadQp.activeItems[0].label) {
+                                threadQp.hide();
+                                let id = threads[threadQp.activeItems[0].label];
+                                let fullWebServerUri = await vscode.env.asExternalUri(vscode.Uri.parse("http://localhost:" + PORT));
+                                let d = (await axios_1.default.get(`https://my.4399.com/forums/thread-${id}`, getReqCfg("arraybuffer"))).data;
+                                if (d) {
+                                    const $ = cheerio.load(d);
+                                    let title = $("div.host_main_title > a").text();
+                                    if (!title)
+                                        err("无法获取帖子页面: 标题为空");
+                                    // 强制使用 http
+                                    $("img").each((i, elem) => {
+                                        let s = $(elem).attr("src");
+                                        if (s && !s.startsWith("http")) {
+                                            s = s.replace("//", "http://");
+                                            $(elem).attr("src", s);
+                                        }
+                                    });
+                                    // 解除防盗链限制
+                                    $("img").each((i, elem) => {
+                                        let u = new URL("/proxy/" + $(elem).attr("src"), String(fullWebServerUri));
+                                        $(elem).attr("src", String(u));
+                                    });
+                                    $(".host_content.user_content.j-thread-content").css();
+                                    let html = `
                                         <style>* {color: #888;}</style>
                                         <h1>${title}</h1>
                                         <a href="https://my.4399.com/forums/thread-${id}">在浏览器中打开</a> ` +
-                                    String($($(".post_author_name_text")[0]).text()) +
-                                    " " +
-                                    String($(".host_title").html()) +
-                                    " " +
-                                    String($(".host_content.user_content.j-thread-content")
-                                        .html()
-                                        ?.replaceAll(/(#ffffff|#fff)/gi, "transparent"));
-                                initHttpServer(() => {
-                                    panel =
-                                        vscode.window.createWebviewPanel("4399OnVscode", title || "4399 on VSCode", vscode.ViewColumn.Active, {
-                                            enableScripts: false,
-                                            localResourceRoots: [],
-                                            portMapping: [
-                                                {
-                                                    webviewPort: PORT,
-                                                    extensionHostPort: PORT,
-                                                },
-                                            ],
-                                        });
-                                    panel.webview.html = html;
-                                }, "http://my.4399.com/");
+                                        String($($(".post_author_name_text")[0]).text()) +
+                                        " " +
+                                        String($(".host_title").html()) +
+                                        " " +
+                                        String($(".host_content.user_content.j-thread-content")
+                                            .html()
+                                            ?.replaceAll(/(#ffffff|#fff)/gi, "transparent"));
+                                    initHttpServer(() => {
+                                        panel =
+                                            vscode.window.createWebviewPanel("4399OnVscode", title || "4399 on VSCode", vscode.ViewColumn.Active, {
+                                                enableScripts: false,
+                                                localResourceRoots: [],
+                                            });
+                                        panel.webview.html = html;
+                                    }, "http://my.4399.com/");
+                                }
+                                else
+                                    err("无法获取帖子页面");
                             }
-                            else
-                                err("无法获取帖子页面");
                         }
-                    }
-                    catch (e) {
-                        err("无法获取帖子页面", String(e));
-                    }
-            });
-            threadQp.show();
-            if (!threadSearchValue)
-                search(k || "");
-        }
-        catch (e) {
-            err("无法获取群组页面", String(e));
-        }
+                        catch (e) {
+                            err("无法获取帖子页面", String(e));
+                        }
+                });
+                threadQp.show();
+                if (!threadSearchValue)
+                    search(k || "");
+            }
+            catch (e) {
+                err("无法获取群组页面", String(e));
+            }
+        });
     }));
     context = ctx;
     fs.mkdir(path.join(DATA_DIR, "cache/icon"), { recursive: true }, err => { });

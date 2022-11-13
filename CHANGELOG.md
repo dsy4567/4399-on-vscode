@@ -1,5 +1,9 @@
 # 4399 on VSCode - 更新日志
 
+## v0.2.10
+
+-   🚀 优化 GitHub CodeSpaces 上的使用体验
+
 ## v0.2.8
 
 -   ✨ 新增使用更安全的系统提供的凭据管理器存储 cookie
