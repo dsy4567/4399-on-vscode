@@ -1,28 +1,5 @@
 /*
 
-MIT License
-
-Copyright (c) 2022 dsy4567 (https://github.com/dsy4567/ ; dsy4567@outlook.com)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-----------
-
 版权所有（c）2022 dsy4567（https://github.com/dsy4567/ ; dsy4567@outlook.com）
 
 反996许可证版本1.0
@@ -49,36 +26,58 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ----------
 
-“死妈的防沉迷”许可证 第一版（草案）
+“死妈的防沉迷”许可证　第一版（草案）
 
-版权所有 （c） 2022 dsy4567
+版权所有　（c）　2022　dsy4567（https://github.com/dsy4567/ ; dsy4567@outlook.com）
 
-    在符合下列条件的情况下，特此免费向任何得到本授权作品的副本（包括源代码、文件和/或相关内容
-，以下统称为“授权作品”）的个人和法人实体授权：被授权个人或法人实体有权以任何目的处置授权作品，
-包括但不限于使用、复制，修改，衍生利用、散布，发布和再许可：
+简介
 
+　　《“死妈的防沉迷”许可证》是一份面向软件及其他类型作品的版权许可协议，它旨在制约制定、实施
+或遵守防沉迷通知以及为上述行为提供条件或便利的个人或法人实体的发展，并强迫这些个人或法人实体权
+衡自身行为。
 
-    1. 个人或法人实体必须在授权作品的每个再散布或衍生副本上包含以上版权声明和本许可证，不得自
-    行修改。
+　　下文是有关使用、复制、修改、衍生利用、散布、发布和再许可的严谨描述和实施条件。
 
-    2. 个人或法人实体不得实施《国家新闻出版署关于进一步严格管理 切实防止未成年人沉迷网络游戏
-    的通知》<https://www.nppa.gov.cn/nppa/contents/279/98792.shtml>（国新出发〔2021〕
-    14号）内的任何要求。
+〇、定义
 
-    3. 个人或法人实体不得为国家新闻出版署防止未成年人沉迷网络游戏举报平台
-    <https://jubao.chinaso.com/>（以下简称为“举报平台”）和网络游戏防沉迷实名认证系统
-    <https://wlc.nppa.gov.cn/fcm_company/index.html)（以下简称为“实名认证系统”）的宣传、访
-    问、使用和正常运营提供便利，也不得组织和/或参与举报平台和实名认证系统的运营活动，以及宣传
-    、访问和使用举报平台和实名认证系统。
+　　“本许可证”指《“死妈的防沉迷”许可证　第一版（草案）》；
+　　“本作品”指任何在本许可证保护下的有版权的作品（包括源代码、文件和/或相关内容）；
+　　“版权持有人”可以是个人或法人实体；
+　　“您”指接收本作品的副本的个人或法人实体；
+　　“防沉迷通知”指《国家新闻出版署关于进一步严格管理　切实防止未成年人沉迷网络游戏的通知》（国
+新出发〔2021〕14号）；<https://www.nppa.gov.cn/nppa/contents/279/98792.shtml>
+　　“举报平台”指国家新闻出版署防止未成年人沉迷网络游戏举报平台；
+<https://jubao.chinaso.com/>
+　　“实名认证系统”指网络游戏防沉迷实名认证系统。
+<https://wlc.nppa.gov.cn/fcm_company/index.html>
 
-    4. 个人或法人实体不得与不满足以上条件的其他个人或法人实体有合作、隶属、投资或被投资关系。
+一、本作品的处置
 
+　　在符合本许可证的条件的情况下，您有权以任何目的处置本作品（包括但不限于使用、复制、修改、衍
+生利用、散布、发布和再许可），且不必事先取得版权持有人的同意。
 
-    该授权作品是"按原样"提供，不做任何明示或暗示的保证，包括但不限于对适销性、特定用途适用性
-和非侵权性的保证。在任何情况下，无论是在合同诉讼、侵权诉讼或其他诉讼中，版权持有人均不承担因
-本软件或本软件的使用或其他交易而产生、引起或与之相关的任何索赔、损害或其他责任。
+二、版权声明
 
-    条款和条件结束。
+　　您必须在授权作品的每个再散布或衍生副本上包含以上版权声明和本许可证，不得自行修改。
+
+三、您的行为的限制
+
+　　在您使用、复制、修改、衍生利用、散布、发布或再许可本作品的副本后及前30日内，您应当满足以下
+条件：
+　　您未遵守或实施防沉迷通知内的任何要求，且未参与或组织防沉迷通知的编写、制定或修订活动；
+　　您未为举报平台和实名认证系统及其衍生副本的制作、使用、复制、修改、衍生利用、散布、发布和正
+常运营提供条件或便利，或制作、使用、复制、修改、衍生利用、散布或发布举报平台或实名认证系统及其
+衍生副本，且未组织或参与举报平台或实名认证系统的运营或维护活动；
+　　您未与不满足第三条条件的其他个人或法人实体有隶属、投资或被投资关系。
+
+四、品质担保和免责声明
+
+　　在适用的法律范围内，除非另有书面说明，否则版权持有人不对本作品的品质作任何担保，如果本作品
+的缺陷（例如程序的质量和性能问题）引发了任何程度的损失和后果（例如数据丢失或损坏、无法与其他程
+序协同工作），那么版权持有人不为此承担任何责任，即使他（们）声称本作品没有任何缺陷，且您需要自
+行承担为此花费的修复费用或其他必要费用以及损失和责任。
+
+　　条款和条件结束。
 
 */
 
