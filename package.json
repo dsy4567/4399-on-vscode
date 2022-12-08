@@ -124,6 +124,11 @@
         "commands": [
             {
                 "category": "4399 on VSCode",
+                "command": "4399-on-vscode.more-action",
+                "title": "更多操作"
+            },
+            {
+                "category": "4399 on VSCode",
                 "command": "4399-on-vscode.special",
                 "title": "推荐"
             },

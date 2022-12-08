@@ -93,6 +93,7 @@ import * as os from "os";
 import * as path from "path";
 import * as mime from "mime";
 import * as keytar from "keytar";
+import G = require("glob");
 
 interface History {
     date: string;
@@ -2116,6 +2117,46 @@ export function activate(ctx: vscode.ExtensionContext) {
                     err("无法获取群组页面", String(e));
                 }
             });
+        })
+    );
+
+    ctx.subscriptions.push(
+        vscode.commands.registerCommand("4399-on-vscode.more-action", () => {
+            vscode.window
+                .showQuickPick(["启动本地服务器", "启动简易浏览器"])
+                .then(async val => {
+                    if (val === "启动本地服务器")
+                        initHttpServer(
+                            async () => {
+                                server =
+                                    (await vscode.window.showInputBox({
+                                        title: "请输入被代理的服务器域名",
+                                        value: "szhong.4399.com",
+                                    })) || "szhong.4399.com";
+                                gamePath =
+                                    (await vscode.window.showInputBox({
+                                        title: "请输入游戏入口路径(可选)",
+                                        placeHolder: "/foo/bar",
+                                    })) || "/proxy/https://www.4399.com/";
+                                let u = new URL(gamePath, "http://" + server);
+                                if (u.pathname === "/")
+                                    u.pathname = "/proxy/https://www.4399.com/";
+                                gameUrl = u.toString();
+                            },
+                            await vscode.window.showInputBox({
+                                title: "请输入 referer (可选)",
+                                placeHolder: "https://www.4399.com/",
+                            })
+                        );
+                    else if (val === "启动简易浏览器")
+                        showWebviewPanel(
+                            (await vscode.window.showInputBox({
+                                title: "请输入网址",
+                                value: "https://www.4399.com/",
+                            })) || "https://www.4399.com/",
+                            "简易浏览器"
+                        );
+                });
         })
     );
 
