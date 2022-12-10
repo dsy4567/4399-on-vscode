@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="128" src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
+<img width="128" src="https://raw.fastgit.org/dsy4567/dsy4567.github.io/main/icon.png" alt="logo" title="logo" />
 
 <h1 align="center">4399 on VSCode</h1>
 
@@ -10,7 +10,6 @@
 [![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/stars/dsy4567.4399-on-vscode.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=dsy4567.4399-on-vscode)
 [![GitHub Stars](https://img.shields.io/github/stars/dsy4567/4399-on-vscode.svg?style=flat-square)](https://github.com/dsy4567/4399-on-vscode)
 
-<img src="https://dsy4567.github.io/4-o-v.gif" alt="演示" title="演示" />
 </div>
 
 > 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏
@@ -35,7 +34,8 @@
 -   🔧 自定义标题(摸鱼必备)
 -   💬 逛群组
 -   ❔ 随机游戏
--   📚 注入自定义 HTML 代码片段
+-   📚 注入自定义 HTML 代码片段 (
+    点[这里](https://dsy4567.github.io/4ov-scripts/)获取更多)
 
 # 🔨 使用方法
 

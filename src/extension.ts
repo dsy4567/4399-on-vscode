@@ -148,20 +148,23 @@ const KEYTAR_ACCOUNT = "4399-cookie";
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 const getScript = (cookie: string = "", fullWebServerUri: vscode.Uri) => {
     let s: string = "",
-        f = (getCfg("scripts", "") as string).split(", ");
+        f = fs.readdirSync(path.join(DATA_DIR, "html-scripts/"));
     f.forEach(file => {
-        if (file)
+        if (
+            file &&
+            fs.statSync(path.join(DATA_DIR, "html-scripts/", file)).isFile()
+        )
             try {
                 s += fs
-                    .readFileSync(path.join(DATA_DIR, "scripts/", file))
+                    .readFileSync(path.join(DATA_DIR, "html-scripts/", file))
                     .toString();
             } catch (e) {
                 err(
-                    `读取 HTML 代码片段文件${path.join(
+                    `读取 HTML 代码片段文件 ${path.join(
                         DATA_DIR,
-                        "scripts/",
+                        "html-scripts/",
                         file
-                    )}时出错`,
+                    )} 时出错`,
                     e
                 );
             }
@@ -2162,41 +2165,17 @@ export function activate(ctx: vscode.ExtensionContext) {
 
     context = ctx;
     fs.mkdir(path.join(DATA_DIR, "cache/icon"), { recursive: true }, err => {});
-    fs.mkdir(path.join(DATA_DIR, "scripts"), { recursive: true }, err => {});
-    if (!fs.existsSync(path.join(DATA_DIR, "scripts/example.html")))
+    fs.mkdir(
+        path.join(DATA_DIR, "html-scripts"),
+        { recursive: true },
+        err => {}
+    );
+    if (!fs.existsSync(path.join(DATA_DIR, "html-scripts/example.html")))
         fs.writeFile(
-            path.join(DATA_DIR, "scripts/example.html"),
+            path.join(DATA_DIR, "html-scripts/example.html"),
             `\
 <!-- 由 4399 on VSCode 创建的示例 HTML 代码片段 -->
-<script>
-    // 打开链接
-    // fetch("/openUrl/https://www.4399.com/flash/227465.htm")
-    // 屏蔽广告
-    /*
-    window.addEventListener("load", function () {
-        h5api.playAd = function (cb) {
-            cb({
-                code: 10001,
-                message: "播放结束",
-            });
-        };
-        h5api.canPlayAd = function (cb) {
-            cb({
-                canPlayAd: true,
-                remain: 99999,
-            });
-            return true;
-        };
-    });
-    */
-</script>
-<style>
-    /*
-    .myDiv{
-        color: #fff;
-    }
-    */
-</style>
+<!-- 去这里看看吧 https://github.com/dsy4567/4ov-scripts -->
 `,
             err => {}
         );

@@ -80,7 +80,7 @@
                 },
                 "4399-on-vscode.injectionScript": {
                     "default": true,
-                    "description": "控制是否向 Webview 注入用于优化体验以及设置 cookie 的脚本",
+                    "markdownDescription": "控制是否向 Webview 注入用于优化体验以及设置 cookie 的 html 代码片段, 文件存放在 `(主目录)/.4ov-data/html-scripts/`, 点[这里](https://dsy4567.github.io/4ov-scripts/)可以获取更多",
                     "type": "boolean"
                 },
                 "4399-on-vscode.showIcon": {
@@ -103,12 +103,6 @@
                     "description": "控制是否允许游戏后台运行",
                     "type": "boolean"
                 },
-                "4399-on-vscode.scripts": {
-                    "default": "",
-                    "scope": "machine",
-                    "markdownDescription": "要向 h5 小游戏入口页面注入的自定义 HTML 代码片段的文件名, 文件存放在`(主目录)/.4ov-data/scripts/`, 多个文件应使用英文逗号 + 空格(`, `)隔开, 例如`addStyle.htm, addScript.html`",
-                    "type": "string"
-                },
                 "4399-on-vscode.alert": {
                     "default": true,
                     "description": "控制是否在游戏开始前显示温馨提示",
@@ -122,11 +116,6 @@
             }
         },
         "commands": [
-            {
-                "category": "4399 on VSCode",
-                "command": "4399-on-vscode.more-action",
-                "title": "更多操作"
-            },
             {
                 "category": "4399 on VSCode",
                 "command": "4399-on-vscode.special",
@@ -159,6 +148,11 @@
             },
             {
                 "category": "4399 on VSCode",
+                "command": "4399-on-vscode.forums",
+                "title": "逛群组"
+            },
+            {
+                "category": "4399 on VSCode",
                 "command": "4399-on-vscode.history",
                 "title": "历史记录"
             },
@@ -169,8 +163,8 @@
             },
             {
                 "category": "4399 on VSCode",
-                "command": "4399-on-vscode.forums",
-                "title": "逛群组"
+                "command": "4399-on-vscode.more-action",
+                "title": "更多操作"
             }
         ]
     },
