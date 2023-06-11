@@ -12,8 +12,7 @@
 
 </div>
 
-> 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏
-> 伤身，合理安排时间，享受健康生活
+> 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏伤身，合理安排时间，享受健康生活
 
 > 如果觉得好用, 请不要吝啬[star](https://github.com/dsy4567/4399-on-vscode)
 
@@ -34,8 +33,7 @@
 -   🔧 自定义标题(摸鱼必备)
 -   💬 逛群组
 -   ❔ 随机游戏
--   📚 注入自定义 HTML 代码片段 (
-    点[这里](https://dsy4567.cf/4ov-scripts/)获取更多)
+-   📚 注入自定义 HTML 代码片段（点[这里](https://dsy4567.cf/4ov-scripts/)获取更多）
 
 # 🔨 使用方法
 
@@ -76,10 +74,13 @@ copy(document.cookie);
 
 # 🤝 特别感谢
 
-这个扩展依赖的, 超棒的项目
+这个扩展依赖的项目
 
 -   [axios](https://github.com/axios/axios)
 -   [cheerio](https://github.com/cheeriojs/cheerio)
+-   [cookie](https://github.com/jshttp/cookie)
+-   [iconv-lite](https://github.com/ashtuchkin/iconv-lite)
+-   [mime](https://github.com/broofa/mime)
 -   [ruffle](https://github.com/ruffle-rs/ruffle)
 
 给我灵感的项目
@@ -89,8 +90,7 @@ copy(document.cookie);
 
 # ⚖️ 许可证
 
-4399 on vscode 在反“996”许可证 和 “死妈的防沉迷”许可证 下获得许可，
-有关详细信息，请查阅随源代码提供的文件：
+4399 on vscode 在反“996”许可证 和 “死妈的防沉迷”许可证 下获得许可，有关详细信息，请查阅随源代码提供的文件：
 
 -   LICENSE-ANTI996
 -   LICENSE-MFAIL

@@ -95,7 +95,6 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as mime from "mime";
-import * as keytar from "keytar";
 
 interface History {
     date: string;
@@ -166,8 +165,6 @@ let searchedGames: Record<string, number> = {};
 /** 延迟获取搜索建议 */
 let searchTimeout: NodeJS.Timeout;
 
-const KEYTAR_SERVICE = "4399-on-vscode";
-const KEYTAR_ACCOUNT = "4399-cookie";
 /** e.g. "C:\users\you\.4ov-data\", "/home/you/.4ov-data/" */
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 /** 获取要注入的 HTML 代码片段 */
@@ -571,7 +568,7 @@ function openUrl(url: string) {
 }
 /** 输出日志, 受用户配置影响(推荐优先使用) */
 function log(...arg: any) {
-    if (!getCfg("outputLogs")) return;
+    if (!getCfg("printLogs")) return;
 
     console.log("[4399 on VSCode]", ...arg);
 }
@@ -631,14 +628,13 @@ function getCfg(
         | "user-agent"
         | "referer"
         | "port"
-        | "outputLogs"
+        | "printLogs"
         | "title"
-        | "injectionScript"
+        | "injectionScripts"
         | "showIcon"
         | "openUrl"
         | "updateHistory"
         | "background"
-        | "scripts"
         | "alert"
         | "use-credential-manager",
     defaultValue: any = undefined
@@ -659,7 +655,6 @@ function setCfg(name: string, val: any) {
 }
 /**
  * 获取存放小游戏的服务器
- * @returns e.g. Promise<"szhong.4399.com">
  */
 async function getServer(server_matched: RegExpMatchArray): Promise<string> {
     try {
@@ -792,7 +787,7 @@ async function getPlayUrl(url: string) {
 
             let server_matched = html
                 .replaceAll(" ", "")
-                .match(/src\=\"\/js\/server.*\.js\"/i);
+                .match(/src\=\"\/js\/(server|s[0-9]).*\.js\"/i);
             let gamePath_matched = html.match(
                 /\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\"/i
             );
@@ -1265,7 +1260,7 @@ async function showWebviewPanel(
     );
 
     // 注入脚本
-    if (type !== "fl" && getCfg("injectionScript", true))
+    if (type !== "fl" && getCfg("injectionScripts", true))
         try {
             if (url.endsWith(".html") || (url.endsWith(".htm") && DATA)) {
                 const $ = cheerio.load(iconv.decode(DATA as Buffer, "utf8"));
@@ -1381,52 +1376,24 @@ async function showWebviewPanel(
 async function setCookie(c: string = ""): Promise<void> {
     COOKIE = c;
     return new Promise(async (resolve, reject) => {
-        if (getCfg("use-credential-manager", false))
-            try {
-                globalStorage(context).set("cookie", "");
-                c === ""
-                    ? keytar.deletePassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT)
-                    : keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, c);
-                resolve();
-            } catch (e) {
-                err("无法设置 cookie", e);
-                reject(e);
-            }
-        else
-            try {
-                globalStorage(context).set("cookie", c);
-                keytar.deletePassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
-                resolve();
-            } catch (e) {
-                err("无法设置 cookie", e);
-                reject(e);
-            }
+        try {
+            context.secrets.store("cookie", c);
+            resolve();
+        } catch (e) {
+            err("无法设置 cookie", e);
+            reject(e);
+        }
     });
 }
 /** 获取 cookie */
 async function getCookie(): Promise<string> {
     return new Promise(async (resolve, reject) => {
-        if (getCfg("use-credential-manager", false))
-            try {
-                let c, c2;
-                c = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
-                if (!c) {
-                    c2 = globalStorage(context).get("cookie");
-                    if (!c2) c2 = "";
-                    keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, c2);
-                }
-                resolve((COOKIE = c || c2 || ""));
-            } catch (e) {
-                err("无法获取 cookie", e);
-                reject(e);
-            }
-        else
-            try {
-                resolve((COOKIE = globalStorage(context).get("cookie") || ""));
-            } catch (e) {
-                err("无法获取 cookie", e);
-                reject(e);
-            }
+        try {
+            resolve((COOKIE = (await context.secrets.get("cookie")) || ""));
+        } catch (e) {
+            err("无法获取 cookie", e);
+            reject(e);
+        }
     });
 }
 /** 即时获取 cookie */
@@ -1699,7 +1666,7 @@ export function activate(ctx: vscode.ExtensionContext) {
 
     ctx.subscriptions.push(
         vscode.commands.registerCommand(
-            "4399-on-vscode.special", // 推荐
+            "4399-on-vscode.recommended", // 推荐
             () => {
                 axios
                     .get("https://www.4399.com/", getReqCfg("arraybuffer"))
@@ -2366,5 +2333,20 @@ export function activate(ctx: vscode.ExtensionContext) {
         );
     // 初始化cookie
     getCookieSync();
+
+    axios.interceptors.request.use(
+        function (config) {
+            let u = new URL(config.url || "https://www.4399.com");
+            u.protocol = "https:"; // 强制 https
+            // 域名检测
+            if (u.hostname !== "4399.com" || !u.hostname.endsWith(".4399.com"))
+                config.headers && (config.headers["cookie"] = "");
+            return config;
+        },
+        function (error) {
+            return Promise.reject(error);
+        }
+    );
+
     console.log("4399 on VSCode is ready!");
 }
