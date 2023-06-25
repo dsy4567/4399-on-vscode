@@ -33,7 +33,7 @@
 -   🔧 自定义标题(摸鱼必备)
 -   💬 逛群组
 -   ❔ 随机游戏
--   📚 注入自定义 HTML 代码片段（点[这里](https://dsy4567.cf/4ov-scripts/)获取更多）
+-   📚 注入自定义 HTML 代码片段（点[这里](https://dsy4567.github.io/4ov-scripts/)获取更多）
 
 # 🔨 使用方法
 
