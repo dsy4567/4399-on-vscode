@@ -148,10 +148,9 @@ let searchTimeout;
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 /** 获取要注入的 HTML 代码片段 */
 const getScript = (cookie = "", fullWebServerUri) => {
-    let s = "", f = fs.readdirSync(path.join(DATA_DIR, "html-scripts/"));
+    let s = "", f = (getCfg("scripts") || "").split(", ");
     f.forEach(file => {
-        if (file &&
-            fs.statSync(path.join(DATA_DIR, "html-scripts/", file)).isFile())
+        if (file)
             try {
                 s += fs
                     .readFileSync(path.join(DATA_DIR, "html-scripts/", file))
@@ -530,7 +529,7 @@ function createQuickPick(o) {
 }
 /**
  * 获取工作区配置
- * @param name 去掉 "4399-on-vscode." 后的配置 id
+ * @param name 去掉 "4399-on-vscode." 后的配置 ID
  * @param defaultValue 找不到配置时的返回值
  */
 function getCfg(name, defaultValue = undefined) {
@@ -540,7 +539,7 @@ function getCfg(name, defaultValue = undefined) {
 }
 /**
  * 更改工作区配置
- * @param name 去掉 "4399-on-vscode." 后的配置 id
+ * @param name 去掉 "4399-on-vscode." 后的配置 ID
  * @param val 更改后的配置值
  */
 function setCfg(name, val) {
@@ -571,7 +570,7 @@ async function getServer(server_matched) {
 }
 /**
  * 获取 h5 页游的真实地址
- * @param urlOrId 游戏详情页链接或游戏 id(字符串)
+ * @param urlOrId 游戏详情页链接或游戏 ID(字符串)
  */
 function getPlayUrlForWebGames(urlOrId) {
     login(async (c) => {
@@ -824,7 +823,7 @@ async function searchGames(s) {
                 searchData.forEach(g => {
                     searchQpItems.push({
                         label: g[0],
-                        description: "游戏 id: " + g[1],
+                        description: "游戏 ID: " + g[1],
                         alwaysShow: true,
                     });
                 });
@@ -878,7 +877,7 @@ async function searchGames(s) {
                 searchData.forEach(g => {
                     searchQpItems.push({
                         label: g[0],
-                        description: "游戏 id: " + g[1],
+                        description: "游戏 ID: " + g[1],
                         alwaysShow: true,
                     });
                     searchedGames[g[0]] = g[1];
@@ -952,7 +951,7 @@ async function showGameInfo(url) {
             .showQuickPick([
             "🎮 游戏名: " + title,
             "📜 简介: " + desc,
-            "🆔 游戏 id: " + gameId,
+            "🆔 游戏 ID: " + gameId,
             "ℹ️ " + $("div.cls").text(),
             "❤️ 添加到收藏盒",
             "🌏 在浏览器中打开详情页面",
@@ -1283,7 +1282,7 @@ function objectToQuery(obj, prefix) {
         return query;
     }, "");
 }
-/** 游戏详情页链接转游戏 id */
+/** 游戏详情页链接转游戏 ID */
 function parseId(url) {
     if (!isNaN(Number(url)))
         return url;
@@ -1293,22 +1292,43 @@ function parseId(url) {
     log(url, " -> ", id);
     return Number(id);
 }
+/** 签到 */
+function checkIn(quiet) {
+    login(async () => {
+        try {
+            let data = (await axios_1.default.get("https://my.4399.com/plugins/sign/set-t-" +
+                new Date().getTime(), getReqCfg("json"))).data;
+            if (data.result === null)
+                err("签到失败, 其他错误: " + data.msg);
+            else if (typeof data.result === "string")
+                !quiet && vscode.window.showInformationMessage(data.result);
+            else if (typeof data.result === "object")
+                !quiet &&
+                    vscode.window.showInformationMessage(`签到成功, 您已连续签到${data.result.days}天`);
+            else
+                err("签到失败, 返回数据非法");
+        }
+        catch (e) {
+            err("签到失败: ", String(e));
+        }
+    });
+}
 /** 入口 */
-function activate(ctx) {
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", // 试试手气(有几率失败)
-    () => {
+async function activate(ctx) {
+    // 试试手气(有几率失败)
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.random", () => {
         getPlayUrl("https://www.4399.com/flash/" +
             String(Math.floor(Math.random() * 10000) + 200000) +
             ".htm");
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get", // 输入游戏 id (链接以 http(s)://www.4399.com/flash/ 开头)
-    () => {
+    // 输入游戏 ID (链接以 http(s)://www.4399.com/flash/ 开头)
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get", () => {
         let i = globalStorage(ctx).get("id1");
         vscode.window
             .showInputBox({
             value: i ? String(i) : "222735",
-            title: "4399 on VSCode: 输入游戏 id",
-            prompt: "输入游戏链接或 http(s)://www.4399.com/flash/ 后面的数字(游戏 id)",
+            title: "4399 on VSCode: 输入游戏 ID",
+            prompt: "输入游戏链接或 http(s)://www.4399.com/flash/ 后面的数字(游戏 ID)",
         })
             .then(id => {
             if (id) {
@@ -1318,14 +1338,14 @@ function activate(ctx) {
             }
         });
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get-h5-web-game", // 输入游戏 id (链接以 http(s)://www.zxwyouxi.com/g/ 开头)
-    () => {
+    // 输入游戏 ID (链接以 http(s)://www.zxwyouxi.com/g/ 开头)
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get-h5-web-game", () => {
         let i = globalStorage(ctx).get("id2");
         vscode.window
             .showInputBox({
             value: i ? String(i) : "100060323",
-            title: "4399 on VSCode: 输入游戏 id",
-            prompt: "输入游戏链接或 http(s)://www.zxwyouxi.com/g/ 后面的数字(游戏 id)",
+            title: "4399 on VSCode: 输入游戏 ID",
+            prompt: "输入游戏链接或 http(s)://www.zxwyouxi.com/g/ 后面的数字(游戏 ID)",
         })
             .then(id => {
             if (id) {
@@ -1335,8 +1355,8 @@ function activate(ctx) {
             }
         });
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.recommended", // 推荐
-    () => {
+    // 推荐
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.recommended", () => {
         axios_1.default
             .get("https://www.4399.com/", getReqCfg("arraybuffer"))
             .then(res => {
@@ -1376,13 +1396,13 @@ function activate(ctx) {
             err("无法获取4399首页: ", e);
         });
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.search", // 搜索
-    () => {
+    // 搜索
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.search", () => {
         let s = globalStorage(ctx).get("kwd"); // 上次搜索词
         searchGames(s);
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.my", // 我的
-    () => {
+    // 我的
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.my", () => {
         login(c => {
             let Pnick = cookie.parse(c)["Pnick"] || "未知";
             Pnick = Pnick === "0" ? "未知" : Pnick;
@@ -1433,34 +1453,19 @@ function activate(ctx) {
                     else if (value.includes("我玩过的"))
                         getGames("https://gprp.4399.com/cg/get_gamehistory.php?page_size=100", "played_gids");
                     else if (value.includes("签到"))
-                        try {
-                            let data = (await axios_1.default.get("https://my.4399.com/plugins/sign/set-t-" +
-                                new Date().getTime(), getReqCfg("json"))).data;
-                            if (data.result === null)
-                                err("签到失败, 其他错误: " +
-                                    data.msg);
-                            else if (typeof data.result === "string")
-                                vscode.window.showInformationMessage(data.result);
-                            else if (typeof data.result === "object")
-                                vscode.window.showInformationMessage(`签到成功, 您已连续签到${data.result.days}天`);
-                            else
-                                err("签到失败, 返回数据非法");
-                        }
-                        catch (e) {
-                            err("签到失败: ", String(e));
-                        }
+                        checkIn();
                     else if (value.includes("退出登录"))
                         login(() => { }, true);
                 }
             });
         });
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.info", // 游戏详情
-    async () => {
+    // 游戏详情
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.detail", async () => {
         showGameInfo();
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.history", // 历史记录
-    () => {
+    // 历史记录
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.history", () => {
         try {
             let h = globalStorage(ctx).get("history");
             if (!h || (typeof h === "object" && !h[0]))
@@ -1475,9 +1480,7 @@ function activate(ctx) {
             h.forEach(obj => {
                 quickPickList.push(obj.name + obj.date);
             });
-            vscode.window
-                .showQuickPick(quickPickList)
-                .then(gameName => {
+            vscode.window.showQuickPick(quickPickList).then(gameName => {
                 if (gameName === "🧹 清空历史记录")
                     return globalStorage(ctx).set("history", []);
                 if (gameName)
@@ -1497,8 +1500,8 @@ function activate(ctx) {
             err("无法读取历史记录", String(e));
         }
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.forums", // 逛群组
-    () => {
+    // 逛群组
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.forums", () => {
         login(async () => {
             try {
                 if (threadQp)
@@ -1519,7 +1522,7 @@ function activate(ctx) {
                     threadData = [];
                     threadQpItems = [];
                     threadQp.busy = true;
-                    log("帖子 id: " + id);
+                    log("帖子 ID: " + id);
                     let d = (await axios_1.default.get(`https://my.4399.com/forums/mtag-${id}`, getReqCfg("arraybuffer"))).data;
                     if (d) {
                         const $ = cheerio.load(d);
@@ -1528,15 +1531,10 @@ function activate(ctx) {
                         // 获取标题和类型
                         $("div.listtitle > div.title").each((i, elem) => {
                             let $title = $(elem).children("a.thread_link");
-                            let id = Number($title
-                                .attr("href")
-                                ?.split("-")
-                                .at(-1));
+                            let id = Number($title.attr("href")?.split("-").at(-1));
                             let gid = $("div.toplink > a[href*='']");
                             let title = $title.text();
-                            let type = $(elem)
-                                .children("a.type")
-                                .text();
+                            let type = $(elem).children("a.type").text();
                             if (!id || isNaN(id) || !title)
                                 return;
                             type = type || "[顶] ";
@@ -1601,7 +1599,7 @@ function activate(ctx) {
                             threadData.forEach(g => {
                                 threadQpItems.push({
                                     label: g[0],
-                                    description: "群组 id: " + g[1],
+                                    description: "群组 ID: " + g[1],
                                     alwaysShow: true,
                                 });
                                 threads[g[0]] = g[1];
@@ -1633,12 +1631,11 @@ function activate(ctx) {
                         threadPage++;
                         search(threadQp.value);
                     }
-                    else if (threadQp.activeItems[0].description?.includes("群组 id")) {
+                    else if (threadQp.activeItems[0].description?.includes("群组 ID")) {
                         getThreads(threads[threadQp.activeItems[0].label], threadQp.activeItems[0].label);
                         globalStorage(context).set("kwd-forums", threadQp.value);
                     }
-                    else if (threadQp.activeItems[0].description ===
-                        "进入帖子")
+                    else if (threadQp.activeItems[0].description === "进入帖子")
                         try {
                             if (threadQp.activeItems[0].label) {
                                 threadQp.hide();
@@ -1654,16 +1651,14 @@ function activate(ctx) {
                                     // 强制使用 http
                                     $("img").each((i, elem) => {
                                         let s = $(elem).attr("src");
-                                        if (s &&
-                                            !s.startsWith("http")) {
+                                        if (s && !s.startsWith("http")) {
                                             s = s.replace("//", "http://");
                                             $(elem).attr("src", s);
                                         }
                                     });
                                     // 解除防盗链限制
                                     $("img").each((i, elem) => {
-                                        let u = new URL("/proxy/" +
-                                            $(elem).attr("src"), String(fullWebServerUri));
+                                        let u = new URL("/proxy/" + $(elem).attr("src"), String(fullWebServerUri));
                                         $(elem).attr("src", String(u));
                                     });
                                     $("#send-floor,[class*='user_actions'],script,style,link,meta,object").remove();
@@ -1703,9 +1698,7 @@ function activate(ctx) {
                                         .replaceAll(/(javascript|on.+=)/gi, "ovo");
                                     initHttpServer(() => {
                                         panel =
-                                            vscode.window.createWebviewPanel("4399OnVscode", title ||
-                                                "4399 on VSCode", vscode.ViewColumn
-                                                .Active, {
+                                            vscode.window.createWebviewPanel("4399OnVscode", title || "4399 on VSCode", vscode.ViewColumn.Active, {
                                                 enableScripts: false,
                                                 localResourceRoots: [],
                                             });
@@ -1729,12 +1722,18 @@ function activate(ctx) {
             }
         });
     }));
-    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.more-action", // 更多操作
-    () => {
+    // 更多操作
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.more-action", () => {
         vscode.window
-            .showQuickPick(["启动本地服务器", "启动简易浏览器"])
+            .showQuickPick([
+            "安装 HTML 代码片段",
+            "启动本地服务器",
+            "启动简易浏览器",
+        ])
             .then(async (val) => {
-            if (val === "启动本地服务器")
+            if (val === "安装 HTML 代码片段")
+                openUrl("https://dsy4567.github.io/4ov-scripts/");
+            else if (val === "启动本地服务器")
                 initHttpServer(async () => {
                     server =
                         (await vscode.window.showInputBox({
@@ -1748,8 +1747,7 @@ function activate(ctx) {
                         })) || "/proxy/https://www.4399.com/";
                     let u = new URL(gamePath, "http://" + server);
                     if (u.pathname === "/")
-                        u.pathname =
-                            "/proxy/https://www.4399.com/";
+                        u.pathname = "/proxy/https://www.4399.com/";
                     gameUrl = u.toString();
                 }, await vscode.window.showInputBox({
                     title: "请输入 referer (可选)",
@@ -1764,25 +1762,47 @@ function activate(ctx) {
     }));
     context = ctx;
     // 初始化数据目录
-    fs.mkdir(path.join(DATA_DIR, "cache/icon"), { recursive: true }, err => { });
-    fs.mkdir(path.join(DATA_DIR, "html-scripts"), { recursive: true }, err => { });
+    fs.mkdir(path.join(DATA_DIR, "cache/icon"), { recursive: true }, err => {
+        err && console.error(err);
+    });
+    fs.mkdir(path.join(DATA_DIR, "html-scripts"), { recursive: true }, err => {
+        err && console.error(err);
+    });
     if (!fs.existsSync(path.join(DATA_DIR, "html-scripts/example.html")))
         fs.writeFile(path.join(DATA_DIR, "html-scripts/example.html"), `\
 <!-- 由 4399 on VSCode 创建的示例 HTML 代码片段 -->
-<!-- 去这里看看吧 https://github.com/dsy4567/4ov-scripts -->
-`, err => { });
-    // 初始化cookie
-    getCookieSync();
+<!-- 去这里看看吧 https://dsy4567.github.io/4ov-scripts/ -->
+`, err => {
+            err && console.error(err);
+        });
     axios_1.default.interceptors.request.use(function (config) {
-        let u = new URL(config.url || "https://www.4399.com");
+        let u = new URL(config.url || "https://www.example.com");
         u.protocol = "https:"; // 强制 https
         // 域名检测
-        if (u.hostname !== "4399.com" || !u.hostname.endsWith(".4399.com"))
+        if (u.hostname !== "4399.com" && !u.hostname.endsWith(".4399.com"))
             config.headers && (config.headers["cookie"] = "");
+        config.url && (config.url = "" + u);
         return config;
     }, function (error) {
         return Promise.reject(error);
     });
+    // 初始化cookie, 已登录则检查登录状态
+    (await getCookie()) &&
+        axios_1.default
+            .get("https://u.4399.com/profile/index.html", getReqCfg("arraybuffer"))
+            .then(async (res) => {
+            const $ = cheerio.load(await iconv.decode(res.data, "utf8"));
+            if (!$("#loginUserNick")[0])
+                vscode.window
+                    .showErrorMessage("登录失败", "退出登录")
+                    .then(val => {
+                    if (val === "退出登录")
+                        setCookie();
+                });
+            else if (getCfg("automatic-check-in"))
+                checkIn(true);
+        })
+            .catch(e => err("获取登录状态失败:", e));
     console.log("4399 on VSCode is ready!");
 }
 exports.activate = activate;

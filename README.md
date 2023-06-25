@@ -28,7 +28,7 @@
 -   🎮 玩 h5 页游(需要登录)和普通的小游戏(h5 和旧 flash 游戏)
 -   🔍 搜索游戏
 -   ✨ 推荐游戏
--   👆 手动输入游戏 id
+-   👆 手动输入游戏 ID
 -   🕒 历史记录
 -   🔧 自定义标题(摸鱼必备)
 -   💬 逛群组
@@ -100,4 +100,4 @@ copy(document.cookie);
 -   https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE-ANTI996
 -   https://github.com/dsy4567/4399-on-vscode/blob/master/LICENSE-MFAIL
 
-游戏由 [4399](http://www.4399.com) 提供, 游戏的版权归各自游戏作者所有
+游戏由 [4399](https://www.4399.com) 提供, 游戏的版权归各自游戏作者所有

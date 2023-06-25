@@ -33,8 +33,8 @@
                 "key": "Alt+NumPad4 Alt+S"
             },
             {
-                "command": "4399-on-vscode.info",
-                "key": "Alt+NumPad4 Alt+I"
+                "command": "4399-on-vscode.detail",
+                "key": "Alt+NumPad4 Alt+D"
             },
             {
                 "command": "4399-on-vscode.history",
@@ -46,7 +46,7 @@
             },
             {
                 "command": "4399-on-vscode.my",
-                "key": "Alt+NumPad4 Alt+m"
+                "key": "Alt+NumPad4 Alt+M"
             }
         ],
         "configuration": {
@@ -83,6 +83,12 @@
                     "markdownDescription": "控制是否向 Webview 注入用于优化体验以及设置 cookie 的 html 代码片段, 文件存放在 `(主目录)/.4ov-data/html-scripts/`, 点[这里](https://dsy4567.github.io/4ov-scripts/)可以获取更多",
                     "type": "boolean"
                 },
+                "4399-on-vscode.scripts": {
+                    "default": "",
+                    "scope": "machine",
+                    "markdownDescription": "要向 h5 小游戏入口页面注入的自定义 HTML 代码片段的文件名, 文件存放在`(主目录)/.4ov-data/html-scripts/`, 多个文件应使用英文逗号 + 空格(`, `)隔开, 例如`addStyle.htm, addScript.html`",
+                    "type": "string"
+                },
                 "4399-on-vscode.showIcon": {
                     "default": true,
                     "description": "控制是否使用游戏图标作为 Webview 的图标",
@@ -103,6 +109,11 @@
                     "description": "控制是否允许游戏后台运行",
                     "type": "boolean"
                 },
+                "4399-on-vscode.automatic-check-in": {
+                    "default": true,
+                    "description": "控制是否自动签到",
+                    "type": "boolean"
+                },
                 "4399-on-vscode.alert": {
                     "default": true,
                     "description": "控制是否在游戏开始前显示温馨提示",
@@ -119,12 +130,12 @@
             {
                 "category": "4399 on VSCode",
                 "command": "4399-on-vscode.get",
-                "title": "输入游戏 id (链接以 http(s)://www.4399.com/flash/ 开头)"
+                "title": "输入游戏 ID (链接以 http(s)://www.4399.com/flash/ 开头)"
             },
             {
                 "category": "4399 on VSCode",
                 "command": "4399-on-vscode.get-h5-web-game",
-                "title": "输入游戏 id (链接以 http(s)://www.zxwyouxi.com/g/ 开头)"
+                "title": "输入游戏 ID (链接以 http(s)://www.zxwyouxi.com/g/ 开头)"
             },
             {
                 "category": "4399 on VSCode",
@@ -133,7 +144,7 @@
             },
             {
                 "category": "4399 on VSCode",
-                "command": "4399-on-vscode.info",
+                "command": "4399-on-vscode.detail",
                 "title": "游戏详情"
             },
             {
@@ -160,6 +171,52 @@
                 "category": "4399 on VSCode",
                 "command": "4399-on-vscode.more-action",
                 "title": "更多操作"
+            }
+        ],
+        "walkthroughs": [
+            {
+                "id": "4399-on-vscode",
+                "title": "4399 on VSCode 入门",
+                "description": "了解如何使用 4399 on VSCode 带薪摸鱼（bushi），并了解更多使用技巧。",
+                "steps": [
+                    {
+                        "id": "play",
+                        "title": "开玩",
+                        "description": "在[推荐游戏](command:4399-on-vscode.recommended)、[搜索游戏](command:4399-on-vscode.search)中找到并启动喜欢的游戏，你也可以[输入游戏 ID](command:4399-on-vscode.get)\n[查看推荐游戏](command:4399-on-vscode.recommended)",
+                        "media": {
+                            "image": "media/play.png",
+                            "altText": "游戏截图：《冰娃与火娃6》"
+                        },
+                        "completionEvents": [
+                            "onCommand:command:4399-on-vscode.recommended",
+                            "onCommand:command:4399-on-vscode.search",
+                            "onCommand:command:4399-on-vscode.get",
+                            "onCommand:command:4399-on-vscode.get-h5-web-game",
+                            "onCommand:command:4399-on-vscode.random"
+                        ]
+                    },
+                    {
+                        "id": "login",
+                        "title": "登录 4399 账号",
+                        "description": "登录 4399 账号后，你可以玩 H5 页游、浏览群组等。\n[登录](command:4399-on-vscode.my)",
+                        "media": {
+                            "image": "media/login.png",
+                            "altText": "登录"
+                        },
+                        "completionEvents": [
+                            "onSettingChanged:4399-on-vscode.my"
+                        ]
+                    },
+                    {
+                        "id": "script",
+                        "title": "安装 HTML 代码片段",
+                        "description": "HTML 代码片段将在 H5 小游戏启动后被注入，可以优化游戏体验或为 4399 on VSCode 添加新功能。\n[安装 HTML 代码片段](https://dsy4567.github.io/4ov-scripts/)",
+                        "media": {
+                            "image": "media/script.png",
+                            "altText": "示例 HTML 代码片段"
+                        }
+                    }
+                ]
             }
         ]
     },
