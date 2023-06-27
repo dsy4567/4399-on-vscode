@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="128" src="https://raw.fastgit.org/dsy4567/dsy4567.github.io/main/icon.png" alt="logo" title="logo" />
+<img width="128" src="https://dsy4567.github.io/icon.png" alt="logo" title="logo" />
 
 <h1 align="center">4399 on VSCode</h1>
 
