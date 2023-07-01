@@ -238,6 +238,20 @@ const getScript = (
     return (
         (includeDefaultScript
             ? `
+<style>
+html, body {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+p.tip4ov {
+    color: #888;
+    position: absolute;
+    top: 0;
+    z-index: -1;
+}
+</style>
 <script>
 // 强制设置 referrer
 Object.defineProperty(document, "referrer", {
@@ -262,6 +276,8 @@ Object.defineProperty(window, "open", {
     },
     writable: true,
 });
+// 加载提示
+document.documentElement.insertAdjacentHTML("beforeend", "<p class='tip4ov'>游戏正在加载，第一次加载需要一些时间，请耐心等待</p>");
 
 ${
     getCfg("enableProxy") && getCfg("enableServiceWorker")
@@ -313,8 +329,16 @@ const getWebviewHtml_h5 = (
                     typeof h === "string" ? h.replace("%", "vh") : h + "vh"
                 };
             }
+
+            p {
+                color: #888;
+                position: absolute;
+                top: 0;
+                z-index: -1;
+            }
         </style>
         <iframe id="ifr" src="" frameborder="0"></iframe>
+        <p>游戏正在加载，第一次加载需要一些时间，请耐心等待</p>
         <script>
             const IFR_FULL_WEB_SERVER_URI = "${String(
                 fullWebServerUri
@@ -387,6 +411,7 @@ const getWebviewHtml_flash = (
         <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     </head>
     <body style="height: 100%;margin: 0;padding: 0;">
+        <p style=color #888;">游戏正在加载，第一次加载需要一些时间，请耐心等待</p>
         <script>
             const IFR_FULL_WEB_SERVER_URI = "${String(
                 fullWebServerUri

@@ -63,7 +63,7 @@
                     "default": "https://www.4399.com/"
                 },
                 "4399-on-vscode.port": {
-                    "description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode (如果端口被占用, 则端口号会自动增加 1)",
+                    "description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode",
                     "type": "integer",
                     "scope": "machine",
                     "default": 44399
@@ -136,7 +136,7 @@
                 },
                 "4399-on-vscode.enableServiceWorker": {
                     "default": true,
-                    "description": "控制是否启用 ServiceWorker, 以便发起跨域请求(不推荐禁用)",
+                    "description": "控制是否启用 ServiceWorker, 以便发起跨域请求(如果性能受到影响, 可以禁用)",
                     "type": "boolean"
                 }
             }

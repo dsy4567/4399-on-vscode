@@ -180,6 +180,20 @@ const getScript = (cookie = "", fullWebServerUri, includeDefaultScript = true) =
     });
     return ((includeDefaultScript
         ? `
+<style>
+html, body {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+p.tip4ov {
+    color: #888;
+    position: absolute;
+    top: 0;
+    z-index: -1;
+}
+</style>
 <script>
 // 强制设置 referrer
 Object.defineProperty(document, "referrer", {
@@ -204,6 +218,8 @@ Object.defineProperty(window, "open", {
     },
     writable: true,
 });
+// 加载提示
+document.documentElement.insertAdjacentHTML("beforeend", "<p class='tip4ov'>游戏正在加载，第一次加载需要一些时间，请耐心等待</p>");
 
 ${getCfg("enableProxy") && getCfg("enableServiceWorker")
             ? 'navigator.serviceWorker.register("/sw-4ov.js");'
@@ -245,8 +261,16 @@ const getWebviewHtml_h5 = (fullWebServerUri, cspSource = "", w = "100%", h = "10
                 width: ${typeof w === "string" ? w : w + "%"};
                 height: ${typeof h === "string" ? h.replace("%", "vh") : h + "vh"};
             }
+
+            p {
+                color: #888;
+                position: absolute;
+                top: 0;
+                z-index: -1;
+            }
         </style>
         <iframe id="ifr" src="" frameborder="0"></iframe>
+        <p>游戏正在加载，第一次加载需要一些时间，请耐心等待</p>
         <script>
             const IFR_FULL_WEB_SERVER_URI = "${String(fullWebServerUri)}".replaceAll("%3D","=").replaceAll("%26","&")
             console.log(IFR_FULL_WEB_SERVER_URI);
@@ -306,6 +330,7 @@ const getWebviewHtml_flash = (fullWebServerUri, cspSource = "", w = "100%", h = 
         <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     </head>
     <body style="height: 100%;margin: 0;padding: 0;">
+        <p style=color #888;">游戏正在加载，第一次加载需要一些时间，请耐心等待</p>
         <script>
             const IFR_FULL_WEB_SERVER_URI = "${String(fullWebServerUri)}".replaceAll("%3D","=").replaceAll("%26","&")
             let u = new URL(IFR_FULL_WEB_SERVER_URI)
