@@ -74,6 +74,7 @@ copy(document.cookie);
 -   [cheerio](https://github.com/cheeriojs/cheerio)
 -   [cookie](https://github.com/jshttp/cookie)
 -   [iconv-lite](https://github.com/ashtuchkin/iconv-lite)
+-   [is-localhost-ip](https://github.com/tinovyatkin/is-localhost-ip)
 -   [mime](https://github.com/broofa/mime)
 -   [ruffle](https://github.com/ruffle-rs/ruffle)
 
