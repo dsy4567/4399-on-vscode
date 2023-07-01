@@ -96,21 +96,25 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const mime = require("mime");
+const isLocalhost = require("is-localhost-ip");
 let COOKIE;
 /** 游戏入口文件 */
 let DATA;
 let HTTP_SERVER;
 let PORT = 44399;
-/** 覆盖用户设置的 referer, 仅用于本地服务器(推荐使用 @link{initHttpServer}) */
+/** 覆盖用户设置的 referer, 仅用于本地服务器(请尽量使用 initHttpServer() 函数设置该值) */
 let REF;
 /** e.g. szhong.4399.com */
 let server = "";
 /** e.g. /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
 let gamePath = "";
-/** e.g. http://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
+/** e.g. https://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
 let gameUrl = "";
-/** e.g. {"原始人部落": "http://www.4399.com/flash/230924.htm"} */
+/** e.g. {"原始人部落": "https://www.4399.com/flash/230924.htm"} */
 let gameInfoUrls = {};
+/** e.g. https://client-zmxyol.3304399.net/client/?... */
+let webGameUrl = "";
+let isFlashGame = false;
 let alerted = false; // 第一次游戏前提示
 /** Webview 面板 */
 let panel;
@@ -124,7 +128,7 @@ let threadQpItems = [];
 /** 已输入的搜索词 */
 let threadSearchValue;
 /** 页码 */
-let threadPage;
+let threadPage = 1;
 /** e.g. threadData[0] == ["造梦无双", 84526] */
 let threadData;
 /** e.g. threads["造梦无双"] == 84526 */
@@ -137,7 +141,7 @@ let searchQpItems = [];
 /** 已输入的搜索词 */
 let searchValue;
 /** 页码 */
-let searchPage;
+let searchPage = 1;
 /** e.g. searchData[0] == ["造梦无双", 210650] */
 let searchData;
 /** e.g. searchedGames["造梦无双"] == 210650 */
@@ -146,8 +150,22 @@ let searchedGames = {};
 let searchTimeout;
 /** e.g. "C:\users\you\.4ov-data\", "/home/you/.4ov-data/" */
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
+/** Service Worker 代码 */
+const getServiceWorker = () => {
+    try {
+        return require("./sw").code;
+    }
+    catch (e) {
+        err("无法获取 ServiceWorker 代码", e);
+        return "";
+    }
+};
 /** 获取要注入的 HTML 代码片段 */
-const getScript = (cookie = "", fullWebServerUri) => {
+const getScript = (cookie = "", fullWebServerUri, includeDefaultScript = true) => {
+    if (!getCfg("injectionScripts", true))
+        return getCfg("enableProxy") && getCfg("enableServiceWorker")
+            ? 'navigator.serviceWorker.register("/sw-4ov.js");'
+            : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})";
     let s = "", f = (getCfg("scripts") || "").split(", ");
     f.forEach(file => {
         if (file)
@@ -160,17 +178,17 @@ const getScript = (cookie = "", fullWebServerUri) => {
                 err(`读取 HTML 代码片段文件 ${path.join(DATA_DIR, "html-scripts/", file)} 时出错`, e);
             }
     });
-    return (`
+    return ((includeDefaultScript
+        ? `
 <script>
-const FULL_WEB_SERVER_URI = "${fullWebServerUri}";
 // 强制设置 referrer
 Object.defineProperty(document, "referrer", {
-    value: "http://www.4399.com/",
+    value: "https://www.4399.com/",
     writable: true,
 });
 // 强制设置 cookie
 Object.defineProperty(document, "cookie", {
-    value: \`${cookie.replaceAll(";", "; ")}\`,
+    value: \`${is4399Domain(server) ? cookie.replaceAll(";", "; ") : ""}\`,
     writable: false,
 });
 // 设置 document.domain 不会报错
@@ -182,24 +200,25 @@ Object.defineProperty(document, "domain", {
 Object.defineProperty(window, "open", {
     value: (url) => {
         console.log(url);
-        fetch("/openUrl/" + url);
+        fetch("/_4ov/openUrl/" + url);
     },
     writable: true,
 });
-// 用户头像
-setInterval(() => {
-    document
-        .querySelectorAll("img[src*='//a.img4399.com/']")
-        ?.forEach((elem) => {
-            if (!elem.src.includes("/proxy/")) {
-                elem.src = "/proxy/" + elem.src;
-            }
-        });
-}, 3000);
+
+${getCfg("enableProxy") && getCfg("enableServiceWorker")
+            ? 'navigator.serviceWorker.register("/sw-4ov.js");'
+            : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"}
 </script>
-` + s);
+`
+        : "") +
+        `
+<script>
+    const FULL_WEB_SERVER_URI = "${fullWebServerUri}";
+    const PORT = ${PORT}
+</script>` +
+        s);
 };
-const getWebviewHtml_h5 = (fullWebServerUri, cspSource, w = "100%", h = "100vh") => `
+const getWebviewHtml_h5 = (fullWebServerUri, cspSource = "", w = "100%", h = "100vh") => `
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -237,7 +256,7 @@ const getWebviewHtml_h5 = (fullWebServerUri, cspSource, w = "100%", h = "100vh")
 </html>
 
 `;
-const getWebviewHtml_flash = (fullWebServerUri, cspSource, w = "100%", h = "100%") => `
+const getWebviewHtml_flash = (fullWebServerUri, cspSource = "", w = "100%", h = "100%") => `
 <!DOCTYPE html>
 <html style="height: 100%;margin: 0;padding: 0;">
     <head>
@@ -260,16 +279,19 @@ const getWebviewHtml_flash = (fullWebServerUri, cspSource, w = "100%", h = "100%
             }
         </style>
         <script>
-            try{ var vscode = acquireVsCodeApi(); } catch (e) {}
             // 打开链接
             Object.defineProperty(window, "open", {
                 value: (url) => {
                     console.log(url);
-                    vscode.postMessage({ open: new URL(url, location.href).href })
+                    fetch("/_4ov/openUrl/" + url);
                 },
                 writable: true,
             });
+            ${getCfg("enableProxy") && getCfg("enableServiceWorker")
+    ? 'navigator.serviceWorker.register("/sw-4ov.js");'
+    : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"}
         </script>
+        ${getScript("", fullWebServerUri, false)}
         <script>
             window.play = function (url) {
                 var html =
@@ -286,8 +308,10 @@ const getWebviewHtml_flash = (fullWebServerUri, cspSource, w = "100%", h = "100%
     <body style="height: 100%;margin: 0;padding: 0;">
         <script>
             const IFR_FULL_WEB_SERVER_URI = "${String(fullWebServerUri)}".replaceAll("%3D","=").replaceAll("%26","&")
-            console.log(IFR_FULL_WEB_SERVER_URI);
-            window.play(IFR_FULL_WEB_SERVER_URI);
+            let u = new URL(IFR_FULL_WEB_SERVER_URI)
+            u.path = "/_4ov/flash"
+            console.log(u);
+            window.play(u);
         </script>
     </body>
 </html>
@@ -309,60 +333,111 @@ const globalStorage = (context) => {
  */
 function initHttpServer(callback, ref) {
     REF = ref;
-    let onRequest = (request, response) => {
+    let onRequest = async (request, response) => {
         function log(...p) { } // NOTE: 在需要输出网络请求相关日志时需要注释掉这行代码
         log(request.url, request);
         try {
             if (!request?.url)
                 response.end(null);
+            else if (request.url.includes("_4ov-flash-player.htm"))
+                response.end(getWebviewHtml_flash(await vscode.env.asExternalUri(vscode.Uri.parse(`http://127.0.0.1:${PORT}/_4ov/flash`))));
+            else if (request.url === "/_4ov/webGame") {
+                response.writeHead(302, {
+                    Location: webGameUrl,
+                });
+                response.end();
+            }
+            else if (request.url === "/_4ov/flash") {
+                response.writeHead(302, {
+                    Location: gamePath,
+                });
+                response.end();
+            }
             else if (request.url === "/") {
                 log("访问根目录直接跳转到游戏入口页面");
                 gamePath !== "/"
                     ? response.writeHead(302, {
-                        Location: gamePath,
+                        Location: isFlashGame
+                            ? new URL("./_4ov-flash-player.html", gameUrl)
+                                .pathname
+                            : gamePath,
                     })
                     : response.writeHead(500, {}); // 防止重复重定向
                 response.end();
             }
-            else if (request.url.startsWith("/proxy/")) {
+            else if (request.url.startsWith("/_4ov/stop/")) {
+                if (request.url.startsWith("/_4ov/stop/" +
+                    globalStorage(context).get("stop-secret"))) {
+                    response.end(null);
+                    HTTP_SERVER?.close();
+                    HTTP_SERVER = undefined;
+                    log("本地服务器已停止");
+                }
+            }
+            else if (request.url.startsWith("/_4ov/proxy/")) {
                 log("代理请求", REF);
-                let u = request.url.substring("/proxy/".length);
-                let h = new URL(u, "https://www.4399.com/").hostname;
-                if (h === "127.0.0.1" || h === "localhost")
-                    u = "";
-                if (u)
+                let u = new URL(request.url.substring("/_4ov/proxy/".length), "https://www.4399.com");
+                if (await isLocalhost(u.hostname))
+                    return response.end(null);
+                if (!getCfg("enableProxy", true)) {
+                    response.writeHead(302, {
+                        Location: "" + u,
+                    });
+                    return response.end(null);
+                }
+                let data = "";
+                request.on("data", function (chunk) {
+                    data += chunk;
+                });
+                request.on("end", function () {
+                    let config = {
+                        data,
+                        url: "" + u,
+                        method: request.method,
+                        responseType: "arraybuffer",
+                        headers: request.headers || {},
+                        validateStatus: () => true,
+                    };
+                    config.headers["user-agent"] = getCfg("user-agent");
+                    config.headers["referer"] =
+                        REF || "https://" + server + "/";
+                    config.headers["cookie"] =
+                        is4399Domain(u.hostname) &&
+                            getCfg("requestWithCookieOn4399Domain")
+                            ? COOKIE
+                            : "";
                     axios_1.default
-                        .get(u, getReqCfg("arraybuffer", true, REF))
+                        .request(config)
                         .then(res => {
                         let headers = res.headers;
+                        getCfg("allowCrossOriginWhenNot4399Domain") &&
+                            (headers["access-control-allow-origin"] = "*");
+                        headers["content-length"] = "";
                         response.writeHead(res.status, headers);
                         response.statusMessage = res.statusText;
                         response.end(res.data);
                     })
                         .catch(e => {
                         response.writeHead(500, {
-                            "Content-Type": "text/plain",
+                            "content-type": "text/plain",
                         });
                         response.statusMessage = e.message;
                         response.end(e.message);
-                        if (!String(e.message).includes("Request failed with status code"))
-                            // 忽略 4xx, 5xx 错误
-                            err("本地服务器出现错误: ", e.message);
                     });
-                else
-                    response.end(null);
+                });
             }
-            else if (request.url.startsWith("/openUrl/") &&
+            else if (request.url.startsWith("/_4ov/openUrl/") &&
                 getCfg("openUrl", true)) {
                 log("打开外链/推荐游戏");
+                response.end(null);
                 let u;
                 try {
-                    u = new URL(request.url.substring("/openUrl/".length), "https://www.4399.com/");
+                    u = new URL(request.url
+                        .substring("/_4ov/openUrl/".length)
+                        .replaceAll("127.0.0.1%3A" + PORT, server), "https://www.4399.com/");
                 }
                 catch (e) {
-                    openUrl(request.url.substring("/openUrl/".length));
-                    response.writeHead(200);
-                    response.end(null);
+                    openUrl(request.url.substring("/_4ov/openUrl/".length));
                     return;
                 }
                 if (u.hostname.endsWith(".4399.com") &&
@@ -370,30 +445,39 @@ function initHttpServer(callback, ref) {
                     getPlayUrl(u.href);
                 else if (u.hostname === "sbai.4399.com" &&
                     u.searchParams.get("4399id"))
-                    getPlayUrl("http://www.4399.com/flash/" +
+                    getPlayUrl("https://www.4399.com/flash/" +
                         u.searchParams.get("4399id") +
                         ".htm");
                 else
-                    openUrl(request.url.substring("/openUrl/".length));
-                response.writeHead(200);
-                response.end(null);
+                    openUrl("" + u);
             }
-            else if (new URL(request.url, "http://localhost:" + PORT).pathname ===
+            else if (request.url.startsWith("/sw-4ov.js")) {
+                response.writeHead(200, { "content-type": "text/javascript" });
+                response.end(getServiceWorker());
+            }
+            else if (request.url.startsWith("/favicon.ico")) {
+                response.writeHead(302, {
+                    Location: "https://dsy4567.github.io/icon.png",
+                });
+                response.end();
+            }
+            else if (new URL(request.url, "http://127.0.0.1:" + PORT).pathname ===
                 gamePath) {
                 log("访问游戏入口页面直接返回数据");
-                let t = mime.getType(request.url || "");
-                t = t || "text/html";
                 response.writeHead(200, {
                     "content-security-policy": "allow-pointer-lock allow-scripts",
-                    "content-type": t + "; charset=utf-8",
+                    "content-type": mime.getType(request.url || "") ||
+                        "text/html" + "; charset=utf-8",
                     "access-control-allow-origin": "*",
                 });
                 response.end(DATA);
             }
             else {
                 log("向 4399 服务器请求游戏文件");
+                let config = getReqCfg("arraybuffer", false, REF);
+                config.validateStatus = status => true;
                 axios_1.default
-                    .get("http://" + server + request.url, getReqCfg("arraybuffer", false, REF))
+                    .get("http://" + server + request.url, config)
                     .then(res => {
                     let headers = res.headers;
                     headers["access-control-allow-origin"] = "*";
@@ -404,19 +488,16 @@ function initHttpServer(callback, ref) {
                     .catch(e => {
                     log(request, request.url);
                     response.writeHead(500, {
-                        "Content-Type": "text/plain",
+                        "content-type": "text/plain",
                     });
                     response.statusMessage = e.message;
                     response.end(e.message);
-                    if (!String(e.message).includes("Request failed with status code"))
-                        // 忽略 4xx, 5xx 错误
-                        err("本地服务器出现错误: ", e.message);
                 });
             }
         }
         catch (e) {
             response.writeHead(500, {
-                "Content-Type": "text/plain",
+                "content-type": "text/plain",
             });
             response.end(String(e));
         }
@@ -430,16 +511,31 @@ function initHttpServer(callback, ref) {
         try {
             HTTP_SERVER = http
                 .createServer(onRequest)
-                .listen(PORT, "localhost", function () {
+                .listen(PORT, "127.0.0.1", function () {
                 log("本地服务器已启动");
                 callback();
             })
-                .on("error", e => {
-                err("本地服务器启动时出错(第一次出现端口占用问题请忽略): ", e.stack);
-                PORT += 1; // 端口第一次被占用时自动 +1
+                .on("error", async (e) => {
+                log("正在尝试关闭已启动的服务器");
+                try {
+                    await axios_1.default.get("http://127.0.0.1:" +
+                        PORT +
+                        "/_4ov/stop/" +
+                        globalStorage(context).get("stop-secret"), {
+                        timeout: 3000,
+                    });
+                }
+                catch (e) { }
+                await (async () => {
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            resolve(null);
+                        }, 500);
+                    });
+                })();
                 HTTP_SERVER = http
                     .createServer(onRequest)
-                    .listen(PORT, "localhost", function () {
+                    .listen(PORT, "127.0.0.1", function () {
                     log("本地服务器已启动");
                     callback();
                 })
@@ -467,7 +563,7 @@ function getReqCfg(responseType, noCookie = false, ref) {
     if (!noCookie)
         c = getCookieSync();
     return {
-        baseURL: "http://www.4399.com",
+        baseURL: "https://www.4399.com",
         responseType: responseType,
         headers: {
             "user-agent": getCfg("user-agent"),
@@ -552,7 +648,7 @@ function setCfg(name, val) {
  */
 async function getServer(server_matched) {
     try {
-        let res = await axios_1.default.get("http://www.4399.com" + server_matched[0].split('"')[1], getReqCfg("text", true));
+        let res = await axios_1.default.get("https://www.4399.com" + server_matched[0].split('"')[1], getReqCfg("text", true));
         if (res.data) {
             log("成功获取到定义游戏服务器的脚本");
             return res.data.split('"')[1].split("/")[2];
@@ -594,7 +690,7 @@ function getPlayUrlForWebGames(urlOrId) {
                 title = title || url;
                 try {
                     gameInfoUrls[title] =
-                        "http://www.4399.com/flash/" +
+                        "https://www.4399.com/flash/" +
                             data.data.game.mainId +
                             ".htm";
                 }
@@ -611,7 +707,7 @@ function getPlayUrlForWebGames(urlOrId) {
                 catch (e) {
                     err("写入历史记录失败", String(e));
                 }
-                showWebviewPanel(data.data.game.gameUrl, title, "", false);
+                showWebviewPanel((webGameUrl = data.data.game.gameUrl), title, "", true, false);
             }
             else
                 err("无法登录游戏, 或者根本没有这个游戏");
@@ -627,9 +723,9 @@ function getPlayUrlForWebGames(urlOrId) {
  */
 async function getPlayUrl(url) {
     if (url.startsWith("//"))
-        url = "http:" + url;
+        url = "https:" + url;
     else if (url.startsWith("/"))
-        url = "http://www.4399.com" + url;
+        url = "https://www.4399.com" + url;
     try {
         loaded(false);
         let res = await axios_1.default.get(url, getReqCfg("arraybuffer"));
@@ -658,7 +754,7 @@ async function getPlayUrl(url) {
                 }
             let server_matched = html
                 .replaceAll(" ", "")
-                .match(/src\=\"\/js\/(server|s[0-9]).*\.js\"/i);
+                .match(/src\=\"\/js\/((server|s[0-9]).*|nitrome)\.js\"/i);
             let gamePath_matched = html.match(/\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\"/i);
             title = title || url;
             if ($("title").text().includes("您访问的页面不存在！") &&
@@ -687,7 +783,7 @@ async function getPlayUrl(url) {
                         .replace(/["]/g, "");
             if (gamePath.includes("gameId="))
                 try {
-                    let u = new URL(gamePath, "http://www.4399.com/");
+                    let u = new URL(gamePath, "https://www.4399.com/");
                     let i = u.searchParams.get("gameId");
                     if (i && !isNaN(Number(i)))
                         return getPlayUrlForWebGames(i);
@@ -709,16 +805,15 @@ async function getPlayUrl(url) {
             log("服务器", s);
             let isFlashPage = false;
             // 简单地判断域名是否有效
-            if (s === "127.0.0.1" || s === "localhost" || /[/:?#\\=&]/g.test(s))
+            if ((await isLocalhost(s)) || /[/:?#\\=&]/g.test(s))
                 return err("游戏服务器域名 " + s + " 非法");
-            if (!s.endsWith(".4399.com") &&
-                s !== "4399.com" &&
+            if (!is4399Domain(s) &&
                 (await vscode.window.showWarningMessage("游戏服务器域名 " +
                     s +
                     " 不以 4399.com 结尾, 是否仍要开始游戏", "是", "否")) !== "是")
                 return;
             server = s;
-            gameUrl = "http://" + s + gamePath;
+            gameUrl = "https://" + s + gamePath;
             if (gameUrl) {
                 if (!$("#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap")[0] &&
                     !gamePath.includes(".swf"))
@@ -749,10 +844,10 @@ async function getPlayUrl(url) {
                         log("成功获取到游戏真实页面", gameUrl);
                         initHttpServer(() => {
                             DATA = res.data;
-                            let u = new URL(gamePath, "http://localhost/");
+                            let u = new URL(gamePath, "http://127.0.0.1:" + PORT);
                             u.port = String(PORT);
                             title = title || url;
-                            showWebviewPanel(u.toString(), title, gamePath.includes(".swf") && "fl", true);
+                            showWebviewPanel("http://127.0.0.1:" + PORT, title, gamePath.includes(".swf") && "fl", true);
                         });
                     }
                 }
@@ -899,7 +994,7 @@ async function searchGames(s) {
             search(searchQp.value);
         }
         else {
-            getPlayUrl(`http://www.4399.com/flash/${searchedGames[searchQp.activeItems[0].label]}.htm`);
+            getPlayUrl(`https://www.4399.com/flash/${searchedGames[searchQp.activeItems[0].label]}.htm`);
             searchQp.hide();
             globalStorage(context).set("kwd", searchQp.value);
         }
@@ -922,11 +1017,9 @@ async function showGameInfo(url) {
     }
     if (!url)
         return;
+    let gameId = String(parseId(url));
     try {
-        if (url.startsWith("//"))
-            url = "http:" + url;
-        else if (url.startsWith("/"))
-            url = "http://www.4399.com" + url;
+        url = "https://www.4399.com/flash/" + gameId + ".htm";
         const html = iconv.decode((await axios_1.default.get(url, getReqCfg("arraybuffer"))).data, "gb2312");
         if (!html)
             return err("无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号(错误发生在获取游戏详情页阶段)");
@@ -944,7 +1037,6 @@ async function showGameInfo(url) {
             .text()
             .split(/[-_ |，,¦]/gi)[0]
             .replaceAll(/[\n ]/gi, "");
-        let gameId = String(parseId(url));
         title = title || "未知";
         gameId = (isNaN(Number(gameId)) ? "未知" : gameId) || "未知";
         vscode.window
@@ -1014,9 +1106,7 @@ async function showGameInfo(url) {
  * @param asExternalUri 没用
  */
 async function showWebviewPanel(url, title, type, hasIcon, asExternalUri = true) {
-    // try {
-    //     panel.dispose();
-    // } catch (e) {}
+    isFlashGame = !!type;
     const customTitle = getCfg("title");
     panel = vscode.window.createWebviewPanel("4399OnVscode", customTitle || title || "4399 on VSCode", vscode.ViewColumn.Active, {
         enableScripts: true,
@@ -1033,24 +1123,23 @@ async function showWebviewPanel(url, title, type, hasIcon, asExternalUri = true)
             openUrl(m.open);
     }, undefined, context.subscriptions);
     // 注入脚本
-    if (type !== "fl" && getCfg("injectionScripts", true))
+    if (new URL(url, "http://127.0.0.1:" + PORT).host === "127.0.0.1:" + PORT &&
+        type !== "fl" &&
+        getCfg("injectionScripts", true))
         try {
-            if (url.endsWith(".html") || (url.endsWith(".htm") && DATA)) {
-                const $ = cheerio.load(iconv.decode(DATA, "utf8"));
-                $("head").append(getScript(getCookieSync(), await vscode.env.asExternalUri(vscode.Uri.parse(`http://localhost:${PORT}`))));
+            if (gamePath.endsWith(".html") ||
+                (gamePath.endsWith(".htm") && DATA)) {
+                const $ = cheerio.load(typeof DATA === "string" ? DATA : iconv.decode(DATA, "utf8"));
+                $("head").append(getScript(getCookieSync(), await vscode.env.asExternalUri(vscode.Uri.parse(`http://127.0.0.1:${PORT}`))));
                 DATA = $.html();
             }
         }
         catch (e) {
             err("无法为游戏页面注入优化脚本", String(e));
         }
-    type === "fl"
-        ? (panel.webview.html = getWebviewHtml_flash(asExternalUri
-            ? await vscode.env.asExternalUri(vscode.Uri.parse(url))
-            : url, panel.webview.cspSource))
-        : (panel.webview.html = getWebviewHtml_h5(asExternalUri
-            ? await vscode.env.asExternalUri(vscode.Uri.parse(url))
-            : url, panel.webview.cspSource));
+    panel.webview.html = getWebviewHtml_h5(asExternalUri
+        ? await vscode.env.asExternalUri(vscode.Uri.parse(url))
+        : url, panel.webview.cspSource);
     if (!alerted && getCfg("alert", true)) {
         alerted = true;
         vscode.window
@@ -1068,7 +1157,7 @@ async function showWebviewPanel(url, title, type, hasIcon, asExternalUri = true)
     };
     if (hasIcon && getCfg("showIcon", true) && title)
         try {
-            let gameId = gameInfoUrls[title].split(/[/.]/gi).at(-2);
+            let gameId = (gameInfoUrls[title].split(/[/.]/gi).at(-2) || "").split("_")[0];
             if (gameId)
                 if (fs.existsSync(path.join(DATA_DIR, `cache/icon/${gameId}.jpg`))) {
                     iconPath = vscode.Uri.file(path.join(DATA_DIR, `cache/icon/${gameId}.jpg`));
@@ -1313,6 +1402,9 @@ function checkIn(quiet) {
         }
     });
 }
+function is4399Domain(hostname) {
+    return hostname === "4399.com" || hostname.endsWith(".4399.com");
+}
 /** 入口 */
 async function activate(ctx) {
     // 试试手气(有几率失败)
@@ -1334,7 +1426,7 @@ async function activate(ctx) {
             if (id) {
                 log("用户输入 ", id);
                 globalStorage(ctx).set("id1", id);
-                getPlayUrl("https://www.4399.com/flash/" + id + ".htm");
+                getPlayUrl("https://www.4399.com/flash/" + parseId(id) + ".htm");
             }
         });
     }));
@@ -1351,7 +1443,7 @@ async function activate(ctx) {
             if (id) {
                 log("用户输入 ", id);
                 globalStorage(ctx).set("id2", id);
-                getPlayUrlForWebGames("https://www.zxwyouxi.com/g/" + id);
+                getPlayUrlForWebGames("https://www.zxwyouxi.com/g/" + parseId(id));
             }
         });
     }));
@@ -1570,7 +1662,7 @@ async function activate(ctx) {
                     threadTimeout = setTimeout(() => {
                         threadQp.busy = true;
                         axios_1.default
-                            .get("http://my.4399.com/forums/index-getMtags?type=game&keyword=" +
+                            .get("https://my.4399.com/forums/index-getMtags?type=game&keyword=" +
                             encodeURI(kwd || "") +
                             "&page=" +
                             threadPage, getReqCfg("arraybuffer"))
@@ -1648,17 +1740,23 @@ async function activate(ctx) {
                                     if (!title)
                                         err("无法获取帖子页面: 标题为空");
                                     // 预处理
-                                    // 强制使用 http
+                                    // 修改 // 为 https://
                                     $("img").each((i, elem) => {
                                         let s = $(elem).attr("src");
-                                        if (s && !s.startsWith("http")) {
-                                            s = s.replace("//", "http://");
-                                            $(elem).attr("src", s);
+                                        if (s) {
+                                            s = s.replaceAll(/ |\n|\%20|\%0A/g, "");
+                                            if (!s.startsWith("http")) {
+                                                s = s.replace("//", "https://");
+                                                $(elem).attr("src", s);
+                                            }
                                         }
                                     });
                                     // 解除防盗链限制
                                     $("img").each((i, elem) => {
-                                        let u = new URL("/proxy/" + $(elem).attr("src"), String(fullWebServerUri));
+                                        let u = new URL("/_4ov/proxy/" +
+                                            $(elem)
+                                                .attr("src")
+                                                ?.replaceAll(/ |\n|\%20|\%0A/g, ""), String(fullWebServerUri));
                                         $(elem).attr("src", String(u));
                                     });
                                     $("#send-floor,[class*='user_actions'],script,style,link,meta,object").remove();
@@ -1680,7 +1778,7 @@ async function activate(ctx) {
                                     let html = 
                                     // 主帖
                                     " <br /> <h1>" +
-                                        ($(".mainPost .host_main_title a").html() || "") + // 震惊, 3 + 3 居然等于 3!
+                                        ($(".mainPost .host_main_title a").html() || "") + // (btd) 震惊, 3 + 3 居然等于 3!
                                         "</h1> <br /> " +
                                         `
                                                <style>* {color: #888;}</style>
@@ -1727,7 +1825,9 @@ async function activate(ctx) {
         vscode.window
             .showQuickPick([
             "安装 HTML 代码片段",
+            "⚠️ 以下选项仅应用于开发用途 ⬇️",
             "启动本地服务器",
+            "关闭本地服务器",
             "启动简易浏览器",
         ])
             .then(async (val) => {
@@ -1744,15 +1844,30 @@ async function activate(ctx) {
                         (await vscode.window.showInputBox({
                             title: "请输入游戏入口路径(可选)",
                             placeHolder: "/foo/bar",
-                        })) || "/proxy/https://www.4399.com/";
+                        })) || "/_4ov/proxy/https://www.4399.com/";
                     let u = new URL(gamePath, "http://" + server);
                     if (u.pathname === "/")
-                        u.pathname = "/proxy/https://www.4399.com/";
+                        u.pathname =
+                            "/_4ov/proxy/https://www.4399.com/";
                     gameUrl = u.toString();
+                    try {
+                        DATA = (await axios_1.default.get(gameUrl, getReqCfg("arraybuffer"))).data;
+                    }
+                    catch (e) {
+                        DATA = "";
+                    }
                 }, await vscode.window.showInputBox({
                     title: "请输入 referer (可选)",
                     placeHolder: "https://www.4399.com/",
                 }));
+            else if (val === "关闭本地服务器")
+                try {
+                    await axios_1.default.get("http://127.0.0.1:" +
+                        PORT +
+                        "/_4ov/stop/" +
+                        globalStorage(context).get("stop-secret"));
+                }
+                catch (e) { }
             else if (val === "启动简易浏览器")
                 showWebviewPanel((await vscode.window.showInputBox({
                     title: "请输入网址",
@@ -1775,13 +1890,18 @@ async function activate(ctx) {
 `, err => {
             err && console.error(err);
         });
+    let stopSecret = Math.random();
+    globalStorage(ctx).set("stop-secret", "" + stopSecret);
+    log("stop-secret:", stopSecret);
     axios_1.default.interceptors.request.use(function (config) {
         let u = new URL(config.url || "https://www.example.com");
-        u.protocol = "https:"; // 强制 https
+        if (!isLocalhost(u.hostname))
+            u.protocol = "https:"; // 强制 https
         // 域名检测
-        if (u.hostname !== "4399.com" && !u.hostname.endsWith(".4399.com"))
+        if (!is4399Domain(u.hostname))
             config.headers && (config.headers["cookie"] = "");
         config.url && (config.url = "" + u);
+        config.headers && (config.headers["host"] = u.hostname);
         return config;
     }, function (error) {
         return Promise.reject(error);
@@ -1799,7 +1919,7 @@ async function activate(ctx) {
                     if (val === "退出登录")
                         setCookie();
                 });
-            else if (getCfg("automatic-check-in"))
+            else if (getCfg("automaticCheckIn"))
                 checkIn(true);
         })
             .catch(e => err("获取登录状态失败:", e));

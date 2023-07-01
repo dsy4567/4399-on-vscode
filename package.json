@@ -2,7 +2,7 @@
     "name": "4399-on-vscode",
     "displayName": "4399 on VSCode",
     "description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-    "version": "0.2.13",
+    "version": "0.3.0",
     "engines": {
         "vscode": "^1.70.0"
     },
@@ -109,14 +109,34 @@
                     "description": "控制是否允许游戏后台运行",
                     "type": "boolean"
                 },
-                "4399-on-vscode.automatic-check-in": {
-                    "default": true,
+                "4399-on-vscode.automaticCheckIn": {
+                    "default": false,
                     "description": "控制是否自动签到",
                     "type": "boolean"
                 },
                 "4399-on-vscode.alert": {
                     "default": true,
                     "description": "控制是否在游戏开始前显示温馨提示",
+                    "type": "boolean"
+                },
+                "4399-on-vscode.enableProxy": {
+                    "default": true,
+                    "markdownDescription": "控制是否启用本地代理, 本地代理的示例请求路径为 `http://127.0.0.1:<port>/_4ov/proxy/https://www.4399.com/`",
+                    "type": "boolean"
+                },
+                "4399-on-vscode.requestWithCookieOn4399Domain": {
+                    "default": true,
+                    "description": "控制本地代理发往 4399.com 域的请求是否应包含 cookie",
+                    "type": "boolean"
+                },
+                "4399-on-vscode.allowCrossOriginWhenNot4399Domain": {
+                    "default": false,
+                    "markdownDescription": "控制是否允许本地代理在响应发往非 4399.com 域的请求时修改 `Access-Control-Allow-Origin` 响应头, 以允许跨域",
+                    "type": "boolean"
+                },
+                "4399-on-vscode.enableServiceWorker": {
+                    "default": true,
+                    "description": "控制是否启用 ServiceWorker, 以便发起跨域请求(不推荐禁用)",
                     "type": "boolean"
                 }
             }
@@ -256,6 +276,7 @@
         "cheerio": "^1.0.0-rc.12",
         "cookie": "^0.5.0",
         "iconv-lite": "^0.6.3",
+        "is-localhost-ip": "^2.0.0",
         "mime": "^3.0.0"
     },
     "icon": "icon.png",
