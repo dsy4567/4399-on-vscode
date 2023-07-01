@@ -364,8 +364,12 @@ function initHttpServer(callback, ref) {
         try {
             if (!request?.url)
                 response.end(null);
-            else if (request.url.includes("_4ov-flash-player.htm"))
+            else if (request.url.includes("_4ov-flash-player.htm")) {
+                response.writeHead(200, {
+                    "content-type": "text/html;charset=utf8",
+                });
                 response.end(getWebviewHtml_flash(await vscode.env.asExternalUri(vscode.Uri.parse(`http://127.0.0.1:${PORT}/_4ov/flash`))));
+            }
             else if (request.url === "/_4ov/webGame") {
                 response.writeHead(302, {
                     Location: webGameUrl,

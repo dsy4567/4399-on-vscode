@@ -448,7 +448,10 @@ function initHttpServer(callback: Function, ref?: string) {
         log(request.url, request);
         try {
             if (!request?.url) response.end(null);
-            else if (request.url.includes("_4ov-flash-player.htm"))
+            else if (request.url.includes("_4ov-flash-player.htm")) {
+                response.writeHead(200, {
+                    "content-type": "text/html;charset=utf8",
+                });
                 response.end(
                     getWebviewHtml_flash(
                         await vscode.env.asExternalUri(
@@ -458,7 +461,7 @@ function initHttpServer(callback: Function, ref?: string) {
                         )
                     )
                 );
-            else if (request.url === "/_4ov/webGame") {
+            } else if (request.url === "/_4ov/webGame") {
                 response.writeHead(302, {
                     Location: webGameUrl,
                 });
