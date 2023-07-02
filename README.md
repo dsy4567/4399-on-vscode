@@ -12,9 +12,13 @@
 
 </div>
 
-> 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏伤身，合理安排时间，享受健康生活
+<div align="center">
 
-> 如果觉得好用, 请不要吝啬[star](https://github.com/dsy4567/4399-on-vscode)
+[赏一颗星](https://github.com/dsy4567/4399-on-vscode) | [Wiki](https://github.com/dsy4567/4399-on-vscode/wiki)
+
+</div>
+
+> 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏伤身，合理安排时间，享受健康生活
 
 # ✨ 简介
 
@@ -40,10 +44,9 @@
 
 # ⚠️ 注意事项
 
--   **未登录/国外 IP (比如使用 GitHub CodeSpaces 或梯子)可能会出现许多奇奇怪怪的
-    问题**
--   **请不要用这个扩展玩 u3d 或新的 flash 游戏, 此扩展不会支持这类游戏**
--   VSCode 版本为 1.71.0 以下的用户需要 [替换 ffmpeg](https://github.com/nondanee/vsc-netease-music#requirement) 才能使少数游戏有声音
+-   **GitHub Codespaces/code-server 请看[这里](https://github.com/dsy4567/4399-on-vscode/wiki/%E8%BF%9C%E7%A8%8B%E5%BC%80%E5%8F%91%E7%9B%B8%E5%85%B3)**
+-   **Flash 游戏的运行依赖 [Ruffle](https://ruffle.rs), 在[这里]()**
+-   请不要用这个扩展玩 u3d 游戏, 此扩展不会支持这类游戏
 -   如果游戏显示方向不正确, 请尽可能让游戏界面变宽(比如取消拆分编辑器)
 
 # 📢 已知问题
