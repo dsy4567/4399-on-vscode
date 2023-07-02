@@ -20,11 +20,11 @@
 
 > 抵制不良游戏，拒绝盗版游戏，注意自我保护，谨防受骗上当，适度游戏益脑，沉迷游戏伤身，合理安排时间，享受健康生活
 
-# ✨ 简介
+## ✨ 简介
 
 4399 on VSCode 是一个牛逼他妈给牛逼开门, 牛逼到家的 VSCode 扩展, 它可以让您在紧张的开发工作之余, 通过玩一会 4399 小游戏, 放松身心, 劳逸结合, 更好地开始接下来的工作
 
-# 👍 功能
+## 👍 功能
 
 -   🖊 登录账号
 -   🎮 玩 h5 页游(需要登录)和普通的小游戏(h5 和 flash 游戏)
@@ -37,25 +37,25 @@
 -   ❔ 随机游戏
 -   📚 注入自定义 HTML 代码片段（点[这里](https://dsy4567.github.io/4ov-scripts/)获取更多）
 
-# 🔨 使用方法
+## 🔨 使用方法
 
 按下 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> , 输入 `4399 on VSCode`
 开始探索
 
-# ⚠️ 注意事项
+## ⚠️ 注意事项
 
 -   **GitHub Codespaces/code-server 请看[这里](https://github.com/dsy4567/4399-on-vscode/wiki/%E8%BF%9C%E7%A8%8B%E5%BC%80%E5%8F%91%E7%9B%B8%E5%85%B3)**
 -   **Flash 游戏的运行依赖 [Ruffle](https://github.com/ruffle-rs/ruffle) 模拟器, 在[这里](https://ruffle.rs/#compatibility)查看支持情况**
 -   请不要用这个扩展玩 u3d 游戏, 此扩展不会支持这类游戏
 -   如果游戏显示方向不正确, 请尽可能让游戏界面变宽(比如取消拆分编辑器)
 
-# 📢 已知问题
+## 📢 已知问题
 
 -   不能在任何一个游戏未完全加载完成前多开另一个游戏(页游不受限制)
 -   如果焦点在游戏界面上, 大多数 VSCode 内的快捷键可能会失效
 -   游戏无法锁定鼠标(尤其是射击类游戏)
 
-# 🍪 获取 cookie
+## 🍪 获取 cookie
 
 cookie 用于登录 h5 页游以及使用更多需要登录的功能
 
@@ -67,7 +67,7 @@ copy(document.cookie);
 
 > 请确保 cookie 里包含 `Pauth` 值
 
-# 🤝 特别感谢
+## 🤝 特别感谢
 
 这个扩展依赖的项目
 
@@ -84,7 +84,7 @@ copy(document.cookie);
 -   [flash collector](https://github.com/cnotech/flash-collector)
 -   [vsc netease music](https://github.com/nondanee/vsc-netease-music)
 
-# ⚖️ 许可证
+## ⚖️ 许可证
 
 4399 on vscode 在反“996”许可证 和 “死妈的防沉迷”许可证 下获得许可，有关详细信息，请查阅随源代码提供的文件：
 
