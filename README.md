@@ -27,7 +27,7 @@
 # 👍 功能
 
 -   🖊 登录账号
--   🎮 玩 h5 页游(需要登录)和普通的小游戏(h5 和旧 flash 游戏)
+-   🎮 玩 h5 页游(需要登录)和普通的小游戏(h5 和 flash 游戏)
 -   🔍 搜索游戏
 -   ✨ 推荐游戏
 -   👆 手动输入游戏 ID
@@ -45,16 +45,14 @@
 # ⚠️ 注意事项
 
 -   **GitHub Codespaces/code-server 请看[这里](https://github.com/dsy4567/4399-on-vscode/wiki/%E8%BF%9C%E7%A8%8B%E5%BC%80%E5%8F%91%E7%9B%B8%E5%85%B3)**
--   **Flash 游戏的运行依赖 [Ruffle](https://ruffle.rs), 在[这里]()**
+-   **Flash 游戏的运行依赖 [Ruffle](https://github.com/ruffle-rs/ruffle) 模拟器, 在[这里](https://ruffle.rs/#compatibility)查看支持情况**
 -   请不要用这个扩展玩 u3d 游戏, 此扩展不会支持这类游戏
 -   如果游戏显示方向不正确, 请尽可能让游戏界面变宽(比如取消拆分编辑器)
 
 # 📢 已知问题
 
--   Flash 游戏可能无法在 GitHub CodeSpaces 上玩
 -   不能在任何一个游戏未完全加载完成前多开另一个游戏(页游不受限制)
 -   如果焦点在游戏界面上, 大多数 VSCode 内的快捷键可能会失效
--   部分游戏半天不能完成加载, 或黑白屏(如果您遇到此问题, 欢迎提交 issue)
 -   游戏无法锁定鼠标(尤其是射击类游戏)
 
 # 🍪 获取 cookie
