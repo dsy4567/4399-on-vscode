@@ -356,33 +356,36 @@ const globalStorage = (context) => {
  * @param callback 服务器启动后要执行的回调
  * @param ref 覆盖用户设置的 referer
  */
-function initHttpServer(callback, ref) {
+async function initHttpServer(callback, ref) {
     REF = ref;
+    const LOCAL_SERVER_HOST = new URL("" +
+        (await vscode.env.asExternalUri(vscode.Uri.parse("http://localhost:" + PORT)))).host;
     let onRequest = async (request, response) => {
         function log(...p) { } // NOTE: 在需要输出网络请求相关日志时需要注释掉这行代码
         log(request.url, request);
         try {
             if (!request?.url)
-                response.end(null);
-            else if (request.url.includes("_4ov-flash-player.htm")) {
+                return response.end(null);
+            let U = new URL(request.url, "http://127.0.0.1:" + PORT);
+            if (U.pathname.includes("_4ov-flash-player.htm")) {
                 response.writeHead(200, {
                     "content-type": "text/html;charset=utf8",
                 });
                 response.end(getWebviewHtml_flash(await vscode.env.asExternalUri(vscode.Uri.parse(`http://127.0.0.1:${PORT}/_4ov/flash`))));
             }
-            else if (request.url === "/_4ov/webGame") {
+            else if (U.pathname === "/_4ov/webGame") {
                 response.writeHead(302, {
                     Location: webGameUrl,
                 });
                 response.end();
             }
-            else if (request.url === "/_4ov/flash") {
+            else if (U.pathname === "/_4ov/flash") {
                 response.writeHead(302, {
                     Location: gamePath,
                 });
                 response.end();
             }
-            else if (request.url === "/") {
+            else if (U.pathname === "/") {
                 log("访问根目录直接跳转到游戏入口页面");
                 gamePath !== "/"
                     ? response.writeHead(302, {
@@ -394,8 +397,8 @@ function initHttpServer(callback, ref) {
                     : response.writeHead(500, {}); // 防止重复重定向
                 response.end();
             }
-            else if (request.url.startsWith("/_4ov/stop/")) {
-                if (request.url.startsWith("/_4ov/stop/" +
+            else if (U.pathname.startsWith("/_4ov/stop/")) {
+                if (U.pathname.startsWith("/_4ov/stop/" +
                     globalStorage(context).get("stop-secret"))) {
                     response.end(null);
                     HTTP_SERVER?.close();
@@ -403,11 +406,13 @@ function initHttpServer(callback, ref) {
                     log("本地服务器已停止");
                 }
             }
-            else if (request.url.startsWith("/_4ov/proxy/")) {
+            else if (U.pathname.startsWith("/_4ov/proxy/")) {
                 log("代理请求", REF);
                 let u = new URL(request.url.substring("/_4ov/proxy/".length), "https://www.4399.com");
-                if (await isLocalhost(u.hostname))
+                if (await isLocalhost(u.hostname)) {
+                    response.writeHead(403);
                     return response.end(null);
+                }
                 if (!getCfg("enableProxy", true)) {
                     response.writeHead(302, {
                         Location: "" + u,
@@ -433,14 +438,13 @@ function initHttpServer(callback, ref) {
                     config.headers["cookie"] =
                         is4399Domain(u.hostname) &&
                             getCfg("requestWithCookieOn4399Domain")
-                            ? COOKIE
+                            ? getCookieSync()
                             : "";
                     axios_1.default
                         .request(config)
                         .then(res => {
                         let headers = res.headers;
-                        getCfg("allowCrossOriginWhenNot4399Domain") &&
-                            (headers["access-control-allow-origin"] = "*");
+                        headers["access-control-allow-origin"] = "";
                         headers["content-length"] = "";
                         response.writeHead(res.status, headers);
                         response.statusMessage = res.statusText;
@@ -455,7 +459,7 @@ function initHttpServer(callback, ref) {
                     });
                 });
             }
-            else if (request.url.startsWith("/_4ov/openUrl/") &&
+            else if (U.pathname.startsWith("/_4ov/openUrl/") &&
                 getCfg("openUrl", true)) {
                 log("打开外链/推荐游戏");
                 response.end(null);
@@ -480,36 +484,35 @@ function initHttpServer(callback, ref) {
                 else
                     openUrl("" + u);
             }
-            else if (request.url.startsWith("/sw-4ov.js")) {
+            else if (U.pathname.startsWith("/sw-4ov.js")) {
                 response.writeHead(200, { "content-type": "text/javascript" });
                 response.end(getServiceWorker());
             }
-            else if (request.url.startsWith("/favicon.ico")) {
+            else if (U.pathname === "/favicon.ico") {
                 response.writeHead(302, {
                     Location: "https://dsy4567.github.io/icon.png",
                 });
                 response.end();
             }
-            else if (new URL(request.url, "http://127.0.0.1:" + PORT).pathname ===
-                gamePath) {
+            else if (U.pathname === gamePath) {
                 log("访问游戏入口页面直接返回数据");
                 response.writeHead(200, {
                     "content-security-policy": "allow-pointer-lock allow-scripts",
-                    "content-type": mime.getType(request.url || "") ||
+                    "content-type": mime.getType(U.pathname || "") ||
                         "text/html" + "; charset=utf-8",
-                    "access-control-allow-origin": "*",
+                    "access-control-allow-origin": "",
                 });
                 response.end(DATA);
             }
             else {
                 log("向 4399 服务器请求游戏文件");
-                let config = getReqCfg("arraybuffer", false, REF);
-                config.validateStatus = status => true;
+                let config = getReqCfg("arraybuffer", true, REF);
+                config.validateStatus = () => true;
                 axios_1.default
                     .get("http://" + server + request.url, config)
                     .then(res => {
                     let headers = res.headers;
-                    headers["access-control-allow-origin"] = "*";
+                    headers["access-control-allow-origin"] = "";
                     response.writeHead(res.status, headers);
                     response.statusMessage = res.statusText;
                     response.end(res.data);

@@ -125,13 +125,8 @@
                     "type": "boolean"
                 },
                 "4399-on-vscode.requestWithCookieOn4399Domain": {
-                    "default": true,
-                    "description": "控制本地代理发往 4399.com 域的请求是否应包含 cookie",
-                    "type": "boolean"
-                },
-                "4399-on-vscode.allowCrossOriginWhenNot4399Domain": {
                     "default": false,
-                    "markdownDescription": "控制是否允许本地代理在响应发往非 4399.com 域的请求时修改 `Access-Control-Allow-Origin` 响应头, 以允许跨域",
+                    "description": "控制本地代理发往 4399.com 域的请求是否应包含 cookie (高风险选项, 非必要请勿启用)",
                     "type": "boolean"
                 },
                 "4399-on-vscode.enableServiceWorker": {
