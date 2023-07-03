@@ -263,6 +263,7 @@
         "glob": "^8.1.0",
         "typescript": "^5.1.6"
     },
+    "packageManager": "pnpm@8.6.5",
     "keywords": [
         "小霸王",
         "游戏",
