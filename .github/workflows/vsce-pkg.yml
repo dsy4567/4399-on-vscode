@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [19.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -21,12 +21,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - name: init
-        run: npm install
-      - name: init-vsce
-        run: npm install -g vsce
-      - name: pkg
+      - name: install pnpm
+        run: npm install -g pnpm
+      - name: install dependencies
+        run: pnpm install
+      - name: install vsce
+        run: pnpm install -g vsce
+      - name: run vsce package
         run: vsce package
       - name: commit
         run: |
@@ -38,10 +39,3 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-#       - name: Publish VS Code Extension
-#         uses: HaaLeo/publish-vscode-extension@v1
-#         with:
-#           # Personal access token
-#           pat: 
-#           # Path to the vsix file to be published. Cannot be used together with packagePath.
-#           extensionFile: 

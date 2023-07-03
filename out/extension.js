@@ -148,6 +148,7 @@ let searchData;
 let searchedGames = {};
 /** 延迟获取搜索建议 */
 let searchTimeout;
+const DIRNAME = __dirname;
 /** e.g. "C:\users\you\.4ov-data\", "/home/you/.4ov-data/" */
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 /** Service Worker 代码 */
@@ -161,7 +162,7 @@ const getServiceWorker = () => {
     }
 };
 /** 获取要注入的 HTML 代码片段 */
-const getScript = (cookie = "", fullWebServerUri, includeDefaultScript = true) => {
+const getScript = (cookie = "", includeDefaultScript = true) => {
     if (!getCfg("injectionScripts", true))
         return getCfg("enableProxy") && getCfg("enableServiceWorker")
             ? 'navigator.serviceWorker.register("/sw-4ov.js");'
@@ -226,15 +227,9 @@ ${getCfg("enableProxy") && getCfg("enableServiceWorker")
             : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"}
 </script>
 `
-        : "") +
-        `
-<script>
-    const FULL_WEB_SERVER_URI = "${fullWebServerUri}";
-    const PORT = ${PORT}
-</script>` +
-        s);
+        : "") + s);
 };
-const getWebviewHtml_h5 = (fullWebServerUri, cspSource = "", w = "100%", h = "100vh") => `
+const getWebviewHtml_h5 = (fullWebServerUri, w = "100%", h = "100vh") => `
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -280,7 +275,7 @@ const getWebviewHtml_h5 = (fullWebServerUri, cspSource = "", w = "100%", h = "10
 </html>
 
 `;
-const getWebviewHtml_flash = (fullWebServerUri, cspSource = "", w = "100%", h = "100%") => `
+const getWebviewHtml_flash = (fullWebServerUri, w = "100%", h = "100%") => `
 <!DOCTYPE html>
 <html style="height: 100%;margin: 0;padding: 0;">
     <head>
@@ -315,7 +310,7 @@ const getWebviewHtml_flash = (fullWebServerUri, cspSource = "", w = "100%", h = 
     ? 'navigator.serviceWorker.register("/sw-4ov.js");'
     : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"}
         </script>
-        ${getScript("", fullWebServerUri, false)}
+        ${getScript("", false)}
         <script>
             window.play = function (url) {
                 var html =
@@ -358,8 +353,6 @@ const globalStorage = (context) => {
  */
 async function initHttpServer(callback, ref) {
     REF = ref;
-    const LOCAL_SERVER_HOST = new URL("" +
-        (await vscode.env.asExternalUri(vscode.Uri.parse("http://localhost:" + PORT)))).host;
     let onRequest = async (request, response) => {
         function log(...p) { } // NOTE: 在需要输出网络请求相关日志时需要注释掉这行代码
         log(request.url, request);
@@ -459,15 +452,17 @@ async function initHttpServer(callback, ref) {
                     });
                 });
             }
-            else if (U.pathname.startsWith("/_4ov/openUrl/") &&
-                getCfg("openUrl", true)) {
+            else if (U.pathname.startsWith("/_4ov/openUrl/")) {
                 log("打开外链/推荐游戏");
                 response.end(null);
+                if (!getCfg("openUrl", true))
+                    return;
                 let u;
                 try {
                     u = new URL(request.url
                         .substring("/_4ov/openUrl/".length)
-                        .replaceAll("127.0.0.1%3A" + PORT, server), "https://www.4399.com/");
+                        .replaceAll("127.0.0.1%3A" + PORT, server)
+                        .replaceAll("127.0.0.1:" + PORT, server));
                 }
                 catch (e) {
                     openUrl(request.url.substring("/_4ov/openUrl/".length));
@@ -486,18 +481,15 @@ async function initHttpServer(callback, ref) {
             }
             else if (U.pathname.startsWith("/sw-4ov.js")) {
                 response.writeHead(200, { "content-type": "text/javascript" });
-                response.end(getServiceWorker());
+                response.end(fs.readFileSync(path.join(DIRNAME, "../resources/sw.js")));
             }
             else if (U.pathname === "/favicon.ico") {
-                response.writeHead(302, {
-                    Location: "https://dsy4567.github.io/icon.png",
-                });
-                response.end();
+                response.writeHead(200, { "content-type": "image/png" });
+                response.end(fs.readFileSync(path.join(DIRNAME, "../icon.png")));
             }
             else if (U.pathname === gamePath) {
                 log("访问游戏入口页面直接返回数据");
                 response.writeHead(200, {
-                    "content-security-policy": "allow-pointer-lock allow-scripts",
                     "content-type": mime.getType(U.pathname || "") ||
                         "text/html" + "; charset=utf-8",
                     "access-control-allow-origin": "",
@@ -686,7 +678,7 @@ async function getServer(server_matched) {
             return res.data.split('"')[1].split("/")[2];
         }
         else
-            throw new Error("无法获取定义游戏服务器的脚本: 响应文本为空, 您可能需要配置 UA 或登录账号");
+            throw new Error("无法获取定义游戏服务器的脚本: 响应为空, 您可能需要配置 UA 或登录账号");
     }
     catch (e) {
         console.error(e);
@@ -882,6 +874,8 @@ async function getPlayUrl(url) {
                             showWebviewPanel("http://127.0.0.1:" + PORT, title, gamePath.includes(".swf") && "fl", true);
                         });
                     }
+                    else
+                        err("无法获取游戏真实页面: 响应为空");
                 }
                 catch (e) {
                     err("无法获取游戏真实页面: ", e);
@@ -962,6 +956,8 @@ async function searchGames(s) {
                 searchQp.items = searchQpItems;
                 searchQp.busy = false;
             }
+            else
+                err("无法获取游戏真实页面: 响应为空");
         })
             .catch(e => {
             err("无法获取4399首页: ", e);
@@ -1162,7 +1158,7 @@ async function showWebviewPanel(url, title, type, hasIcon, asExternalUri = true)
             if (gamePath.endsWith(".html") ||
                 (gamePath.endsWith(".htm") && DATA)) {
                 const $ = cheerio.load(typeof DATA === "string" ? DATA : iconv.decode(DATA, "utf8"));
-                $("head").append(getScript(getCookieSync(), await vscode.env.asExternalUri(vscode.Uri.parse(`http://127.0.0.1:${PORT}`))));
+                $("head").append(getScript(getCookieSync()));
                 DATA = $.html();
             }
         }
@@ -1171,7 +1167,7 @@ async function showWebviewPanel(url, title, type, hasIcon, asExternalUri = true)
         }
     panel.webview.html = getWebviewHtml_h5(asExternalUri
         ? await vscode.env.asExternalUri(vscode.Uri.parse(url))
-        : url, panel.webview.cspSource);
+        : url);
     if (!alerted && getCfg("alert", true)) {
         alerted = true;
         vscode.window
@@ -1300,8 +1296,7 @@ function login(callback, loginOnly = false) {
                             let welcomeMsg = "";
                             if (parsedCookie["Pnick"])
                                 welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
-                            vscode.window.showInformationMessage(welcomeMsg +
-                                "登录成功, 请注意定期更新 cookie");
+                            vscode.window.showInformationMessage(welcomeMsg + "登录成功");
                             callback(c);
                         }
                         catch (e) {
@@ -1355,8 +1350,7 @@ function login(callback, loginOnly = false) {
                                         let welcomeMsg = "";
                                         if (parsedCookie["Pnick"])
                                             welcomeMsg = `亲爱的 ${parsedCookie["Pnick"]}, 您已`;
-                                        vscode.window.showInformationMessage(welcomeMsg +
-                                            "登录成功, 请注意定期重新登录");
+                                        vscode.window.showInformationMessage(welcomeMsg + "登录成功");
                                         callback(cookies);
                                     }
                                     else
@@ -1462,6 +1456,81 @@ async function activate(ctx) {
             }
         });
     }));
+    // 分类
+    ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.category", () => {
+        axios_1.default
+            .get("https://www.4399.com/", getReqCfg("arraybuffer"))
+            .then(res => {
+            if (res.data) {
+                res.data = iconv.decode(res.data, "gb2312");
+                log("成功获取到4399首页");
+                const $ = cheerio.load(res.data);
+                let categories = {};
+                $("a[href*='/flash_fl/'][href*='.htm'], a[href*='/special/'][href*='.htm']").each((i, elem) => {
+                    let categoryName = $(elem)
+                        .text()
+                        .replaceAll(" ", ""), href = $(elem).attr("href");
+                    if (!categoryName ||
+                        !href ||
+                        categoryName.includes("开服") ||
+                        categoryName.includes("网页") ||
+                        categoryName.includes("云游戏"))
+                        return;
+                    categories[categoryName] = href;
+                });
+                let categoryNames = Object.keys(categories);
+                if (!categoryNames[0])
+                    return err("一个分类也没有");
+                vscode.window.showQuickPick(categoryNames).then(val => {
+                    log("用户输入:", val);
+                    if (!val)
+                        return;
+                    let url = categories[val];
+                    log("游戏页面: ", url);
+                    if (!url)
+                        return err("变量 url 可能为 undefined");
+                    axios_1.default
+                        .get(url, getReqCfg("arraybuffer"))
+                        .then(res => {
+                        res.data = iconv.decode(res.data, "gb2312");
+                        log("成功获取到分类页");
+                        const $ = cheerio.load(res.data);
+                        let games = {};
+                        $("a[href*='/flash/'][href*='.htm']")
+                            .has("img")
+                            .each((i, elem) => {
+                            games[$(elem)
+                                .children("img")
+                                .attr("alt")] = $(elem).attr("href");
+                        });
+                        let gameNames = Object.values(games);
+                        if (!gameNames[0])
+                            return err("一个游戏也没有");
+                        vscode.window
+                            .showQuickPick(gameNames)
+                            .then(val => {
+                            log("用户输入:", val);
+                            if (!val)
+                                return;
+                            let url = games[val];
+                            log("游戏页面: ", url);
+                            if (!url)
+                                return err("变量 url 可能为 undefined");
+                            getPlayUrl(url);
+                        });
+                    })
+                        .catch(e => {
+                        err("无法获取分类页: ", e);
+                    });
+                });
+            }
+            else
+                err("无法获取4399首页: 响应为空");
+        })
+            .catch(e => {
+            err("无法获取4399首页: ", e);
+        });
+    }));
     // 输入游戏 ID (链接以 http(s)://www.zxwyouxi.com/g/ 开头)
     ctx.subscriptions.push(vscode.commands.registerCommand("4399-on-vscode.get-h5-web-game", () => {
         let i = globalStorage(ctx).get("id2");
@@ -1488,33 +1557,30 @@ async function activate(ctx) {
                 res.data = iconv.decode(res.data, "gb2312");
                 log("成功获取到4399首页");
                 const $ = cheerio.load(res.data);
-                let gameNames = [], urls = [];
-                $("#skinbody > div.middle_3.cf > div.box_c > div.tm_fun.h_3 > ul > li > a[href*='/flash/']").each((i, elem) => {
-                    urls[i] = $(elem).attr("href");
+                let games = {};
+                $("a[href*='/flash/'][href*='.htm']")
+                    .has("img")
+                    .each((i, elem) => {
+                    games[$(elem)
+                        .children("img")
+                        .attr("alt")] = $(elem).attr("href");
                 });
-                $("#skinbody > div.middle_3.cf > div.box_c > div.tm_fun.h_3 > ul > li > a[href*='/flash/'] > img").each((i, elem) => {
-                    gameNames[i] = $(elem).attr("alt");
-                });
-                if (!gameNames[0] || !urls[0])
-                    return err("一个推荐的游戏也没有");
-                vscode.window
-                    .showQuickPick(gameNames)
-                    .then(val => {
+                let gameNames = Object.values(games);
+                if (!gameNames[0])
+                    return err("一个游戏也没有");
+                vscode.window.showQuickPick(gameNames).then(val => {
                     log("用户输入:", val);
                     if (!val)
                         return;
-                    let index = gameNames.indexOf(val);
-                    log("游戏页面: ", urls[index]);
-                    if (index !== -1) {
-                        let url = urls[index];
-                        if (!url)
-                            return err("变量 url 可能为 undefined");
-                        getPlayUrl(url);
-                    }
-                    else
-                        log("用户似乎取消了操作");
+                    let url = games[val];
+                    log("游戏页面: ", url);
+                    if (!url)
+                        return err("变量 url 可能为 undefined");
+                    getPlayUrl(url);
                 });
             }
+            else
+                err("无法获取4399首页: 响应为空");
         })
             .catch(e => {
             err("无法获取4399首页: ", e);

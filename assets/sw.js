@@ -1,4 +1,4 @@
-export const code = `const whiteList = ["unpkg.com"];
+const whiteList = ["unpkg.com"];
 self.addEventListener("activate", ev => {
     ev.waitUntil(clients.claim());
 });
@@ -52,4 +52,3 @@ self.addEventListener("fetch", ev => {
         })()
     );
 });
-`;
