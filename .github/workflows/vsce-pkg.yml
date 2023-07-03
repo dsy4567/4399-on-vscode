@@ -24,9 +24,9 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.2.4
       - name: install dependencies
-        run: pnpm i
+        run: npm i
       - name: install vsce
-        run: pnpm install -g vsce
+        run: npm i -g vsce
       - name: run vsce package
         run: vsce package
       - name: commit
