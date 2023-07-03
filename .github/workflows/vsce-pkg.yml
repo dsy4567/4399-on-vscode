@@ -25,6 +25,8 @@ jobs:
         run: npm install -g pnpm
       - name: install dependencies
         run: pnpm install
+      - name: run pnpm setup
+        run: pnpm setup
       - name: install vsce
         run: pnpm install -g vsce
       - name: run vsce package
