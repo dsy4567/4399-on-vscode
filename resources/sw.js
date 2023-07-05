@@ -1,3 +1,5 @@
+/** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
+
 const whiteList = ["unpkg.com"];
 self.addEventListener("activate", ev => {
     ev.waitUntil(clients.claim());
@@ -44,9 +46,11 @@ self.addEventListener("fetch", ev => {
                 return new Response(
                     '<p style="color: #888;">[4399 on VSCode] service worker在发出请求时遇到了错误，请检查您的网络连接，或<a href="javascript:navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})">注销 service worker</a>并禁用设置项<abbr title="控制是否启用 ServiceWorker, 以便发起跨域请求(不推荐禁用)"><code>4399-on-vscode.enableServiceWorker</code></abbr></p>',
                     {
-                        status: 408, headers: {
-                        "content-type":"text/html;charset=utf8"
-                    }}
+                        status: 408,
+                        headers: {
+                            "content-type": "text/html;charset=utf8",
+                        },
+                    }
                 );
             }
         })()
