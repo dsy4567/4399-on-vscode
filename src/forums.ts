@@ -19,6 +19,8 @@ import {
 // 群组相关
 let threadQp: vscode.QuickPick<vscode.QuickPickItem>;
 let threadQpItems: vscode.QuickPickItem[] = [];
+let threadId = 0;
+let threadTitle = "";
 /** 已输入的搜索词 */
 let threadSearchValue: string;
 /** 页码 */
@@ -48,10 +50,10 @@ async function main() {
             threadQpItems = [];
             threadQp.busy = true;
 
-            log("帖子 ID: " + id);
+            log("群组 ID: " + id);
             const d: Buffer = (
                 await axios.get(
-                    `https://my.4399.com/forums/mtag-${id}`,
+                    `https://my.4399.com/forums/mtag-${id}?page=${threadPage}`,
                     getReqCfg("arraybuffer")
                 )
             ).data;
@@ -84,8 +86,8 @@ async function main() {
                     threads[g[0]] = g[1];
                 });
                 threadQpItems.push({
-                    label: "到底了",
-                    description: "只展示第一页内容",
+                    label: "下一页",
+                    description: "加载下一页帖子",
                     alwaysShow: true,
                 });
 
@@ -147,7 +149,7 @@ async function main() {
                 });
                 threadQpItems.push({
                     label: "下一页",
-                    description: "加载下一页内容",
+                    description: "加载下一页群组",
                     alwaysShow: true,
                 });
 
@@ -168,16 +170,21 @@ async function main() {
         });
 
         threadQp.onDidAccept(async () => {
-            if (threadQp.activeItems[0].label === "下一页") {
+            if (threadQp.activeItems[0].description === "加载下一页群组") {
                 threadPage++;
                 search(threadQp.value);
             } else if (
+                threadQp.activeItems[0].description === "加载下一页帖子"
+            ) {
+                threadPage++;
+                getThreads(threadId, threadTitle);
+            } else if (
                 threadQp.activeItems[0].description?.includes("群组 ID")
             ) {
-                getThreads(
-                    threads[threadQp.activeItems[0].label],
-                    threadQp.activeItems[0].label
-                );
+                threadPage = 1;
+                threadId = threads[threadQp.activeItems[0].label];
+                threadTitle = threadQp.activeItems[0].label;
+                getThreads(threadId, threadTitle);
                 globalStorage(getContext()).set("kwd-forums", threadQp.value);
             } else if (threadQp.activeItems[0].description === "进入帖子")
                 try {
@@ -281,7 +288,10 @@ async function main() {
                 }
         });
         threadQp.show();
-        if (!threadSearchValue) search(k || "");
+        if (!threadSearchValue) {
+            threadPage = 1;
+            search(k || "");
+        }
     } catch (e) {
         err("无法获取群组页面", String(e));
     }
