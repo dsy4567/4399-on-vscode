@@ -1,21 +1,3 @@
-interface History {
-    date: string;
-    webGame: boolean;
-    name: string;
-    url: string;
-}
-interface GlobalStorage {
-    get(key: "history"): History[];
-    get(key: "cookie" | "kwd" | "kwd-forums" | "stop-secret"): string;
-    get(key: "id1" | "id2"): number | string;
-
-    set(key: "history", value: History[]): Thenable<void>;
-    set(
-        key: "cookie" | "kwd" | "kwd-forums" | "stop-secret",
-        value: string
-    ): Thenable<void>;
-    set(key: "id1" | "id2", value: number | string): Thenable<void>;
-}
 type CfgNames =
     | "user-agent"
     | "referer"
@@ -32,4 +14,28 @@ type CfgNames =
     | "automaticCheckIn"
     | "enableProxy"
     | "requestWithCookieOn4399Domain"
-    | "enableServiceWorker";
+    | "enableServiceWorker"
+    | "RuffleSource";
+type GlobalStorage = {
+    get(key: "history"): History[];
+    get(key: "cookie" | "kwd" | "kwd-forums" | "stop-secret"): string;
+    get(key: "id1" | "id2"): number | string;
+
+    set(key: "history", value: History[]): Thenable<void>;
+    set(
+        key: "cookie" | "kwd" | "kwd-forums" | "stop-secret",
+        value: string
+    ): Thenable<void>;
+    set(key: "id1" | "id2", value: number | string): Thenable<void>;
+};
+type History = {
+    date: string;
+    webGame: boolean;
+    name: string;
+    url: string;
+};
+type Supplements = Record<"_ver", number> &
+    Record<
+        string,
+        { type: "flash"; url: string; title: string; detailUrl: string }
+    >;

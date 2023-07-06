@@ -1,6 +1,12 @@
 /** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
 
-const whiteList = ["unpkg.com"];
+const whiteList = [
+    "cdnjs.cloudflare.com",
+    "jsdelivr.net",
+    "onmicrosoft.cn",
+    "ruffle",
+    "unpkg.com",
+];
 self.addEventListener("activate", ev => {
     ev.waitUntil(clients.claim());
 });
@@ -15,7 +21,14 @@ self.addEventListener("fetch", ev => {
         u.host === location.host ||
         u.pathname.startsWith("/_4ov/") ||
         u.pathname === "/sw-4ov.js" ||
-        whiteList.includes(u.hostname)
+        (() => {
+            let r = false;
+            for (let i = 0; i < whiteList.length; i++) {
+                r = u.href.includes(whiteList[i]);
+                if (r) break;
+            }
+            return r;
+        })()
     )
         return;
     u = "/_4ov/proxy/" + u;

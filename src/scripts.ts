@@ -202,7 +202,14 @@ const getWebviewHtml_flash = (
                 document.body.innerHTML =html
             };
         </script>
-        <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+        <script src="${(() => {
+            try {
+                const u = new URL(getCfg("RuffleSource"));
+                return u;
+            } catch (e) {
+                return "https://unpkg.com/@ruffle-rs/ruffle/ruffle.js";
+            }
+        })()}"></script>
     </head>
     <body style="height: 100%;margin: 0;padding: 0;">
         <p style=color #888;">游戏正在加载，第一次加载需要一些时间，请耐心等待</p>

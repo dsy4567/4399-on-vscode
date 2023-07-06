@@ -2,6 +2,7 @@
 
 import * as fs from "fs";
 import * as http from "http";
+import * as https from "https";
 import * as mime from "mime";
 import isLocalhost = require("is-localhost-ip");
 import * as path from "path";
@@ -37,6 +38,76 @@ let REF: string | undefined;
 async function initHttpServer(callback: Function, ref?: string) {
     REF = ref;
     let onRequest: http.RequestListener = async (request, response) => {
+        function get(
+            request: http.IncomingMessage,
+            response: http.ServerResponse,
+            u: URL
+        ) {
+            let config: https.RequestOptions = {
+                hostname: u.hostname,
+                port: u.port || 443,
+                path: u.pathname + u.search,
+                servername: u.hostname,
+                headers: request.headers || {},
+                method: request.method,
+                setHost: false,
+            };
+            (config.headers as http.OutgoingHttpHeaders)["user-agent"] =
+                getCfg("user-agent");
+            (config.headers as http.OutgoingHttpHeaders)["referer"] =
+                REF || "https://" + getGameInfo().server + "/";
+            (config.headers as http.OutgoingHttpHeaders)["host"] = u.hostname;
+            (config.headers as http.OutgoingHttpHeaders)["cookie"] =
+                is4399Domain(u.hostname) &&
+                getCfg("requestWithCookieOn4399Domain")
+                    ? getCookieSync()
+                    : "";
+            let req = https.request(config, res => {
+                response.writeHead(
+                    res.statusCode || 200,
+                    res.statusMessage,
+                    res.headers
+                );
+                res.on("data", chunk => {
+                    response.write(chunk);
+                });
+                res.on("end", () => {
+                    response.end();
+                });
+                res.on("error", e => {
+                    console.error(e);
+
+                    if (
+                        response.destroyed ||
+                        response.writableEnded ||
+                        request.aborted ||
+                        request.destroyed
+                    )
+                        return;
+                    response.writeHead(500, {
+                        "content-type": "text/plain",
+                    });
+                    response.statusMessage = e.message;
+                    response.end(e.message);
+                });
+            });
+            req.on("error", e => {
+                console.error(e);
+
+                response.writeHead(500, {
+                    "content-type": "text/plain",
+                });
+                response.statusMessage = e.message;
+                response.end(e.message);
+            });
+
+            request.on("data", chunk => {
+                req.write(chunk);
+            });
+            request.on("end", () => {
+                req.end();
+            });
+        }
         function log(...p: any) {} // NOTE: 在需要输出网络请求相关日志时需要注释掉这行代码
 
         log(request.url, request);
@@ -109,45 +180,7 @@ async function initHttpServer(callback: Function, ref?: string) {
                     return response.end(null);
                 }
 
-                let data = "";
-                request.on("data", function (chunk) {
-                    data += chunk;
-                });
-                request.on("end", function () {
-                    let config = {
-                        data,
-                        url: "" + u,
-                        method: request.method,
-                        responseType: "arraybuffer",
-                        headers: (request.headers as AxiosRequestHeaders) || {},
-                        validateStatus: () => true,
-                    };
-                    config.headers["user-agent"] = getCfg("user-agent");
-                    config.headers["referer"] =
-                        REF || "https://" + getGameInfo().server + "/";
-                    config.headers["cookie"] =
-                        is4399Domain(u.hostname) &&
-                        getCfg("requestWithCookieOn4399Domain")
-                            ? getCookieSync()
-                            : "";
-                    axios
-                        .request(config as AxiosRequestConfig<any>)
-                        .then(res => {
-                            let headers = res.headers;
-                            headers["access-control-allow-origin"] = "";
-                            headers["content-length"] = "";
-                            response.writeHead(res.status, headers);
-                            response.statusMessage = res.statusText;
-                            response.end(res.data);
-                        })
-                        .catch(e => {
-                            response.writeHead(500, {
-                                "content-type": "text/plain",
-                            });
-                            response.statusMessage = e.message;
-                            response.end(e.message);
-                        });
-                });
+                get(request, response, u);
             } else if (U.pathname.startsWith("/_4ov/openUrl/")) {
                 log("打开外链/推荐游戏");
                 response.end(null);
@@ -209,26 +242,12 @@ async function initHttpServer(callback: Function, ref?: string) {
                 response.end(DATA);
             } else {
                 log("向 4399 服务器请求游戏文件");
-                let config = getReqCfg("arraybuffer", true, REF);
-                config.validateStatus = () => true;
 
-                axios
-                    .get("http://" + getGameInfo().server + request.url, config)
-                    .then(res => {
-                        let headers = res.headers;
-                        headers["access-control-allow-origin"] = "";
-                        response.writeHead(res.status, headers);
-                        response.statusMessage = res.statusText;
-                        response.end(res.data);
-                    })
-                    .catch(e => {
-                        log(request, request.url);
-                        response.writeHead(500, {
-                            "content-type": "text/plain",
-                        });
-                        response.statusMessage = e.message;
-                        response.end(e.message);
-                    });
+                get(
+                    request,
+                    response,
+                    new URL(request.url, getGameInfo().gameUrl)
+                );
             }
         } catch (e) {
             response.writeHead(500, {

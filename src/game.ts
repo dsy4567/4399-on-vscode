@@ -3,13 +3,16 @@
 import axios, { AxiosResponse } from "axios";
 import * as cheerio from "cheerio";
 import * as cookie from "cookie";
+import * as fs from "fs";
 import * as iconv from "iconv-lite";
 import isLocalhost = require("is-localhost-ip");
+import * as path from "path";
 import * as vscode from "vscode";
 
 import { login } from "./account";
 import { getPort, initHttpServer, setData } from "./server";
 import {
+    DIRNAME,
     err,
     log,
     getCfg,
@@ -34,6 +37,14 @@ let gameInfoUrls: Record<string, string> = {};
 /** e.g. https://client-zmxyol.3304399.net/client/?... */
 let webGameUrl = "";
 let isFlashGame = false;
+
+// 使用事先准备好的规则匹配难以添加支持的游戏
+let supplements: Supplements = JSON.parse(
+    fs
+        .readFileSync(path.join(DIRNAME, "../resources/supplements.json"))
+        .toString()
+);
+if (supplements._ver !== 1) supplements = {} as Supplements;
 
 /**
  * 获取存放小游戏的服务器
@@ -69,9 +80,45 @@ async function play(url: string) {
     try {
         if (url.startsWith("//")) url = "https:" + url;
         else if (url.startsWith("/")) url = "https://www.4399.com" + url;
-        if (!/[0-9].+htm/i.test("" + url)) return err("不支持该类型的游戏");
 
         loaded(false);
+
+        let supplement = supplements[new URL(url).pathname];
+        if (supplement) {
+            let u = new URL(supplement.url);
+            server = u.host;
+            gamePath = u.pathname;
+            gameUrl = "" + u;
+            isFlashGame = supplement.type === "flash";
+            setData((await axios.get("" + u, getReqCfg("arraybuffer"))).data);
+
+            initHttpServer(() => {
+                gameInfoUrls[supplement.title] = supplement.detailUrl;
+                showWebviewPanel(
+                    "http://127.0.0.1:" + getPort(),
+                    supplement.title,
+                    isFlashGame && "fl",
+                    true
+                );
+
+                try {
+                    let D = new Date();
+                    updateHistory({
+                        date: ` (${D.getFullYear()}年${
+                            D.getMonth() + 1
+                        }月${D.getDate()}日${D.getHours()}时${D.getMinutes()}分)`,
+                        name: supplement.title,
+                        webGame: false,
+                        url: url,
+                    });
+                } catch (e) {
+                    err("写入历史记录失败", String(e));
+                }
+            });
+            return;
+        }
+
+        if (!/[0-9].+htm/i.test("" + url)) return err("不支持该类型的游戏");
         let res = await axios.get(url, getReqCfg("arraybuffer"));
 
         if (!res.data)
@@ -107,14 +154,14 @@ async function play(url: string) {
             }
 
         title = title || url;
-        if ($("title").text().includes("您访问的页面不存在！") && res.status) {
-            delete gameInfoUrls[title];
+        if ($("title").text().includes("您访问的页面不存在！") && res.status)
             return err("无法获取游戏信息: 游戏可能因为某些原因被删除");
-        }
 
-        gameInfoUrls[title] = url;
-
-        if ($flash[0] && $flash_src) {
+        if (
+            $flash[0] &&
+            $flash_src &&
+            !$flash_src.includes("h.api.4399.com/")
+        ) {
             let u = new URL($flash_src, "https://www.4399.com");
             gameUrl = "" + u;
             server = u.host;
@@ -124,7 +171,7 @@ async function play(url: string) {
                 .replaceAll(" ", "")
                 .match(/src\=\"\/js\/((server|s[0-9]).*|nitrome)\.js\"/i);
             let gamePath_matched = html.match(
-                /\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\"/i
+                /\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\",game_title/i
             );
             if (!server_matched || !gamePath_matched) {
                 // 游戏可能是 h5 页游
@@ -134,18 +181,20 @@ async function play(url: string) {
 
                 if (u2) return playWebGame(u2);
 
-                delete gameInfoUrls[title];
                 err(
                     "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏类型不受支持, 已自动为您跳转至游戏详情页面"
                 );
                 return showWebviewPanel(url, title);
             }
-            gamePath =
-                "/4399swf" +
-                (gamePath_matched as RegExpMatchArray)[0]
-                    .replaceAll(" ", "")
-                    .replace("_strGamePath=", "")
-                    .replace(/["]/g, "");
+            let p = (gamePath_matched as RegExpMatchArray)[0]
+                .replaceAll(" ", "")
+                .replace("_strGamePath=", "")
+                .replace(/"|,game_title/g, "");
+
+            gamePath = p.includes("//")
+                ? "" + new URL(p, "https://www.4399.com").pathname
+                : "/4399swf" + p;
+
             if (gamePath.includes("gameId="))
                 try {
                     let u = new URL(gamePath, "https://www.4399.com/");
@@ -161,20 +210,6 @@ async function play(url: string) {
         // 简单地判断域名是否有效
         if ((await isLocalhost(server)) || /[/:?#\\=&]/g.test(server))
             return err("游戏服务器域名 " + server + " 非法");
-
-        try {
-            let D = new Date();
-            updateHistory({
-                date: ` (${D.getFullYear()}年${
-                    D.getMonth() + 1
-                }月${D.getDate()}日${D.getHours()}时${D.getMinutes()}分)`,
-                name: title,
-                webGame: false,
-                url: url,
-            });
-        } catch (e) {
-            err("写入历史记录失败", String(e));
-        }
 
         if (
             !is4399Domain(server) &&
@@ -236,17 +271,29 @@ async function play(url: string) {
                 log("成功获取到游戏真实页面", gameUrl);
 
                 initHttpServer(() => {
-                    const p = getPort();
                     setData(res.data);
-                    let u = new URL(gamePath, "http://127.0.0.1:" + p);
-                    u.port = String(p);
                     title = title || url;
+                    gameInfoUrls[title] = url;
                     showWebviewPanel(
-                        "http://127.0.0.1:" + p,
+                        "http://127.0.0.1:" + getPort(),
                         title,
                         gamePath.includes(".swf") && "fl",
                         true
                     );
+
+                    try {
+                        let D = new Date();
+                        updateHistory({
+                            date: ` (${D.getFullYear()}年${
+                                D.getMonth() + 1
+                            }月${D.getDate()}日${D.getHours()}时${D.getMinutes()}分)`,
+                            name: title,
+                            webGame: false,
+                            url: url,
+                        });
+                    } catch (e) {
+                        err("写入历史记录失败", String(e));
+                    }
                 });
             } else err("无法获取游戏真实页面: 响应为空");
         } catch (e) {
@@ -348,7 +395,7 @@ async function showGameInfo(url?: string) {
         url = gameInfoUrls[n || ""];
     }
     if (!url) return;
-    let gameId = String(parseId(url));
+    let gameId = "" + parseId(url);
 
     try {
         url = "https://www.4399.com/flash/" + gameId + ".htm";
