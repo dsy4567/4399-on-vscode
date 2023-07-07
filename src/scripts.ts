@@ -71,11 +71,22 @@ Object.defineProperty(document, "domain", {
 });
 // 打开链接
 Object.defineProperty(window, "open", {
-    value: (url) => {
-        console.log(url);
-        fetch("/_4ov/openUrl/" + url);
+    value: url => {
+        let u = new URL(url, location.href);
+        u = u.href.replaceAll(location.host, "_4ov-server");
+        fetch("/_4ov/openUrl/" + u);
     },
     writable: true,
+});
+addEventListener("click", ev => {
+    if (ev.target?.tagName === "A" && ev.target.href) {
+        ev.preventDefault();
+        let u = new URL(ev.target.href, location.href);
+        if (ev.target.pathname !== location.pathname && !u.hash) {
+            u = u.href.replaceAll(location.host, "_4ov-server");
+            open(u.href);
+        }
+    }
 });
 // 加载提示
 document.documentElement.insertAdjacentHTML("beforeend", "<p class='tip4ov'>游戏正在加载，第一次加载需要一些时间，请耐心等待</p>");
@@ -179,6 +190,23 @@ const getWebviewHtml_flash = (
                     fetch("/_4ov/openUrl/" + url);
                 },
                 writable: true,
+            });Object.defineProperty(window, "open", {
+                value: url => {
+                    let u = new URL(url, location.href);
+                    u = u.href.replaceAll(location.host, "_4ov-server");
+                    fetch("/_4ov/openUrl/" + u);
+                },
+                writable: true,
+            });
+            addEventListener("click", ev => {
+                if (ev.target?.tagName === "A" && ev.target.href) {
+                    ev.preventDefault();
+                    let u = new URL(ev.target.href, location.href);
+                    if (ev.target.pathname !== location.pathname && !u.hash) {
+                        u = u.href.replaceAll(location.host, "_4ov-server");
+                        open(u.href);
+                    }
+                }
             });
             ${
                 getCfg("enableProxy") && getCfg("enableServiceWorker")

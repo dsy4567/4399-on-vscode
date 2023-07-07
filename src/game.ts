@@ -221,7 +221,7 @@ async function play(url: string) {
                 "否"
             )) !== "是"
         )
-            return;
+            return loaded(true);
 
         gameUrl = "https://" + server + gamePath;
 

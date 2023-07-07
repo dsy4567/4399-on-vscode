@@ -198,6 +198,7 @@ async function initHttpServer(callback: Function, ref?: string) {
                                 "127.0.0.1:" + PORT,
                                 getGameInfo().server
                             )
+                            .replaceAll("_4ov-server", getGameInfo().server)
                     );
                 } catch (e) {
                     openUrl(request.url.substring("/_4ov/openUrl/".length));
