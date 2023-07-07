@@ -136,7 +136,7 @@ async function play(url: string) {
 
         let title: string | null = "";
         let m: RegExpMatchArray | null = null,
-            $flash = $("iframe#flash22"),
+            $flash = $("iframe#flash22, iframe#CommFrame"),
             $flash_src = $flash.attr("src"),
             isFlashPage = false;
 
@@ -171,7 +171,7 @@ async function play(url: string) {
                 .replaceAll(" ", "")
                 .match(/src\=\"\/js\/((server|s[0-9]).*|nitrome)\.js\"/i);
             let gamePath_matched = html.match(
-                /\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\",game_title/i
+                /\_strGamePath\=\".+\.(swf|htm[l]?)(\?.+)?\"(,game_title|;)/i
             );
             if (!server_matched || !gamePath_matched) {
                 // 游戏可能是 h5 页游
@@ -189,7 +189,7 @@ async function play(url: string) {
             let p = (gamePath_matched as RegExpMatchArray)[0]
                 .replaceAll(" ", "")
                 .replace("_strGamePath=", "")
-                .replace(/"|,game_title/g, "");
+                .replace(/"|,game_title|;/g, "");
 
             gamePath = p.includes("//")
                 ? "" + new URL(p, "https://www.4399.com").pathname
