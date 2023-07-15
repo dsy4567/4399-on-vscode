@@ -128,7 +128,10 @@ async function initHttpServer(callback: Function, ref?: string) {
                         getGameInfo().server
                     )
                 );
-            } else if (U.pathname === "/_4ov/webGame") {
+            } else if (U.pathname === "/_4ov/ok") {
+                response.writeHead(200);
+                response.end("ok");
+            }else if (U.pathname === "/_4ov/webGame") {
                 response.writeHead(302, {
                     Location: getGameInfo().webGameUrl,
                 });
