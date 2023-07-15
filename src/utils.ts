@@ -16,6 +16,8 @@ import isLocalhost = require("is-localhost-ip");
 
 /** 第一次游戏前提示 */
 let alerted = false;
+/** GitHub CodeSpaces 提示 */
+let ghCodeSpaces_alerted = false;
 /** 扩展上下文 */
 let context: vscode.ExtensionContext;
 /** 加载提示状态栏项 */
@@ -388,6 +390,18 @@ async function showWebviewPanel(
                 "不再提示"
             )
             .then(val => setCfg("alert", false));
+    }
+    if (!ghCodeSpaces_alerted) {
+        ghCodeSpaces_alerted = true;
+        vscode.window
+            .showWarningMessage(
+                `您似乎正在使用 GitHub CodeSpaces，如果游戏无法加载或图裂，请点击下方按钮完成验证。\n警告：请勿将端口 ${getPort} 的可见性设为 Public，这可能导致您的 cookie 被泄露。`,
+                "去验证"
+            )
+            .then(val => {
+                if (val === "去验证")
+                    openUrl(`http://127.0.0.1:${getPort()}/_4ov/generate_204`);
+            });
     }
 
     // 获取游戏图标
