@@ -270,9 +270,13 @@ async function play(url: string, download = false) {
             }
             if (res.data)
                 if (download) {
+                    loaded(true);
+                    if (!gamePath.includes(".swf"))
+                        return err("无法下载游戏文件: 只能下载 Flash 游戏");
+
                     let p = path.join(
                         DATA_DIR,
-                        "./downloads/" + path.parse(gamePath).name
+                        "./downloads/" + path.parse(gamePath).name + ".swf"
                     );
                     fs.writeFile(p, res.data, e => {
                         if (e) return err("无法下载游戏文件:", e);

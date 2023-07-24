@@ -3,11 +3,13 @@
 import axios, { AxiosResponse } from "axios";
 import * as cheerio from "cheerio";
 import * as iconv from "iconv-lite";
+import * as path from "path";
 import * as vscode from "vscode";
 
 import { login } from "./account";
 import { getPort, initHttpServer } from "./server";
 import {
+    DIRNAME,
     alertWhenUsingGHCodeSpaces,
     createQuickPick,
     err,
@@ -282,7 +284,13 @@ async function main() {
                                 localResourceRoots: [],
                             }
                         );
-                        panel.webview.html = html;
+                        const iconPath: vscode.Uri = vscode.Uri.file(
+                            path.join(DIRNAME, "../icon.png")
+                        );
+                        panel.webview.html = html;panel.iconPath = {
+                            light: iconPath,
+                            dark: iconPath,
+                        };
                         alertWhenUsingGHCodeSpaces();
                     }, "http://my.4399.com/");
                 } catch (e) {
