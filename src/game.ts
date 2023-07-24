@@ -24,6 +24,7 @@ import {
     openUrl,
     parseId,
     showWebviewPanel,
+    DATA_DIR,
 } from "./utils";
 
 /** e.g. szhong.4399.com */
@@ -76,7 +77,7 @@ async function parseServer(server_matched: RegExpMatchArray): Promise<string> {
  * 获取普通小游戏的真实地址
  * @param url 游戏详情页链接
  */
-async function play(url: string) {
+async function play(url: string, download = false) {
     try {
         if (url.startsWith("//")) url = "https:" + url;
         else if (url.startsWith("/")) url = "https://www.4399.com" + url;
@@ -267,35 +268,48 @@ async function play(url: string) {
                     ).data;
                 }
             }
-            if (res.data) {
-                log("成功获取到游戏真实页面", gameUrl);
-
-                initHttpServer(() => {
-                    setData(res.data);
-                    title = title || url;
-                    gameInfoUrls[title] = url;
-                    showWebviewPanel(
-                        "http://127.0.0.1:" + getPort(),
-                        title,
-                        gamePath.includes(".swf") && "fl",
-                        true
+            if (res.data)
+                if (download) {
+                    let p = path.join(
+                        DATA_DIR,
+                        "./downloads/" + path.parse(gamePath).name
                     );
+                    fs.writeFile(p, res.data, e => {
+                        if (e) return err("无法下载游戏文件:", e);
+                        vscode.window.showInformationMessage(
+                            "游戏文件已保存到 " + p
+                        );
+                    });
+                } else {
+                    log("成功获取到游戏真实页面", gameUrl);
 
-                    try {
-                        let D = new Date();
-                        updateHistory({
-                            date: ` (${D.getFullYear()}年${
-                                D.getMonth() + 1
-                            }月${D.getDate()}日${D.getHours()}时${D.getMinutes()}分)`,
-                            name: title,
-                            webGame: false,
-                            url: url,
-                        });
-                    } catch (e) {
-                        err("写入历史记录失败", String(e));
-                    }
-                });
-            } else err("无法获取游戏真实页面: 响应为空");
+                    initHttpServer(() => {
+                        setData(res.data);
+                        title = title || url;
+                        gameInfoUrls[title] = url;
+                        showWebviewPanel(
+                            "http://127.0.0.1:" + getPort(),
+                            title,
+                            gamePath.includes(".swf") && "fl",
+                            true
+                        );
+
+                        try {
+                            let D = new Date();
+                            updateHistory({
+                                date: ` (${D.getFullYear()}年${
+                                    D.getMonth() + 1
+                                }月${D.getDate()}日${D.getHours()}时${D.getMinutes()}分)`,
+                                name: title,
+                                webGame: false,
+                                url: url,
+                            });
+                        } catch (e) {
+                            err("写入历史记录失败", String(e));
+                        }
+                    });
+                }
+            else err("无法获取游戏真实页面: 响应为空");
         } catch (e) {
             err("无法获取游戏真实页面: ", e);
         }
@@ -435,13 +449,14 @@ async function showGameInfo(url?: string) {
             "🆔 游戏 ID: " + gameId,
             "ℹ️ " + $("div.cls").text(),
             "❤️ 添加到收藏盒",
+            "⬇️ 下载游戏（仅 Flash 游戏）",
             "🌏 在浏览器中打开详情页面",
             "💬 热门评论",
         ]);
         if (!item) return;
 
         try {
-            if (item.includes("添加到收藏盒"))
+            if (item === "❤️ 添加到收藏盒")
                 login(async () => {
                     try {
                         await axios.get(
@@ -456,9 +471,10 @@ async function showGameInfo(url?: string) {
                         err("添加到收藏盒失败", String(e));
                     }
                 });
-            else if (item.includes("在浏览器中打开详情页面"))
+            else if (item === "⬇️ 下载游戏（仅 Flash 游戏）") play(url, true);
+            else if (item === "🌏 在浏览器中打开详情页面")
                 openUrl(url as string);
-            else if (item.includes("热门评论")) {
+            else if (item === "💬 热门评论") {
                 const html = iconv.decode(
                     (
                         await axios.get(
