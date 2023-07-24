@@ -24,8 +24,9 @@ let context: vscode.ExtensionContext;
 const STATUS_BAR_ITEM: vscode.StatusBarItem =
     vscode.window.createStatusBarItem(1);
 
+/** 扩展 .ts 文件路径 */
 const DIRNAME = __dirname;
-/** e.g. "C:\users\you\.4ov-data\", "/home/you/.4ov-data/" */
+/** 主目录路径 e.g. "C:\users\you\.4ov-data\", "/home/you/.4ov-data/" */
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 
 function createQuickPick(o: {
@@ -114,6 +115,9 @@ async function init() {
         err && console.error(err);
     });
     fs.mkdir(path.join(DATA_DIR, "html-scripts"), { recursive: true }, err => {
+        err && console.error(err);
+    });
+    fs.mkdir(path.join(DATA_DIR, "downloads"), { recursive: true }, err => {
         err && console.error(err);
     });
     if (!fs.existsSync(path.join(DATA_DIR, "html-scripts/example.html")))
@@ -395,18 +399,19 @@ async function showWebviewPanel(
     alertWhenUsingGHCodeSpaces();
 
     // 获取游戏图标
-    let iconPath: vscode.Uri | undefined;
+    let iconPath: vscode.Uri = vscode.Uri.file(
+        path.join(DIRNAME, "../icon.png")
+    );
     const setIcon = () => {
-        if (iconPath)
-            panel.iconPath = {
-                light: iconPath,
-                dark: iconPath,
-            };
+        panel.iconPath = {
+            light: iconPath,
+            dark: iconPath,
+        };
     };
 
     loaded(true);
 
-    if (!(hasIcon && getCfg("showIcon", true) && title)) return;
+    if (!(hasIcon && getCfg("showIcon", true) && title)) return setIcon();
 
     try {
         const gameId = (
