@@ -8,6 +8,7 @@ import * as vscode from "vscode";
 import { login } from "./account";
 import { getPort, initHttpServer } from "./server";
 import {
+    alertWhenUsingGHCodeSpaces,
     createQuickPick,
     err,
     log,
@@ -282,6 +283,7 @@ async function main() {
                             }
                         );
                         panel.webview.html = html;
+                        alertWhenUsingGHCodeSpaces();
                     }, "http://my.4399.com/");
                 } catch (e) {
                     err("无法获取帖子页面", String(e));

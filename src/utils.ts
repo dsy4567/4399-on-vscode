@@ -391,18 +391,8 @@ async function showWebviewPanel(
             )
             .then(val => setCfg("alert", false));
     }
-    if (!ghCodeSpaces_alerted) {
-        ghCodeSpaces_alerted = true;
-        vscode.window
-            .showWarningMessage(
-                `您似乎正在使用 GitHub CodeSpaces，如果游戏无法加载或图裂，请点击下方按钮完成验证。\n警告：请勿将端口 ${getPort} 的可见性设为 Public，这可能导致您的 cookie 被泄露。`,
-                "去验证"
-            )
-            .then(val => {
-                if (val === "去验证")
-                    openUrl(`http://127.0.0.1:${getPort()}/_4ov/generate_204`);
-            });
-    }
+
+    alertWhenUsingGHCodeSpaces();
 
     // 获取游戏图标
     let iconPath: vscode.Uri | undefined;
@@ -472,10 +462,28 @@ async function showWebviewPanel(
         console.error(String(e));
     }
 }
+function alertWhenUsingGHCodeSpaces() {
+    if (
+        !ghCodeSpaces_alerted &&
+        getContext().extension.extensionKind === vscode.ExtensionKind.Workspace
+    ) {
+        ghCodeSpaces_alerted = true;
+        vscode.window
+            .showWarningMessage(
+                `您似乎正在使用 GitHub CodeSpaces 或其他远程开发环境，如果游戏无法加载或图裂，请点击下方按钮完成验证，然后重启游戏。请勿将端口 ${getPort()} 的可见性设为 Public，这可能导致您的 cookie 被泄露。`,
+                "去验证"
+            )
+            .then(val => {
+                if (val === "去验证")
+                    openUrl(`http://127.0.0.1:${getPort()}/_4ov/ok`);
+            });
+    }
+}
 
 export {
     DIRNAME,
     DATA_DIR,
+    alertWhenUsingGHCodeSpaces,
     createQuickPick,
     getCfg,
     setCfg,
