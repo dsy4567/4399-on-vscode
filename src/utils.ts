@@ -33,18 +33,16 @@ function createQuickPick(o: {
     value?: string;
     title?: string;
     prompt?: string;
-}): Promise<vscode.QuickPick<vscode.QuickPickItem>> {
-    return new Promise((resolve, reject) => {
-        const qp = vscode.window.createQuickPick();
-        qp.title = o.title;
-        qp.value = o.value || "";
-        qp.placeholder = o.prompt;
-        qp.canSelectMany = false;
-        qp.matchOnDescription = true;
-        qp.matchOnDetail = true;
-        qp.ignoreFocusOut = true;
-        resolve(qp);
-    });
+}): vscode.QuickPick<vscode.QuickPickItem> {
+    const qp = vscode.window.createQuickPick();
+    qp.title = o.title;
+    qp.value = o.value || "";
+    qp.placeholder = o.prompt;
+    qp.canSelectMany = false;
+    qp.matchOnDescription = true;
+    qp.matchOnDetail = true;
+    qp.ignoreFocusOut = true;
+    return qp;
 }
 /**
  * 获取工作区配置
@@ -475,7 +473,7 @@ function alertWhenUsingGHCodeSpaces() {
         ghCodeSpaces_alerted = true;
         vscode.window
             .showWarningMessage(
-                `您似乎正在使用 GitHub CodeSpaces 或其他远程开发环境，如果游戏无法加载或图裂，请点击下方按钮完成验证，然后重启游戏。请勿将端口 ${getPort()} 的可见性设为 Public，这可能导致您的 cookie 被泄露。`,
+                `您似乎正在使用 GitHub CodeSpaces 或其他远程开发环境，如果游戏无法加载或图裂，请点击下方按钮完成验证，然后重启游戏。请勿将端口 ${getPort()} 的可见性设为 Public (公共)，这可能导致您的 cookie 被泄露。`,
                 "去验证"
             )
             .then(val => {

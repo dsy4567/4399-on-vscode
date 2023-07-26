@@ -25,6 +25,7 @@ import {
     parseId,
     showWebviewPanel,
     DATA_DIR,
+    createQuickPick,
 } from "./utils";
 
 /** e.g. szhong.4399.com */
@@ -403,14 +404,15 @@ function playWebGame(urlOrId: string) {
  * 显示游戏详细信息
  * @param url 游戏详情页链接(可选, 留空则显示已打开的游戏)
  */
-async function showGameInfo(url?: string) {
-    let u = Object.keys(gameInfoUrls);
+async function showGameDetail(url?: string) {
+    let u = Object.keys(gameInfoUrls),
+        title = "";
 
     if (url) {
-    } else if (u.length === 1) url = gameInfoUrls[u[0]];
+    } else if (u.length === 1) url = gameInfoUrls[(title = u[0])];
     else if (u[1]) {
-        let n = await vscode.window.showQuickPick(u);
-        url = gameInfoUrls[n || ""];
+        title = (await vscode.window.showQuickPick(u)) || "";
+        url = gameInfoUrls[title];
     }
     if (!url) return;
     let gameId = "" + parseId(url);
@@ -441,11 +443,6 @@ async function showGameInfo(url?: string) {
             .replaceAll(/[\n ]/gi, "");
         const desc4 = $("#cont").text().replaceAll(/[\n ]/gi, "");
         let desc = desc1 || desc2 || desc3 || desc4 || "未知";
-        let title = $("title")
-            .text()
-            .split(/[-_ |，,¦]/gi)[0]
-            .replaceAll(/[\n ]/gi, "");
-        title = title || "未知";
         gameId = (isNaN(Number(gameId)) ? "未知" : gameId) || "未知";
         const item = await vscode.window.showQuickPick([
             "🎮 游戏名: " + title,
@@ -453,7 +450,7 @@ async function showGameInfo(url?: string) {
             "🆔 游戏 ID: " + gameId,
             "ℹ️ " + $("div.cls").text(),
             "❤️ 添加到收藏盒",
-            "⬇️ 下载游戏（仅 Flash 游戏）",
+            "⬇️ 下载游戏（仅单文件 Flash 游戏）",
             "🌏 在浏览器中打开详情页面",
             "💬 热门评论",
         ]);
@@ -475,38 +472,247 @@ async function showGameInfo(url?: string) {
                         err("添加到收藏盒失败", String(e));
                     }
                 });
-            else if (item === "⬇️ 下载游戏（仅 Flash 游戏）") play(url, true);
+            else if (item === "⬇️ 下载游戏（仅单文件 Flash 游戏）")
+                play(url, true);
             else if (item === "🌏 在浏览器中打开详情页面")
                 openUrl(url as string);
             else if (item === "💬 热门评论") {
-                const html = iconv.decode(
-                    (
-                        await axios.get(
-                            "https://cdn.comment.4399pk.com/nhot-" +
-                                gameId +
-                                "-1.htm",
-                            getReqCfg("arraybuffer")
-                        )
-                    ).data,
-                    "utf8"
-                );
-                if (!html)
-                    return err(
-                        "无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号(错误发生在获取游戏评论页阶段)"
+                let commentQp = createQuickPick({
+                        value: "",
+                        title: title + " 的评论",
+                        prompt: "",
+                    }),
+                    page = 1,
+                    items: Comment[] = [];
+                const showComments = async () => {
+                    commentQp.busy = true;
+                    items = [];
+                    const html = iconv.decode(
+                        (
+                            await axios.get(
+                                `https://cdn.comment.4399pk.com/nhot-${gameId}-${page}.htm`,
+                                getReqCfg("arraybuffer")
+                            )
+                        ).data,
+                        "utf8"
+                    );
+                    if (!html) return err("无法获取评论页面: 响应为空");
+
+                    const $ = cheerio.load(html);
+
+                    // 置顶评论
+                    $("#cntBox > div.zd").each((i, elem) => {
+                        let item: Comment = {
+                            nickname:
+                                $(elem)
+                                    .children("div.zd_t")
+                                    .children("a")
+                                    .children("b")
+                                    .text() || "未知用户",
+                            content: $(elem).children("div.con").text(),
+                            top: true,
+                            replies: [],
+                            repliesPage: 1,
+                            cid: -(
+                                $(elem)
+                                    .children("div.con")
+                                    .children("div[id*='hidden_div_']")
+                                    .attr("id")
+                                    ?.split("_")
+                                    .at(-1) || -1
+                            ),
+                            lastPage:
+                                $(elem)
+                                    .siblings("span[id*='reply_']")
+                                    .children("div.hf1").length < 5,
+                        };
+                        // 回复
+                        $(elem)
+                            .siblings("span[id*='reply_']")
+                            .children("div.hf1")
+                            .children("div.hf_le")
+                            .children("div.hf_ri1")
+                            .each((i, elem) => {
+                                item.replies.push({
+                                    nickname:
+                                        $(elem)
+                                            .children("div.hf_wj")
+                                            .children("b")
+                                            .children("a")
+                                            .text() || "未知用户",
+                                    content: $(elem).children("p").text(),
+                                });
+                            });
+                        items.push(item);
+                    });
+                    // 普通评论
+                    $("#cntBox > div.lam > div.am_ri > div.lam").each(
+                        (i, elem) => {
+                            let item: Comment = {
+                                nickname:
+                                    $(elem)
+                                        .children("div.lam_t")
+                                        .children("div.wj")
+                                        .children("b")
+                                        .children("a")
+                                        .text() || "未知用户",
+                                content: $(elem)
+                                    .children("div.tex")
+                                    .children("p")
+                                    .text(),
+                                replies: [],
+                                repliesPage: 1,
+                                cid: +(
+                                    $(elem)
+                                        .children("span[id*='reply_']")
+                                        .attr("id")
+                                        ?.split("_")
+                                        .at(-1) || -1
+                                ),
+                                lastPage:
+                                    $(elem)
+                                        .siblings("span[id*='reply_']")
+                                        .children("div.hf1").length < 5,
+                            };
+                            // 回复
+                            $(elem)
+                                .children("span[id*='reply_']")
+                                .children("div.hf1")
+                                .children("div.hf_le")
+                                .children("div.hf_ri1")
+                                .each((i, elem) => {
+                                    item.replies.push({
+                                        nickname:
+                                            $(elem)
+                                                .children("div.hf_wj")
+                                                .children("b")
+                                                .children("a")
+                                                .text() || "未知用户",
+                                        content: $(elem).children("p").text(),
+                                    });
+                                });
+                            items.push(item);
+                        }
                     );
 
-                const $ = cheerio.load(html);
-                let items: string[] = [],
-                    tops: string[] = [];
-                $("#cntBox > div.zd > div.con").each((i, elem) => {
-                    tops[i] = "[置顶评论] " + $(elem).text();
+                    let qpItems: vscode.QuickPickItem[] = [];
+                    for (let i = 0; i < items.length; i++) {
+                        const comment = items[i];
+                        qpItems.push({
+                            label: `${comment.top ? "[置顶评论] " : ""}${
+                                comment.nickname
+                            }: ${comment.content}`,
+                        });
+                        for (let j = 0; j < comment.replies.length; j++) {
+                            const reply = comment.replies[j];
+                            qpItems.push({
+                                label: " | ",
+                                description: `${reply.nickname}: ${reply.content}`,
+                            });
+                        }
+                        if (!comment.lastPage)
+                            qpItems.push({
+                                label: " | > 查看更多回复",
+                                description: "" + i,
+                            });
+                    }
+
+                    qpItems.push({
+                        label: "下一页",
+                        description: "加载下一页内容",
+                    });
+                    commentQp.items = qpItems;
+                    commentQp.busy = false;
+                };
+                const showReplies = async (CommentIndex: number) => {
+                    commentQp.busy = true;
+                    const page = ++items[CommentIndex].repliesPage,
+                        cid = items[CommentIndex].cid,
+                        json = (
+                            await axios.get(
+                                `https://cdn.comment.4399pk.com/user_reply.php?fid=${gameId}&cid=${cid}&p=${page}&t=${Math.random()}`,
+                                getReqCfg("json")
+                            )
+                        ).data;
+                    if (!json.data) return err("无法获取评论页面: 响应为空");
+                    const $ = cheerio.load(json.data);
+
+                    if ($("div.hf1").length < 5)
+                        items[CommentIndex].lastPage = true;
+                    else
+                        $("div.hf1 > div.hf_le > div.hf_ri1").each(
+                            (i, elem) => {
+                                items[CommentIndex].replies.push({
+                                    nickname:
+                                        $(elem)
+                                            .children("div.hf_wj")
+                                            .children("b")
+                                            .children("a")
+                                            .text() || "未知用户",
+                                    content: $(elem).children("p").text(),
+                                });
+                            }
+                        );
+
+                    let qpItems: vscode.QuickPickItem[] = [];
+                    for (let i = 0; i < items.length; i++) {
+                        const comment = items[i];
+                        qpItems.push({
+                            label: `${comment.top ? "[置顶评论] " : ""}${
+                                comment.nickname
+                            }: ${comment.content}`,
+                        });
+                        for (let j = 0; j < comment.replies.length; j++) {
+                            const reply = comment.replies[j];
+                            qpItems.push({
+                                label: " | ",
+                                description: `${reply.nickname}: ${reply.content}`,
+                            });
+                        }
+                        if (!comment.lastPage)
+                            qpItems.push({
+                                label: " | > 查看更多回复",
+                                description: "" + i,
+                            });
+                    }
+
+                    qpItems.push({
+                        label: "下一页",
+                        description: "加载下一页内容",
+                    });
+                    commentQp.items = qpItems;
+                    commentQp.busy = false;
+                };
+
+                commentQp.onDidAccept(async () => {
+                    if (commentQp.activeItems[0].label === "下一页") {
+                        page++;
+                        showComments().catch(e => {
+                            err("无法获取评论:", e);
+                        });
+                    } else if (
+                        commentQp.activeItems[0].label === " | > 查看更多回复"
+                    )
+                        try {
+                            commentQp.keepScrollPosition = true;
+                            await showReplies(
+                                +(commentQp.activeItems[0].description || -1)
+                            );
+                            commentQp.keepScrollPosition = false;
+                        } catch (e) {
+                            err("无法获取回复:", e);
+                            commentQp.busy = false;
+                        }
+                    else
+                        vscode.window.showInformationMessage(
+                            commentQp.activeItems[0].description ||
+                                commentQp.activeItems[0].label
+                        );
                 });
-                $(".lam .tex").each((i, elem) => {
-                    items[i] = $(elem).text();
-                });
-                items.unshift(...tops);
-                vscode.window.showQuickPick(items).then(item => {
-                    if (item) vscode.window.showInformationMessage(item);
+                commentQp.show();
+                showComments().catch(e => {
+                    err("无法获取评论:", e);
+                    commentQp.busy = false;
                 });
             } else vscode.window.showInformationMessage(item);
         } catch (e) {
@@ -716,7 +922,7 @@ export {
     play,
     playWebGame,
     recommended,
-    showGameInfo,
+    showGameDetail,
     showWebviewPanel,
     getGameInfo,
     setGameInfo,

@@ -2,7 +2,7 @@
     "name": "4399-on-vscode",
     "displayName": "4399 on VSCode",
     "description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "engines": {
         "vscode": "^1.70.0"
     },
@@ -272,8 +272,8 @@
         "小霸王",
         "游戏",
         "flash",
-        "games",
-        "高效工作"
+        "game",
+        "entertainment"
     ],
     "publisher": "dsy4567",
     "license": "SEE LICENSE IN LICENSE",

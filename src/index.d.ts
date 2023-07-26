@@ -16,6 +16,19 @@ type CfgNames =
     | "requestWithCookieOn4399Domain"
     | "enableServiceWorker"
     | "RuffleSource";
+type Comment = {
+    nickname: string;
+    content: string;
+    top?: boolean;
+    replies: Reply[];
+    repliesPage: number;
+    cid: number;
+    lastPage: boolean;
+};
+type Reply = {
+    nickname: string;
+    content: string;
+};
 type GlobalStorage = {
     get(key: "history"): History[];
     get(key: "cookie" | "kwd" | "kwd-forums" | "stop-secret"): string;

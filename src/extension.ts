@@ -10,7 +10,7 @@ import {
     play,
     playWebGame,
     recommended,
-    showGameInfo,
+    showGameDetail,
     showHistory,
 } from "./game";
 import { searchGames } from "./search";
@@ -80,7 +80,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
             searchGames(s);
         }, // ,
         /** 我的 */ my,
-        /** 游戏详情 */ detail: showGameInfo,
+        /** 游戏详情 */ detail: showGameDetail,
         /** 历史记录 */ history: showHistory,
         /** 逛群组 */ forums: showForums,
         /** 更多操作 */ "more-action": moreAction,

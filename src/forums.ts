@@ -41,7 +41,7 @@ async function main() {
 
         const k = globalStorage(getContext()).get("kwd-forums"); // 上次搜索词
 
-        threadQp = await createQuickPick({
+        threadQp = createQuickPick({
             value: k || "",
             title: "4399 on VSCode: 逛群组",
             prompt: "搜索群组",
@@ -287,7 +287,8 @@ async function main() {
                         const iconPath: vscode.Uri = vscode.Uri.file(
                             path.join(DIRNAME, "../icon.png")
                         );
-                        panel.webview.html = html;panel.iconPath = {
+                        panel.webview.html = html;
+                        panel.iconPath = {
                             light: iconPath,
                             dark: iconPath,
                         };

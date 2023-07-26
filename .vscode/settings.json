@@ -30,7 +30,7 @@
     "prettier.bracketSpacing": true,
     "prettier.endOfLine": "auto",
     "prettier.printWidth": 80,
-    "prettier.proseWrap": "always",
+    "prettier.proseWrap": "preserve",
     "prettier.quoteProps": "as-needed",
     "prettier.semi": true,
     "prettier.singleQuote": false,

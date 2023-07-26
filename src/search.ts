@@ -36,7 +36,7 @@ let searchTimeout: NodeJS.Timeout;
 async function searchGames(s: string) {
     if (searchQp) searchQp.show();
 
-    searchQp = await createQuickPick({
+    searchQp = createQuickPick({
         value: String(s) || "",
         title: "4399 on VSCode: 搜索",
         prompt: "输入搜索词",
