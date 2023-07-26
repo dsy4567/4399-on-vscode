@@ -277,7 +277,7 @@ async function play(url: string, download = false) {
 
                     let p = path.join(
                         DATA_DIR,
-                        "./downloads/" + path.parse(gamePath).name + ".swf"
+                        `./downloads/${title}-${+new Date()}.swf`
                     );
                     fs.writeFile(p, res.data, e => {
                         if (e) return err("无法下载游戏文件:", e);
@@ -522,13 +522,16 @@ async function showGameDetail(url?: string) {
                                     .at(-1) || -1
                             ),
                             lastPage:
-                                $(elem)
-                                    .siblings("span[id*='reply_']")
-                                    .children("div.hf1").length < 5,
+                                $(
+                                    $(elem).siblings("span[id*='reply_']")[i]
+                                ).children("div.hf1").length < 5,
                         };
                         // 回复
-                        $(elem)
-                            .siblings("span[id*='reply_']")
+                        $(
+                            $(elem).siblings("span[id*='reply_']")[
+                                (i + 1) * 3 - 1
+                            ]
+                        )
                             .children("div.hf1")
                             .children("div.hf_le")
                             .children("div.hf_ri1")
