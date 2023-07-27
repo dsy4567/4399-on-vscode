@@ -576,7 +576,7 @@ async function showGameDetail(url?: string) {
                                 ),
                                 lastPage:
                                     $(elem)
-                                        .siblings("span[id*='reply_']")
+                                        .children("span[id*='reply_']")
                                         .children("div.hf1").length < 5,
                             };
                             // 回复
@@ -642,7 +642,7 @@ async function showGameDetail(url?: string) {
                     if (!json.data) return err("无法获取评论页面: 响应为空");
                     const $ = cheerio.load(json.data);
 
-                    if ($("div.hf1").length < 5)
+                    if ($("div.hf1").length < 5 || json.cur_page !== page)
                         items[CommentIndex].lastPage = true;
                     else
                         $("div.hf1 > div.hf_le > div.hf_ri1").each(
