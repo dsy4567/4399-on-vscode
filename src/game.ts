@@ -326,7 +326,7 @@ async function play(url: string, download = false) {
  * 获取 h5 页游的真实地址
  * @param urlOrId 游戏详情页链接或游戏 ID(字符串)
  */
-function playWebGame(urlOrId: string) {
+function playWebGame(urlOrId: string, download = false) {
     if (download) {
         loaded(true);
         if (!gamePath.includes(".swf"))
