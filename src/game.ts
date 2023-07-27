@@ -179,9 +179,9 @@ async function play(url: string, download = false) {
                 // 游戏可能是 h5 页游
                 let u1 = $("iframe#flash22").attr("src");
                 let u2 = $("a.start-btn").attr("href");
-                if (u1) return playWebGame(u1);
+                if (u1) return playWebGame(u1, download);
 
-                if (u2) return playWebGame(u2);
+                if (u2) return playWebGame(u2, download);
 
                 err(
                     "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏类型不受支持, 已自动为您跳转至游戏详情页面"
@@ -201,7 +201,7 @@ async function play(url: string, download = false) {
                 try {
                     let u = new URL(gamePath, "https://www.4399.com/");
                     let i = u.searchParams.get("gameId");
-                    if (i && !isNaN(Number(i))) return playWebGame(i);
+                    if (i && !isNaN(Number(i))) return playWebGame(i, download);
                 } catch (e) {}
 
             let s = await parseServer(server_matched);
@@ -327,6 +327,11 @@ async function play(url: string, download = false) {
  * @param urlOrId 游戏详情页链接或游戏 ID(字符串)
  */
 function playWebGame(urlOrId: string) {
+    if (download) {
+        loaded(true);
+        if (!gamePath.includes(".swf"))
+            return err("无法下载游戏文件: 只能下载 Flash 游戏");
+    }
     login(async (c: string) => {
         loaded(false);
 
