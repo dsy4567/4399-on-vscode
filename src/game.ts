@@ -523,7 +523,9 @@ async function showGameDetail(url?: string) {
                             ),
                             lastPage:
                                 $(
-                                    $(elem).siblings("span[id*='reply_']")[i]
+                                    $(elem).siblings("span[id*='reply_']")[
+                                        (i + 1) * 3 - 1
+                                    ]
                                 ).children("div.hf1").length < 5,
                         };
                         // 回复
