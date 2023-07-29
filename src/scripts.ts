@@ -246,7 +246,7 @@ const getWebviewHtml_flash = (
                 fullWebServerUri
             )}".replaceAll("%3D","=").replaceAll("%26","&")
             let u = new URL(IFR_FULL_WEB_SERVER_URI)
-            u.path = "/_4ov/flash"
+            u.pathname = "/_4ov/flash"
             console.log(u);
             window.play(u);
         </script>
