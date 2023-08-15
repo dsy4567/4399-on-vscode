@@ -29,6 +29,9 @@ const DIRNAME = __dirname;
 /** 主目录路径 e.g. "C:\users\you\.4ov-data\", "/home/you/.4ov-data/" */
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 
+const httpRequest = {
+    get<RT>() {},
+};
 function createQuickPick(o: {
     value?: string;
     title?: string;
@@ -49,7 +52,7 @@ function createQuickPick(o: {
  * @param name 去掉 "4399-on-vscode." 后的配置 ID
  * @param defaultValue 找不到配置时的返回值
  */
-function getCfg(name: CfgNames, defaultValue: any = undefined): any {
+function getCfg(name: CfgNames, defaultValue: any = undefined) {
     return vscode.workspace
         .getConfiguration()
         .get("4399-on-vscode." + name, defaultValue);
@@ -77,11 +80,11 @@ function setContext(ctx: vscode.ExtensionContext) {
  * @param ref referer
  * @returns Axios 请求配置
  */
-function getReqCfg(
-    responseType?: ResponseType,
+function getReqCfg<RT>(
+    responseType: ResponseType & RT,
     noCookie: boolean = false,
     ref?: string
-): AxiosRequestConfig<any> {
+): AxiosRequestConfig<RT> {
     let c;
     if (!noCookie) c = getCookieSync();
 
@@ -277,7 +280,7 @@ function moreAction() {
                 );
         });
 }
-/** 对象转 query(Ctrl + C and Ctrl + V from CSDN) */
+/** 对象转 query */
 function objectToQuery(obj: any, prefix?: string) {
     if (typeof obj !== "object") return "";
 

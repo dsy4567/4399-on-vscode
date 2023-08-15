@@ -15,7 +15,8 @@ type CfgNames =
     | "enableProxy"
     | "requestWithCookieOn4399Domain"
     | "enableServiceWorker"
-    | "RuffleSource";
+    | "RuffleSource"
+    | "confirm";
 type Comment = {
     nickname: string;
     content: string;

@@ -7,7 +7,7 @@ import * as mime from "mime";
 import isLocalhost = require("is-localhost-ip");
 import * as path from "path";
 import * as vscode from "vscode";
-import axios, { AxiosRequestConfig, AxiosRequestHeaders } from "axios";
+import axios from "axios";
 
 import { getCookieSync } from "./account";
 import { getGameInfo, play } from "./game";
@@ -18,7 +18,6 @@ import {
     log,
     getCfg,
     getContext,
-    getReqCfg,
     globalStorage,
     is4399Domain,
     openUrl,
@@ -52,12 +51,12 @@ async function initHttpServer(callback: Function, ref?: string) {
                 method: request.method,
                 setHost: false,
             };
-            (config.headers as http.OutgoingHttpHeaders)["user-agent"] =
-                getCfg("user-agent");
-            (config.headers as http.OutgoingHttpHeaders)["referer"] =
+            config.headers = config.headers || {};
+            config.headers["user-agent"] = getCfg("user-agent");
+            config.headers["referer"] =
                 REF || "https://" + getGameInfo().server + "/";
-            (config.headers as http.OutgoingHttpHeaders)["host"] = u.hostname;
-            (config.headers as http.OutgoingHttpHeaders)["cookie"] =
+            config.headers["host"] = u.hostname;
+            config.headers["cookie"] =
                 is4399Domain(u.hostname) &&
                 getCfg("requestWithCookieOn4399Domain")
                     ? getCookieSync()
@@ -131,7 +130,23 @@ async function initHttpServer(callback: Function, ref?: string) {
             } else if (U.pathname === "/_4ov/ok") {
                 response.writeHead(200);
                 response.end("ok");
-            }else if (U.pathname === "/_4ov/webGame") {
+            } else if (U.pathname === "/_4ov/confirm") {
+                if (!getCfg("confirm")) return response.end(null);
+                const reason = U.searchParams.get("reason");
+                if (!reason) {
+                    response.writeHead(400);
+                    return response.end(null);
+                }
+                vscode.window
+                    .showInformationMessage(reason, "允许", "拒绝")
+                    .then(val => {
+                        if (val === "允许") return response.end(null);
+                        else {
+                            response.writeHead(403);
+                            return response.end(null);
+                        }
+                    });
+            } else if (U.pathname === "/_4ov/webGame") {
                 response.writeHead(302, {
                     Location: getGameInfo().webGameUrl,
                 });
@@ -173,7 +188,7 @@ async function initHttpServer(callback: Function, ref?: string) {
                     "https://www.4399.com"
                 );
                 if (await isLocalhost(u.hostname)) {
-                    response.writeHead(403);
+                    response.writeHead(400);
                     return response.end(null);
                 }
                 if (!getCfg("enableProxy", true)) {
@@ -188,6 +203,16 @@ async function initHttpServer(callback: Function, ref?: string) {
                 log("打开外链/推荐游戏");
                 response.end(null);
                 if (!getCfg("openUrl", true)) return;
+                if (
+                    getCfg("confirm") &&
+                    (await vscode.window.showInformationMessage(
+                        "某个游戏想要打开外链或启动另一款游戏",
+                        "允许",
+                        "拒绝"
+                    )) !== "允许"
+                )
+                    return;
+
                 let u;
                 try {
                     u = new URL(

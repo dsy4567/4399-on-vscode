@@ -142,6 +142,11 @@
                     "default": "https://unpkg.com/@ruffle-rs/ruffle/ruffle.js",
                     "description": "控制应从何处加载 Ruffle (如无特殊需求, 建议始终使用最新版本)",
                     "type": "string"
+                },
+                "4399-on-vscode.confirm": {
+                    "default": true,
+                    "description": "控制是否在游戏尝试执行启动另一款游戏等操作时进行确认",
+                    "type": "boolean"
                 }
             }
         },
