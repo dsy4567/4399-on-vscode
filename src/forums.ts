@@ -1,6 +1,6 @@
 /** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
 
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import * as cheerio from "cheerio";
 import * as iconv from "iconv-lite";
 import * as path from "path";
@@ -10,13 +10,13 @@ import { login } from "./account";
 import { getPort, initHttpServer } from "./server";
 import {
     DIRNAME,
-    alertWhenUsingGHCodeSpaces,
+    alertWhenUsingRemoteDevEnv,
     createQuickPick,
     err,
     log,
     getContext,
-    getReqCfg,
     globalStorage,
+    httpRequest,
 } from "./utils";
 
 // 群组相关
@@ -55,9 +55,9 @@ async function main() {
 
             log("群组 ID: " + id);
             const d: Buffer = (
-                await axios.get(
+                await httpRequest.get(
                     `https://my.4399.com/forums/mtag-${id}?page=${threadPage}`,
-                    getReqCfg("arraybuffer")
+                    "arraybuffer"
                 )
             ).data;
 
@@ -107,21 +107,21 @@ async function main() {
             log("页码: " + threadPage);
             threadTimeout = setTimeout(async () => {
                 threadQp.busy = true;
-                let res: AxiosResponse;
+                let res;
                 try {
-                    res = await axios.get(
+                    res = (await httpRequest.get(
                         "https://my.4399.com/forums/index-getMtags?type=game&keyword=" +
                             encodeURI(kwd || "") +
                             "&page=" +
                             threadPage,
-                        getReqCfg("arraybuffer")
-                    );
+                        "arraybuffer"
+                    )) as AxiosResponse<Buffer | string>;
                 } catch (e) {
                     return err("获取搜索建议失败", "" + e);
                 }
                 if (!res.data) return err("获取搜索建议失败");
 
-                res.data = iconv.decode(res.data, "utf8");
+                res.data = iconv.decode(res.data as Buffer, "utf8");
                 const d: string = res.data;
                 const $ = cheerio.load(d);
                 threads = {};
@@ -198,9 +198,9 @@ async function main() {
                             vscode.Uri.parse("http://localhost:" + getPort())
                         ),
                         d: Buffer = (
-                            await axios.get(
+                            await httpRequest.get(
                                 `https://my.4399.com/forums/thread-${id}`,
-                                getReqCfg("arraybuffer")
+                                "arraybuffer"
                             )
                         ).data;
                     if (!d) return err("无法获取帖子页面");
@@ -292,7 +292,7 @@ async function main() {
                             light: iconPath,
                             dark: iconPath,
                         };
-                        alertWhenUsingGHCodeSpaces();
+                        alertWhenUsingRemoteDevEnv();
                     }, "http://my.4399.com/");
                 } catch (e) {
                     err("无法获取帖子页面", String(e));

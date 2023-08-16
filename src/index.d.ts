@@ -53,3 +53,11 @@ type Supplements = Record<"_ver", number> &
         string,
         { type: "flash"; url: string; title: string; detailUrl: string }
     >;
+type RTypes = {
+    arraybuffer: Buffer;
+    blob: any;
+    document: any;
+    json: any;
+    text: string;
+    stream: any;
+};

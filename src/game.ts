@@ -1,6 +1,6 @@
 /** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
 
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import * as cheerio from "cheerio";
 import * as cookie from "cookie";
 import * as fs from "fs";
@@ -17,7 +17,6 @@ import {
     log,
     getCfg,
     getContext,
-    getReqCfg,
     globalStorage,
     is4399Domain,
     loaded,
@@ -26,6 +25,7 @@ import {
     showWebviewPanel,
     DATA_DIR,
     createQuickPick,
+    httpRequest,
 } from "./utils";
 
 /** e.g. szhong.4399.com */
@@ -53,9 +53,10 @@ if (supplements._ver !== 1) supplements = {} as Supplements;
  */
 async function parseServer(server_matched: RegExpMatchArray): Promise<string> {
     try {
-        let res = await axios.get(
+        let res = await httpRequest.get(
             "https://www.4399.com" + server_matched[0].split('"')[1],
-            getReqCfg("text", true)
+            "text",
+            true
         );
         if (res.data) {
             log("成功获取到定义游戏服务器的脚本");
@@ -92,7 +93,7 @@ async function play(url: string, download = false) {
             gamePath = u.pathname;
             gameUrl = "" + u;
             isFlashGame = supplement.type === "flash";
-            setData((await axios.get("" + u, getReqCfg("arraybuffer"))).data);
+            setData((await httpRequest.get("" + u, "arraybuffer")).data);
 
             initHttpServer(() => {
                 gameInfoUrls[supplement.title] = supplement.detailUrl;
@@ -121,13 +122,15 @@ async function play(url: string, download = false) {
         }
 
         if (!/[0-9].+htm/i.test("" + url)) return err("不支持该类型的游戏");
-        let res = await axios.get(url, getReqCfg("arraybuffer"));
+        let res = (await httpRequest.get(url, "arraybuffer")) as AxiosResponse<
+            Buffer | string
+        >;
 
         if (!res.data)
             return err(
                 "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 或登录账号"
             );
-        res.data = iconv.decode(res.data, "gb2312");
+        res.data = iconv.decode(res.data as Buffer, "gb2312");
         log("成功获取到游戏页面");
         const $ = cheerio.load(res.data);
         const html = $.html();
@@ -237,7 +240,10 @@ async function play(url: string, download = false) {
             isFlashPage = true;
 
         try {
-            res = await axios.get(gameUrl, getReqCfg("arraybuffer"));
+            res = (await httpRequest.get(
+                gameUrl,
+                "arraybuffer"
+            )) as AxiosResponse<Buffer | string>;
 
             if (!res.data)
                 return err(
@@ -248,9 +254,9 @@ async function play(url: string, download = false) {
                 isFlashPage &&
                 res.headers["content-type"].toLocaleLowerCase().includes("html")
             ) {
-                let m = (iconv.decode(res.data, "gb2312") as string).match(
-                    /<embed.+src=".+.swf/i
-                );
+                let m = (
+                    iconv.decode(res.data as Buffer, "gb2312") as string
+                ).match(/<embed.+src=".+.swf/i);
 
                 if (m) {
                     let fileName = m[0].split('"').at(-1) as string;
@@ -265,7 +271,7 @@ async function play(url: string, download = false) {
                     let u = new URL(gameUrl);
                     gamePath = u.pathname;
                     res.data = (
-                        await axios.get(gameUrl, getReqCfg("arraybuffer"))
+                        await httpRequest.get(gameUrl, "arraybuffer")
                     ).data;
                 }
             }
@@ -352,13 +358,13 @@ function playWebGame(urlOrId: string, download = false) {
                     };
                 };
             } = (
-                await axios.post(
+                await httpRequest.post(
                     "https://h.api.4399.com/intermodal/user/grant2",
                     "gameId=" +
                         gameId +
                         "&authType=cookie&cookieValue=" +
                         cookieValue,
-                    getReqCfg("json")
+                    "json"
                 )
             ).data;
             if (
@@ -426,7 +432,7 @@ async function showGameDetail(url?: string) {
         url = "https://www.4399.com/flash/" + gameId + ".htm";
 
         const html = iconv.decode(
-            (await axios.get(url, getReqCfg("arraybuffer"))).data,
+            (await httpRequest.get(url, "arraybuffer")).data,
             "gb2312"
         );
         if (!html)
@@ -465,10 +471,10 @@ async function showGameDetail(url?: string) {
             if (item === "❤️ 添加到收藏盒")
                 login(async () => {
                     try {
-                        await axios.get(
+                        await httpRequest.get(
                             "https://gprp.4399.com/cg/add_collection.php?gid=" +
                                 gameId,
-                            getReqCfg("json")
+                            "json"
                         );
                         vscode.window.showInformationMessage(
                             "添加到收藏盒成功"
@@ -494,9 +500,9 @@ async function showGameDetail(url?: string) {
                     items = [];
                     const html = iconv.decode(
                         (
-                            await axios.get(
+                            await httpRequest.get(
                                 `https://cdn.comment.4399pk.com/nhot-${gameId}-${page}.htm`,
-                                getReqCfg("arraybuffer")
+                                "arraybuffer"
                             )
                         ).data,
                         "utf8"
@@ -639,9 +645,9 @@ async function showGameDetail(url?: string) {
                     const page = ++items[CommentIndex].repliesPage,
                         cid = items[CommentIndex].cid,
                         json = (
-                            await axios.get(
+                            await httpRequest.get(
                                 `https://cdn.comment.4399pk.com/user_reply.php?fid=${gameId}&cid=${cid}&p=${page}&t=${Math.random()}`,
-                                getReqCfg("json")
+                                "json"
                             )
                         ).data;
                     if (!json.data) return err("无法获取评论页面: 响应为空");
@@ -735,10 +741,7 @@ async function showGameDetail(url?: string) {
 async function category() {
     let res: AxiosResponse;
     try {
-        res = await axios.get(
-            "https://www.4399.com/",
-            getReqCfg("arraybuffer")
-        );
+        res = await httpRequest.get("https://www.4399.com/", "arraybuffer");
     } catch (e) {
         return err("无法获取4399首页: ", e);
     }
@@ -776,9 +779,9 @@ async function category() {
     if (!url) return err("变量 url 可能为 undefined");
 
     try {
-        res = await axios.get(
+        res = await httpRequest.get(
             "" + new URL(url, "https://www.4399.com/"),
-            getReqCfg("arraybuffer")
+            "arraybuffer"
         );
     } catch (e) {
         return err("无法获取分类页: ", e);
@@ -818,10 +821,7 @@ async function category() {
 async function recommended() {
     let res: AxiosResponse;
     try {
-        res = await axios.get(
-            "https://www.4399.com/",
-            getReqCfg("arraybuffer")
-        );
+        res = await httpRequest.get("https://www.4399.com/", "arraybuffer");
     } catch (e) {
         return err("无法获取4399首页: ", e);
     }
