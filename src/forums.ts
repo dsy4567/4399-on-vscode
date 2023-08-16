@@ -10,7 +10,7 @@ import { login } from "./account";
 import { getPort, initHttpServer } from "./server";
 import {
     DIRNAME,
-    alertWhenUsingGHCodeSpaces,
+    alertWhenUsingRemoteDevEnv,
     createQuickPick,
     err,
     log,
@@ -292,7 +292,7 @@ async function main() {
                             light: iconPath,
                             dark: iconPath,
                         };
-                        alertWhenUsingGHCodeSpaces();
+                        alertWhenUsingRemoteDevEnv();
                     }, "http://my.4399.com/");
                 } catch (e) {
                     err("无法获取帖子页面", String(e));

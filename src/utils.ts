@@ -16,8 +16,8 @@ import isLocalhost = require("is-localhost-ip");
 
 /** 第一次游戏前提示 */
 let alerted = false;
-/** GitHub CodeSpaces 提示 */
-let ghCodeSpaces_alerted = false;
+/** 远程开发环境提示 */
+let RemoteDevEnv_alerted = false;
 /** 扩展上下文 */
 let context: vscode.ExtensionContext;
 /** 加载提示状态栏项 */
@@ -468,12 +468,12 @@ async function showWebviewPanel(
         console.error(String(e));
     }
 }
-function alertWhenUsingGHCodeSpaces() {
+function alertWhenUsingRemoteDevEnv() {
     if (
-        !ghCodeSpaces_alerted &&
+        !RemoteDevEnv_alerted &&
         getContext().extension.extensionKind === vscode.ExtensionKind.Workspace
     ) {
-        ghCodeSpaces_alerted = true;
+        RemoteDevEnv_alerted = true;
         vscode.window
             .showWarningMessage(
                 `您似乎正在使用 GitHub CodeSpaces 或其他远程开发环境，如果游戏无法加载或图裂，请点击下方按钮完成验证，然后重启游戏。请勿将端口 ${getPort()} 的可见性设为 Public (公共)，这可能导致您的 cookie 被泄露。`,
@@ -489,7 +489,7 @@ function alertWhenUsingGHCodeSpaces() {
 export {
     DIRNAME,
     DATA_DIR,
-    alertWhenUsingGHCodeSpaces,
+    alertWhenUsingRemoteDevEnv,
     createQuickPick,
     getCfg,
     setCfg,
