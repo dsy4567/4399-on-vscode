@@ -1,13 +1,12 @@
 /** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
 
-import axios from "axios";
 import * as cheerio from "cheerio";
 import * as cookie from "cookie";
 import * as iconv from "iconv-lite";
 import * as vscode from "vscode";
 
 import { play } from "./game";
-import { err, getContext, getReqCfg, loaded, objectToQuery } from "./utils";
+import { err, getContext, httpRequest, loaded, objectToQuery } from "./utils";
 
 let COOKIE: string;
 
@@ -109,10 +108,11 @@ async function login(
                 });
                 if (pwd)
                     try {
-                        const r = await axios.post(
+                        const r = await httpRequest.post(
                             "https://ptlogin.4399.com/ptlogin/login.do?v=1",
                             `username=${user}&password=${pwd}`,
-                            getReqCfg("arraybuffer", true)
+                            "arraybuffer",
+                            true
                         );
                         const html = iconv.decode(r.data, "utf8");
                         const $ = cheerio.load(html);
@@ -176,10 +176,10 @@ function checkIn(quiet?: boolean) {
                       };
                 msg?: string;
             } = (
-                await axios.get(
+                await httpRequest.get(
                     "https://my.4399.com/plugins/sign/set-t-" +
                         new Date().getTime(),
-                    getReqCfg("json")
+                    "json"
                 )
             ).data;
             if (data.result === null) err("签到失败, 其他错误: " + data.msg);
@@ -222,7 +222,7 @@ function my() {
                             number,
                             { c_url: string; name: string }
                         >;
-                    } = (await axios.get(url, getReqCfg("json"))).data;
+                    } = (await httpRequest.get(url, "json")).data;
                     let _favorites: Record<string, string> = {};
                     let names: string[] = [];
                     if (favorites && favorites.game_infos && favorites[index]) {

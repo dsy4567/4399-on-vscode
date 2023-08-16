@@ -1,6 +1,6 @@
 /** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
 
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import * as cheerio from "cheerio";
 import * as iconv from "iconv-lite";
 import * as vscode from "vscode";
@@ -11,8 +11,8 @@ import {
     err,
     log,
     getContext,
-    getReqCfg,
     globalStorage,
+    httpRequest,
 } from "./utils";
 
 // 搜索相关
@@ -47,21 +47,21 @@ async function searchGames(s: string) {
         searchQp.busy = true;
         log("页码 " + searchPage);
 
-        let res: AxiosResponse;
+        let res;
         try {
-            res = await axios.get(
+            res = (await httpRequest.get(
                 "https://so2.4399.com/search/search.php?k=" +
                     encodeURI(s) +
                     "&p=" +
                     searchPage,
-                getReqCfg("arraybuffer")
-            );
+                "arraybuffer"
+            )) as AxiosResponse<Buffer | string>;
         } catch (e) {
             return err("无法获取4399首页: ", e);
         }
         if (!res.data) return err("无法获取游戏真实页面: 响应为空");
 
-        res.data = iconv.decode(res.data, "gb2312");
+        res.data = iconv.decode(res.data as Buffer, "gb2312");
         log("成功获取到4399搜索页面");
         const $ = cheerio.load(res.data);
         searchedGames = {};
@@ -112,9 +112,9 @@ async function searchGames(s: string) {
             searchQp.busy = true;
             let res: AxiosResponse;
             try {
-                res = await axios.get(
+                res = await httpRequest.get(
                     "https://so2.4399.com/search/lx.php?k=" + encodeURI(kwd),
-                    getReqCfg("arraybuffer")
+                    "arraybuffer"
                 );
             } catch (e) {
                 return err("获取搜索建议失败", String(e));

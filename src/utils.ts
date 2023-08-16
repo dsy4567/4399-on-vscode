@@ -30,7 +30,24 @@ const DIRNAME = __dirname;
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 
 const httpRequest = {
-    get<RT>() {},
+    get<RT>(url: string, responseType: ResponseType & RT, noCookie = false) {
+        return axios.get<RTypes[ResponseType & RT]>(
+            url,
+            getReqCfg(responseType, noCookie)
+        );
+    },
+    post<RT>(
+        url: string,
+        data: string | undefined,
+        responseType: ResponseType & RT,
+        noCookie = false
+    ) {
+        return axios.post<RTypes[ResponseType & RT]>(
+            url,
+            data,
+            getReqCfg(responseType, noCookie)
+        );
+    },
 };
 function createQuickPick(o: {
     value?: string;
@@ -82,8 +99,7 @@ function setContext(ctx: vscode.ExtensionContext) {
  */
 function getReqCfg<RT>(
     responseType: ResponseType & RT,
-    noCookie: boolean = false,
-    ref?: string
+    noCookie: boolean = false
 ): AxiosRequestConfig<RT> {
     let c;
     if (!noCookie) c = getCookieSync();
@@ -93,7 +109,7 @@ function getReqCfg<RT>(
         responseType: responseType,
         headers: {
             "user-agent": getCfg("user-agent"),
-            referer: ref || getCfg("referer"),
+            referer: getCfg("referer"),
             cookie: c && !noCookie ? c : "",
         },
     };
@@ -155,11 +171,8 @@ async function init() {
 
     // 初始化cookie, 已登录则检查登录状态
     (await getCookie()) &&
-        axios
-            .get(
-                "https://u.4399.com/profile/index.html",
-                getReqCfg("arraybuffer")
-            )
+        httpRequest
+            .get("https://u.4399.com/profile/index.html", "arraybuffer")
             .then(async res => {
                 const $ = cheerio.load(await iconv.decode(res.data, "utf8"));
                 if (!$("#loginUserNick")[0])
@@ -246,9 +259,9 @@ function moreAction() {
                         try {
                             setData(
                                 (
-                                    await axios.get(
+                                    await httpRequest.get(
                                         gameInfo.gameUrl,
-                                        getReqCfg("arraybuffer")
+                                        "arraybuffer"
                                     )
                                 ).data
                             );
@@ -263,11 +276,12 @@ function moreAction() {
                 );
             } else if (val === "关闭本地服务器")
                 try {
-                    await axios.get(
+                    await httpRequest.get(
                         "http://127.0.0.1:" +
                             getPort() +
                             "/_4ov/stop/" +
-                            globalStorage(context).get("stop-secret")
+                            globalStorage(context).get("stop-secret"),
+                        "arraybuffer"
                     );
                 } catch (e) {}
             else if (val === "启动简易浏览器")
@@ -397,7 +411,7 @@ async function showWebviewPanel(
             .then(val => setCfg("alert", false));
     }
 
-    alertWhenUsingGHCodeSpaces();
+    alertWhenUsingRemoteDevEnv();
 
     // 获取游戏图标
     let iconPath: vscode.Uri = vscode.Uri.file(
@@ -429,9 +443,9 @@ async function showWebviewPanel(
             } else {
                 let res: AxiosResponse<Buffer>;
                 try {
-                    res = await axios.get(
+                    res = await httpRequest.get(
                         `https://imga1.5054399.com/upload_pic/minilogo/${gameId}.jpg`,
-                        getReqCfg("arraybuffer")
+                        "arraybuffer"
                     );
                 } catch (e) {
                     return console.error(e);
@@ -497,6 +511,7 @@ export {
     setContext,
     getReqCfg,
     globalStorage,
+    httpRequest,
     init,
     is4399Domain,
     loaded,
