@@ -2,7 +2,7 @@
     "name": "4399-on-vscode",
     "displayName": "4399 on VSCode",
     "description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-    "version": "0.3.3",
+    "version": "0.3.4",
     "engines": {
         "vscode": "^1.70.0"
     },
@@ -69,7 +69,7 @@
                 "4399-on-vscode.port": {
                     "description": "4399 on VSCode 本地服务器端口, 修改后必须重启 VSCode",
                     "type": "integer",
-                    "scope": "machine",
+                    "ignoreSync": true,
                     "default": 44399
                 },
                 "4399-on-vscode.printLogs": {
@@ -87,11 +87,17 @@
                     "markdownDescription": "控制是否向 Webview 注入用于优化体验以及设置 cookie 的 html 代码片段, 文件存放在 `(主目录)/.4ov-data/html-scripts/`, 点[这里](https://dsy4567.github.io/4ov-scripts/)可以获取更多",
                     "type": "boolean"
                 },
-                "4399-on-vscode.scripts": {
-                    "default": "",
-                    "scope": "machine",
-                    "markdownDescription": "要向 h5 小游戏入口页面注入的自定义 HTML 代码片段的文件名, 文件存放在`(主目录)/.4ov-data/html-scripts/`, 多个文件应使用英文逗号 + 空格(`, `)隔开, 例如`addStyle.htm, addScript.html`",
-                    "type": "string"
+                "4399-on-vscode.htmlScripts": {
+                    "default": [
+                        {
+                            "filename": "example.html",
+                            "displayName": "示例 HTML 代码片段",
+                            "enabled": false
+                        }
+                    ],
+                    "ignoreSync": true,
+                    "markdownDescription": "要向 h5 小游戏入口页面注入的自定义 HTML 代码片段的文件名, 文件存放在`(主目录)/.4ov-data/html-scripts/`, 手动安装后需要编辑此配置",
+                    "type": "array"
                 },
                 "4399-on-vscode.showIcon": {
                     "default": true,
