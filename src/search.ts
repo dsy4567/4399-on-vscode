@@ -41,8 +41,11 @@ async function searchGames(s: string) {
         title: "4399 on VSCode: 搜索",
         prompt: "输入搜索词",
     });
+    searchQp.buttons = [vscode.QuickInputButtons.Back];
 
     const search = async (s: string) => {
+        if (searchQp.busy) return;
+
         searchQp.title = s + " 的搜索结果";
         searchQp.busy = true;
         log("页码 " + searchPage);
@@ -57,7 +60,8 @@ async function searchGames(s: string) {
                 "arraybuffer"
             )) as AxiosResponse<Buffer | string>;
         } catch (e) {
-            return err("无法获取4399首页: ", e);
+            searchQp.busy = false;
+            return err("无法获取搜索页: ", e);
         }
         if (!res.data) return err("无法获取游戏真实页面: 响应为空");
 
@@ -98,6 +102,7 @@ async function searchGames(s: string) {
             alwaysShow: true,
         });
         searchQp.items = searchQpItems;
+        searchQp.buttons = [vscode.QuickInputButtons.Back];
         searchQp.busy = false;
     };
     searchQp.onDidChangeValue(kwd => {
@@ -110,6 +115,7 @@ async function searchGames(s: string) {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(async () => {
             searchQp.busy = true;
+            searchQp.buttons = [];
             let res: AxiosResponse;
             try {
                 res = await httpRequest.get(
@@ -159,10 +165,16 @@ async function searchGames(s: string) {
     });
     searchQp.onDidAccept(() => {
         if (searchQp.activeItems[0].description === "直接搜索")
-            search(searchQp.value);
+            search(searchQp.value).catch(e => {
+                searchQp.busy = false;
+                err(e);
+            });
         else if (searchQp.activeItems[0].label === "下一页") {
             searchPage++;
-            search(searchQp.value);
+            search(searchQp.value).catch(e => {
+                searchQp.busy = false;
+                err(e);
+            });
         } else {
             play(
                 `https://www.4399.com/flash/${
@@ -171,6 +183,15 @@ async function searchGames(s: string) {
             );
             searchQp.hide();
             globalStorage(getContext()).set("kwd", searchQp.value);
+        }
+    });
+    searchQp.onDidTriggerButton(async b => {
+        if (searchQp.busy) return;
+
+        if (b === vscode.QuickInputButtons.Back) {
+            if (searchQp.value) searchQp.value = "";
+            else search("");
+            return;
         }
     });
     searchQp.show();
