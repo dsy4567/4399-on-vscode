@@ -170,13 +170,13 @@ async function initHttpServer(callback: Function, ref?: string) {
                     : response.writeHead(500, {}); // 防止重复重定向
                 response.end();
             } else if (U.pathname.startsWith("/_4ov/stop/")) {
+                response.end(null);
                 if (
                     U.pathname.startsWith(
                         "/_4ov/stop/" +
                             globalStorage(getContext()).get("stop-secret")
                     )
                 ) {
-                    response.end(null);
                     HTTP_SERVER?.close();
                     HTTP_SERVER = undefined;
                     log("本地服务器已停止");
