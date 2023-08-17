@@ -46,8 +46,11 @@ async function main() {
             title: "4399 on VSCode: 逛群组",
             prompt: "搜索群组",
         });
+        threadQp.buttons = [vscode.QuickInputButtons.Back];
 
         const getThreads = async (id: number, title: string) => {
+            if (threadQp.busy) return;
+
             threads = {};
             threadData = [];
             threadQpItems = [];
@@ -63,6 +66,7 @@ async function main() {
 
             if (d) {
                 const $ = cheerio.load(d);
+                let joined = false;
                 threads = {};
                 threadData = [];
 
@@ -79,6 +83,7 @@ async function main() {
                     threadData.push([title, id]);
                     threads[title] = id;
                 });
+                joined = $("a.join").hasClass("hasjoin");
 
                 threadData.forEach(g => {
                     threadQpItems.push({
@@ -98,11 +103,25 @@ async function main() {
                     threadQp.items = threadQpItems;
                     threadQp.title = "群组: " + title;
                 }
-
+                threadQp.buttons = [
+                    vscode.QuickInputButtons.Back,
+                    {
+                        tooltip: joined ? "离开群组" : "加入群组",
+                        iconPath: joined
+                            ? new vscode.ThemeIcon("remove")
+                            : new vscode.ThemeIcon("add"),
+                    },
+                    {
+                        tooltip: "签到",
+                        iconPath: new vscode.ThemeIcon("check"),
+                    },
+                ];
                 threadQp.busy = false;
             } else err("无法获取群组页面");
         };
         const search = (kwd: string) => {
+            if (threadQp.busy) return;
+
             clearTimeout(threadTimeout);
             log("页码: " + threadPage);
             threadTimeout = setTimeout(async () => {
@@ -157,21 +176,20 @@ async function main() {
                 });
 
                 if (threadQpItems[0]) threadQp.items = threadQpItems;
-
+                threadQp.buttons = [];
                 threadQp.busy = false;
             }, 1000);
         };
         threadQp.onDidChangeValue(kwd => {
+            if (threadQp.buttons?.[0]) return;
             if (kwd === threadSearchValue)
                 return (threadQp.items = threadQpItems);
 
             threadQp.title = "4399 on VSCode: 逛群组";
             threadSearchValue = kwd;
-
             threadPage = 1;
             search(kwd);
         });
-
         threadQp.onDidAccept(async () => {
             if (threadQp.activeItems[0].description === "加载下一页群组") {
                 threadPage++;
@@ -297,6 +315,77 @@ async function main() {
                 } catch (e) {
                     err("无法获取帖子页面", String(e));
                 }
+        });
+        threadQp.onDidTriggerButton(async b => {
+            if (threadQp.busy) return;
+            if (b === vscode.QuickInputButtons.Back) {
+                threadQp.title = "4399 on VSCode: 逛群组";
+                threadQp.value = threadSearchValue = "";
+                threadPage = 1;
+                return search("");
+            }
+
+            threadQp.busy = true;
+            try {
+                let result: any;
+                switch (b.tooltip) {
+                    case "离开群组":
+                        result = (
+                            await httpRequest.post(
+                                "https://my.4399.com/forums/operate-leaveMtag",
+                                `tagid=${threadId}&_AJAX_=1`,
+                                "json"
+                            )
+                        ).data;
+                        if (result?.code !== 100)
+                            vscode.window.showInformationMessage(
+                                result?.msg || "操作失败"
+                            );
+                        break;
+                    case "加入群组":
+                        result = (
+                            await httpRequest.post(
+                                "https://my.4399.com/forums/operate-joinMtag",
+                                `tagid=${threadId}&_AJAX_=1`,
+                                "json"
+                            )
+                        ).data;
+                        if (result?.code === 100)
+                            vscode.window.showInformationMessage(
+                                result?.msg || "加入成功"
+                            );
+                        else
+                            vscode.window.showInformationMessage(
+                                result?.msg || "操作失败"
+                            );
+                        break;
+                    case "签到":
+                        result = (
+                            await httpRequest.post(
+                                "https://my.4399.com/forums/grade-signIn",
+                                `sign=1&tagid=${threadId}&_AJAX_=1`,
+                                "json"
+                            )
+                        ).data;
+                        if (result?.code === 100)
+                            vscode.window.showInformationMessage(
+                                result?.msg ||
+                                    `签到成功, 已连续签到 ${+result?.result
+                                        ?.totalDays} 天`
+                            );
+                        else
+                            vscode.window.showInformationMessage(
+                                result?.msg || "操作失败"
+                            );
+                        break;
+                    default:
+                        break;
+                }
+            } catch (e) {
+                err(e);
+            }
+            threadQp.busy = false;
+            getThreads(threadId, threadTitle);
         });
         threadQp.show();
         if (!threadSearchValue) {
