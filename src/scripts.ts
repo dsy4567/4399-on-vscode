@@ -1,10 +1,21 @@
 /** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
 
+import * as cheerio from "cheerio";
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { DATA_DIR, err, getCfg, is4399Domain } from "./utils";
+import {
+    DATA_DIR,
+    createQuickPick,
+    err,
+    getCfg,
+    httpRequest,
+    is4399Domain,
+    openUrl,
+    setCfg,
+    showWebviewPanel,
+} from "./utils";
 
 /** 获取要注入的 HTML 代码片段 */
 const getScript = (
@@ -17,7 +28,9 @@ const getScript = (
             ? 'navigator.serviceWorker.register("/sw-4ov.js");'
             : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})";
     let s = "";
-    const f = ((getCfg("scripts") as string) || "").split(", ");
+    const f = (getCfg("htmlScripts", []) as ScriptConfig[]).map(item =>
+        item?.enabled ? item.filename : ""
+    );
     f.forEach(file => {
         if (file)
             try {
@@ -253,5 +266,225 @@ const getWebviewHtml_flash = (
     </body>
 </html>
 `;
+/** 管理 HTML 代码片段 */
+async function manageScripts() {
+    try {
+        let scriptsQp = createQuickPick({
+                title: "管理 HTML 代码片段",
+            }),
+            qpItems: vscode.QuickPickItem[] = [],
+            onlineQpItems: vscode.QuickPickItem[] = [],
+            installedItems: ScriptConfig[];
+        scriptsQp.keepScrollPosition = true;
+        scriptsQp.buttons = [
+            {
+                tooltip: "了解更多",
+                iconPath: new vscode.ThemeIcon("globe"),
+            },
+            {
+                tooltip: "反馈",
+                iconPath: new vscode.ThemeIcon("feedback"),
+            },
+        ];
 
-export { getScript, getWebviewHtml_flash, getWebviewHtml_h5 };
+        const f = (update = true) => {
+            scriptsQp.items = [];
+            qpItems = [];
+            installedItems = getCfg("htmlScripts", []);
+            scriptsQp.busy = true;
+            qpItems.push({
+                label: "已安装",
+                kind: -1,
+            });
+            installedItems.forEach(installedItem => {
+                if (!installedItem?.filename) return;
+                qpItems.push({
+                    label: installedItem.displayName,
+                    description: installedItem.filename,
+                    buttons: [
+                        {
+                            tooltip: "简介",
+                            iconPath: new vscode.ThemeIcon("info"),
+                        },
+                        {
+                            tooltip: installedItem.enabled ? "禁用" : "启用",
+                            iconPath: new vscode.ThemeIcon(
+                                installedItem.enabled
+                                    ? "debug-breakpoint-unverified"
+                                    : "debug-breakpoint"
+                            ),
+                        },
+                        {
+                            tooltip: "安装或更新",
+                            iconPath: new vscode.ThemeIcon("cloud-download"),
+                        },
+                        {
+                            tooltip: "移除",
+                            iconPath: new vscode.ThemeIcon("trashcan"),
+                        },
+                    ],
+                });
+            });
+            scriptsQp.items = qpItems;
+            if (update)
+                httpRequest
+                    .get(
+                        "https://dsy4567.github.io/4ov-scripts/download.html",
+                        "text"
+                    )
+                    .then(res => {
+                        const $ = cheerio.load(res.data);
+                        let items: Record<string, string> = {};
+                        $("ul#items > li").each((i, el) => {
+                            const dataset = $(el).data() as Record<
+                                string,
+                                string
+                            >;
+                            items[dataset["id"]] = dataset["displayName"];
+                        });
+
+                        qpItems.push({
+                            label: "全部",
+                            kind: -1,
+                        });
+                        Object.entries(items).forEach(([id, displayName]) => {
+                            if (!id) return;
+                            const o = {
+                                label: displayName,
+                                description: id + ".html",
+                                buttons: [
+                                    {
+                                        tooltip: "简介",
+                                        iconPath: new vscode.ThemeIcon("info"),
+                                    },
+                                    {
+                                        tooltip: "安装或更新",
+                                        iconPath: new vscode.ThemeIcon(
+                                            "cloud-download"
+                                        ),
+                                    },
+                                ],
+                            };
+                            qpItems.push(o);
+                            onlineQpItems.push(o);
+                        });
+                        scriptsQp.items = qpItems;
+                        scriptsQp.busy = false;
+                    })
+                    .catch(e => {
+                        err("无法获取 HTML 代码片段下载页", e);
+                        scriptsQp.busy = false;
+                    });
+            else {
+                qpItems.push(
+                    {
+                        label: "全部",
+                        kind: -1,
+                    },
+                    ...onlineQpItems
+                );
+                scriptsQp.items = qpItems;
+                scriptsQp.busy = false;
+            }
+            scriptsQp.busy = true;
+            setCfg("htmlScripts", installedItems).then(
+                () => {
+                    scriptsQp.busy = false;
+                },
+                () => {
+                    scriptsQp.busy = false;
+                }
+            );
+        };
+        scriptsQp.onDidTriggerItemButton(async b => {
+            try {
+                if (scriptsQp.busy) return;
+                scriptsQp.busy = true;
+                installedItems = getCfg("htmlScripts", []);
+                let installedItem: ScriptConfig | undefined = undefined,
+                    installedItemIndex = -1,
+                    id = b.item.description?.split(".")[0];
+                installedItems.forEach((_, i) => {
+                    if (b.item.description === _?.filename) {
+                        installedItem = _;
+                        installedItemIndex = i;
+                    }
+                });
+
+                switch (b.button.tooltip) {
+                    case "简介":
+                        showWebviewPanel(
+                            `https://dsy4567.github.io/4ov-scripts/${id}/`,
+                            b.item.label,
+                            "",
+                            true,
+                            false
+                        );
+                        break;
+                    case "禁用":
+                    case "启用":
+                        installedItems[installedItemIndex].enabled =
+                            !installedItems[installedItemIndex].enabled;
+                        break;
+                    case "安装或更新":
+                        fs.writeFileSync(
+                            path.join(DATA_DIR, "html-scripts/", id + ".html"),
+                            (
+                                await httpRequest.get(
+                                    `https://dsy4567.github.io/4ov-scripts/${id}/${id}.html`,
+                                    "arraybuffer"
+                                )
+                            ).data
+                        );
+                        !installedItem &&
+                            installedItems.push({
+                                displayName: b.item.label,
+                                enabled: true,
+                                filename: id + ".html",
+                            });
+                        vscode.window.showInformationMessage(
+                            "安装成功: " + b.item.label
+                        );
+                        break;
+                    case "移除":
+                        delete installedItems[installedItemIndex];
+                        fs.rmSync(
+                            path.join(DATA_DIR, "html-scripts/", id + ".html")
+                        );
+                        vscode.window.showInformationMessage(
+                            "移除成功: " + b.item.label
+                        );
+                        break;
+                    default:
+                        break;
+                }
+
+                await setCfg("htmlScripts", installedItems);
+            } catch (e) {
+                err(e);
+            }
+            scriptsQp.busy = false;
+            f(false);
+        });
+        scriptsQp.onDidTriggerButton(b => {
+            switch (b.tooltip) {
+                case "了解更多":
+                    openUrl("https://dsy4567.github.io/4ov-scripts/");
+                    break;
+                case "反馈":
+                    openUrl("https://github.com/dsy4567/4ov-scripts/issues");
+                    break;
+                default:
+                    break;
+            }
+        });
+        scriptsQp.onDidHide(() => scriptsQp.dispose());
+
+        f();
+        scriptsQp.show();
+    } catch (e) {
+        err(e);
+    }
+}
+
+export { getScript, getWebviewHtml_flash, getWebviewHtml_h5, manageScripts };

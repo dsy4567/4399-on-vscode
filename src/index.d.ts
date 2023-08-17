@@ -5,7 +5,7 @@ type CfgNames =
     | "printLogs"
     | "title"
     | "injectionScripts"
-    | "scripts"
+    | "htmlScripts"
     | "showIcon"
     | "openUrl"
     | "updateHistory"
@@ -47,6 +47,11 @@ type History = {
     webGame: boolean;
     name: string;
     url: string;
+};
+type ScriptConfig = {
+    filename: string;
+    displayName: string;
+    enabled: boolean;
 };
 type Supplements = Record<"_ver", number> &
     Record<

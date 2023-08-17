@@ -10,7 +10,7 @@ import * as vscode from "vscode";
 
 import { checkIn, getCookie, getCookieSync, setCookie } from "./account";
 import { getGameInfo, setGameInfo } from "./game";
-import { getScript, getWebviewHtml_h5 } from "./scripts";
+import { getScript, getWebviewHtml_h5, manageScripts } from "./scripts";
 import { getData, setData, getPort, initHttpServer } from "./server";
 import isLocalhost = require("is-localhost-ip");
 
@@ -226,15 +226,17 @@ function err(...arg: any) {
 function moreAction() {
     vscode.window
         .showQuickPick([
-            "安装 HTML 代码片段",
+            "管理 HTML 代码片段",
+            "显示数据目录路径",
             "⚠️ 以下选项仅应用于开发用途 ⬇️",
             "启动本地服务器",
             "关闭本地服务器",
             "启动简易浏览器",
         ])
         .then(async val => {
-            if (val === "安装 HTML 代码片段")
-                openUrl("https://dsy4567.github.io/4ov-scripts/");
+            if (val === "管理 HTML 代码片段") manageScripts();
+            else if (val === "显示数据目录路径")
+                vscode.window.showInformationMessage(DATA_DIR);
             else if (val === "启动本地服务器") {
                 const gameInfo = getGameInfo();
                 initHttpServer(
