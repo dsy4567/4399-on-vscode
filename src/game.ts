@@ -701,30 +701,38 @@ async function showGameDetail(url?: string) {
                 };
 
                 commentQp.onDidAccept(async () => {
-                    if (commentQp.activeItems[0].label === "下一页") {
-                        page++;
-                        showComments().catch(e => {
-                            err("无法获取评论:", e);
-                        });
-                    } else if (
-                        commentQp.activeItems[0].label === " | > 查看更多回复"
-                    )
-                        try {
-                            commentQp.keepScrollPosition = true;
-                            await showReplies(
-                                +(commentQp.activeItems[0].description || -1)
+                    switch (commentQp.activeItems[0].label) {
+                        case "下一页":
+                            page++;
+                            showComments().catch(e => {
+                                err("无法获取评论:", e);
+                            });
+                            break;
+                        case " | > 查看更多回复":
+                            try {
+                                commentQp.keepScrollPosition = true;
+                                await showReplies(
+                                    +(
+                                        commentQp.activeItems[0].description ||
+                                        -1
+                                    )
+                                );
+                                commentQp.keepScrollPosition = false;
+                            } catch (e) {
+                                err("无法获取回复:", e);
+                                commentQp.busy = false;
+                            }
+                            break;
+                        default:
+                            vscode.window.showInformationMessage(
+                                commentQp.activeItems[0].description ||
+                                    commentQp.activeItems[0].label
                             );
-                            commentQp.keepScrollPosition = false;
-                        } catch (e) {
-                            err("无法获取回复:", e);
-                            commentQp.busy = false;
-                        }
-                    else
-                        vscode.window.showInformationMessage(
-                            commentQp.activeItems[0].description ||
-                                commentQp.activeItems[0].label
-                        );
+                            break;
+                    }
                 });
+                commentQp.onDidHide(() => commentQp.dispose());
+
                 commentQp.show();
                 showComments().catch(e => {
                     err("无法获取评论:", e);
@@ -901,10 +909,15 @@ async function showHistory() {
 }
 function getGameInfo() {
     return {
+        /** e.g. szhong.4399.com */
         server,
+        /** e.g. /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
         gamePath,
+        /** e.g. https://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
         gameUrl,
+        /** e.g. {"原始人部落": "https://www.4399.com/flash/230924.htm"} */
         gameInfoUrls,
+        /** e.g. https://client-zmxyol.3304399.net/client/?... */
         webGameUrl,
         isFlashGame,
     };
