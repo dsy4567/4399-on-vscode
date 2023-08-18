@@ -96,7 +96,7 @@ addEventListener("click", ev => {
         ev.preventDefault();
         let u = new URL(ev.target.href, location.href);
         if (ev.target.pathname !== location.pathname && !u.hash) {
-            u = u.href.replaceAll(location.host, "_4ov-server");
+            u.href = u.href.replaceAll(location.host, "_4ov-server");
             open(u.href);
         }
     }
