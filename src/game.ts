@@ -507,6 +507,7 @@ async function showGameDetail(url?: string) {
                         ).data,
                         "utf8"
                     );
+                    log("页码", page);
                     if (!html) return err("无法获取评论页面: 响应为空");
 
                     const $ = cheerio.load(html);
@@ -650,6 +651,7 @@ async function showGameDetail(url?: string) {
                                 "json"
                             )
                         ).data;
+                    log("页码", page, "CommentIndex", CommentIndex);
                     if (!json.data) return err("无法获取评论页面: 响应为空");
                     const $ = cheerio.load(json.data);
 
@@ -746,6 +748,7 @@ async function showGameDetail(url?: string) {
         err("无法获取游戏页面", String(e));
     }
 }
+/** 分类 */
 async function category() {
     let res: AxiosResponse;
     try {
@@ -756,7 +759,7 @@ async function category() {
     if (!res.data) return err("无法获取4399首页: 响应为空");
 
     res.data = iconv.decode(res.data, "gb2312");
-    log("成功获取到4399首页");
+    log("成功获取到4399分类页");
 
     let $ = cheerio.load(res.data),
         categories: Record<string, string> = {};
@@ -826,6 +829,7 @@ async function category() {
 
     play(url);
 }
+/** 首页推荐 */
 async function recommended() {
     let res: AxiosResponse;
     try {
@@ -863,7 +867,7 @@ async function recommended() {
 
     play(url);
 }
-/** 更新历史记录 */
+/** 写入历史记录 */
 function updateHistory(history: History) {
     if (!getCfg("updateHistory", true)) return;
 
@@ -873,6 +877,7 @@ function updateHistory(history: History) {
     h.unshift(history);
     globalStorage(getContext()).set("history", h);
 }
+/** 显示历史记录 */
 async function showHistory() {
     try {
         let h: History[] = globalStorage(getContext()).get("history");
@@ -907,6 +912,7 @@ async function showHistory() {
         err("无法读取历史记录", String(e));
     }
 }
+/** 获取 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
 function getGameInfo() {
     return {
         /** e.g. szhong.4399.com */
@@ -922,6 +928,7 @@ function getGameInfo() {
         isFlashGame,
     };
 }
+/** 设置 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
 function setGameInfo(
     Server?: string,
     GamePath?: string,

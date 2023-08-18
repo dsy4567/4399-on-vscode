@@ -24,11 +24,12 @@ let context: vscode.ExtensionContext;
 const STATUS_BAR_ITEM: vscode.StatusBarItem =
     vscode.window.createStatusBarItem(1);
 
-/** 扩展 .ts 文件路径 */
+/** `<扩展安装路径>/src/` */
 const DIRNAME = __dirname;
-/** 主目录路径 e.g. "C:\users\you\.4ov-data\", "/home/you/.4ov-data/" */
+/** 主目录路径 e.g. `"C:\users\you\.4ov-data\"`, `"/home/you/.4ov-data/"` */
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 
+/** axios 的封装 */
 const httpRequest = {
     get<RT>(url: string, responseType: ResponseType & RT, noCookie = false) {
         return axios.get<RTypes[ResponseType & RT]>(
@@ -49,6 +50,7 @@ const httpRequest = {
         );
     },
 };
+/** `vscode.window.createQuickPick` 的封装 */
 function createQuickPick(o: {
     value?: string;
     title?: string;
@@ -84,9 +86,11 @@ function setCfg(name: CfgNames, val: any) {
         .getConfiguration()
         .update("4399-on-vscode." + name, val, true);
 }
+/** 获取上下文 */
 function getContext() {
     return context;
 }
+/** 设置上下文 */
 function setContext(ctx: vscode.ExtensionContext) {
     context = ctx;
 }
@@ -185,6 +189,7 @@ async function init() {
             })
             .catch(e => err("获取登录状态失败:", e));
 }
+/** 判断是否为 4399 域名 */
 function is4399Domain(hostname: string) {
     return hostname === "4399.com" || hostname.endsWith(".4399.com");
 }
@@ -223,6 +228,7 @@ function err(...arg: any) {
     console.error("[4399 on VSCode]", ...arg);
     loaded(true);
 }
+/** 更多操作 */
 function moreAction() {
     vscode.window
         .showQuickPick([
@@ -318,7 +324,7 @@ function objectToQuery(obj: any, prefix?: string) {
     }, "");
 }
 /**
- * 打开链接
+ * 在浏览器打开链接
  * @param url 链接
  */
 function openUrl(url: string) {
@@ -484,6 +490,7 @@ async function showWebviewPanel(
         console.error(String(e));
     }
 }
+/** 使用远程开发环境时发出警告 */
 function alertWhenUsingRemoteDevEnv() {
     if (
         !RemoteDevEnv_alerted &&

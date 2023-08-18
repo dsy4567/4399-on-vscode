@@ -23,8 +23,11 @@ import {
     openUrl,
 } from "./utils";
 
+/** 游戏入口文件内容 */
 let DATA: Buffer | string;
+/** HTTP 服务器 */
 let HTTP_SERVER: http.Server | undefined;
+/** 服务器端口 */
 let PORT = 44399;
 /** 覆盖用户设置的 referer, 尽量使用 initHttpServer() 函数设置该值 */
 let REF: string | undefined;
@@ -335,12 +338,15 @@ async function initHttpServer(callback: Function, ref?: string) {
         }
     }
 }
+/** 获取 {@link DATA} 变量值 */
 function getData() {
     return DATA;
 }
+/** 设置 {@link DATA} 变量值 */
 function setData(data: Buffer | string) {
     DATA = data;
 }
+/** 获取端口号 */
 function getPort() {
     return PORT;
 }

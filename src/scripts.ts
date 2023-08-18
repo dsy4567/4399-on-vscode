@@ -114,6 +114,7 @@ ${
             : "") + s
     );
 };
+/** 获取用于运行 H5 游戏的 HTML 代码 */
 const getWebviewHtml_h5 = (
     fullWebServerUri: vscode.Uri | string,
     w: string | number = "100%",
@@ -168,6 +169,7 @@ const getWebviewHtml_h5 = (
 </html>
 
 `;
+/** 获取用于运行 Flash 游戏的 HTML 代码 */
 const getWebviewHtml_flash = (
     fullWebServerUri: vscode.Uri | string,
     server: string,

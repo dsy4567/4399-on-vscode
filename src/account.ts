@@ -10,6 +10,7 @@ import { err, getContext, httpRequest, loaded, objectToQuery } from "./utils";
 
 let COOKIE: string;
 
+/** 设置 cookie */
 async function setCookie(c: string = ""): Promise<void> {
     COOKIE = c;
     return new Promise(async (resolve, reject) => {
@@ -44,7 +45,7 @@ function getCookieSync() {
     return COOKIE;
 }
 /**
- * 登录相关, 如未登录则要求用户登录, 然后执行回调, 否则直接执行回调
+ * 登录, 如未登录则要求用户登录, 然后执行回调, 否则直接执行回调
  * @param callback 回调, 参数为 cookie
  * @param loginOnly 直接展示登录框, 不在右下角显示提示
  */
@@ -196,6 +197,7 @@ function checkIn(quiet?: boolean) {
         }
     });
 }
+/** 我的 */
 function my() {
     login(async c => {
         let Pnick = cookie.parse(c)["Pnick"] || "未知";
