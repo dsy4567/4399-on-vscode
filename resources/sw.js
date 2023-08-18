@@ -18,6 +18,7 @@ self.addEventListener("fetch", ev => {
         req = ev.request;
 
     if (
+        (u.protocol !== "http:" && u.protocol !== "https:") ||
         u.host === location.host ||
         u.pathname.startsWith("/_4ov/") ||
         u.pathname === "/sw-4ov.js" ||
