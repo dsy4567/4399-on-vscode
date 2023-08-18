@@ -212,52 +212,6 @@
                 "command": "4399-on-vscode.more-action",
                 "title": "更多操作"
             }
-        ],
-        "walkthroughs": [
-            {
-                "id": "4399-on-vscode",
-                "title": "4399 on VSCode 入门",
-                "description": "了解如何使用 4399 on VSCode 带薪摸鱼（bushi），并了解更多使用技巧。",
-                "steps": [
-                    {
-                        "id": "play",
-                        "title": "开玩",
-                        "description": "在[推荐游戏](command:4399-on-vscode.recommended)、[搜索游戏](command:4399-on-vscode.search)中找到并启动喜欢的游戏，你也可以[输入游戏 ID](command:4399-on-vscode.get)\n[查看推荐游戏](command:4399-on-vscode.recommended)",
-                        "media": {
-                            "image": "resources/play.png",
-                            "altText": "游戏截图：《冰娃与火娃6》"
-                        },
-                        "completionEvents": [
-                            "onCommand:command:4399-on-vscode.recommended",
-                            "onCommand:command:4399-on-vscode.search",
-                            "onCommand:command:4399-on-vscode.get",
-                            "onCommand:command:4399-on-vscode.get-h5-web-game",
-                            "onCommand:command:4399-on-vscode.random"
-                        ]
-                    },
-                    {
-                        "id": "login",
-                        "title": "登录 4399 账号",
-                        "description": "登录 4399 账号后，你可以玩 H5 页游、浏览群组等。\n[登录](command:4399-on-vscode.my)",
-                        "media": {
-                            "image": "resources/login.png",
-                            "altText": "登录"
-                        },
-                        "completionEvents": [
-                            "onSettingChanged:4399-on-vscode.my"
-                        ]
-                    },
-                    {
-                        "id": "script",
-                        "title": "安装 HTML 代码片段",
-                        "description": "HTML 代码片段将在 H5 小游戏启动后被注入，可以优化游戏体验或为 4399 on VSCode 添加新功能。\n[安装 HTML 代码片段](https://dsy4567.github.io/4ov-scripts/)",
-                        "media": {
-                            "image": "resources/script.png",
-                            "altText": "示例 HTML 代码片段"
-                        }
-                    }
-                ]
-            }
         ]
     },
     "scripts": {
