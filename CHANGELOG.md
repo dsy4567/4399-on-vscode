@@ -3,6 +3,7 @@
 ## v0.3.5
 
 -   ✨ 自动删除无效的 `4399-on-vscode.htmlScripts` 配置
+-   ✨ 为 HTML 代码片段添加 `__4399_on_vscode__` 常量
 
 ## v0.3.4
 
