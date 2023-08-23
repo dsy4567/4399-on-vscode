@@ -276,7 +276,7 @@ async function manageScripts() {
             }),
             qpItems: vscode.QuickPickItem[] = [],
             onlineQpItems: vscode.QuickPickItem[] = [],
-            installedItems: ScriptConfig[];
+            installedItems: (ScriptConfig | null)[];
         scriptsQp.keepScrollPosition = true;
         scriptsQp.buttons = [
             {
@@ -403,7 +403,7 @@ async function manageScripts() {
                 if (scriptsQp.busy) return;
                 scriptsQp.busy = true;
                 installedItems = getCfg("htmlScripts", []);
-                let installedItem: ScriptConfig | undefined = undefined,
+                let installedItem: ScriptConfig | null = null,
                     installedItemIndex = -1,
                     id = b.item.description?.split(".")[0];
                 installedItems.forEach((_, i) => {
@@ -412,6 +412,7 @@ async function manageScripts() {
                         installedItemIndex = i;
                     }
                 });
+                installedItem = installedItem as ScriptConfig | null;
 
                 switch (b.button.tooltip) {
                     case "简介":
@@ -425,8 +426,8 @@ async function manageScripts() {
                         break;
                     case "禁用":
                     case "启用":
-                        installedItems[installedItemIndex].enabled =
-                            !installedItems[installedItemIndex].enabled;
+                        if (installedItem)
+                            installedItem.enabled = !installedItem.enabled;
                         break;
                     case "安装或更新":
                         fs.writeFileSync(
@@ -438,7 +439,10 @@ async function manageScripts() {
                                 )
                             ).data
                         );
-                        !installedItem &&
+                        if (installedItem) {
+                            installedItem.displayName = b.item.label;
+                            installedItem.filename = id + ".html";
+                        } else
                             installedItems.push({
                                 displayName: b.item.label,
                                 enabled: true,
@@ -449,7 +453,7 @@ async function manageScripts() {
                         );
                         break;
                     case "移除":
-                        delete installedItems[installedItemIndex];
+                        installedItems.splice(installedItemIndex, 1);
                         fs.rmSync(
                             path.join(DATA_DIR, "html-scripts/", id + ".html")
                         );
@@ -461,6 +465,9 @@ async function manageScripts() {
                         break;
                 }
 
+                installedItems.forEach((item, i) => {
+                    if (!item || !item.filename) installedItems.splice(i, 1);
+                });
                 await setCfg("htmlScripts", installedItems);
             } catch (e) {
                 err(e);
