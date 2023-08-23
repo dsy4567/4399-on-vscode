@@ -44,6 +44,12 @@ function getCookieSync() {
     }
     return COOKIE;
 }
+/** 获取用户 ID */
+function getUid() {
+    const uid = +cookie.parse(getCookieSync())["Pauth"]?.split(/(\%7C|\|)/g)[0];
+    if (isNaN(uid)) return 0;
+    return uid;
+}
 /**
  * 登录, 如未登录则要求用户登录, 然后执行回调, 否则直接执行回调
  * @param callback 回调, 参数为 cookie
@@ -263,4 +269,4 @@ function my() {
     });
 }
 
-export { setCookie, getCookie, getCookieSync, login, checkIn, my };
+export { setCookie, getCookie, getCookieSync, getUid, login, checkIn, my };

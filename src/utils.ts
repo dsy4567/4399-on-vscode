@@ -396,7 +396,7 @@ async function showWebviewPanel(
                     typeof D === "string" ? D : iconv.decode(D, "utf8")
                 );
                 $("head").append(
-                    getScript(getCookieSync(), true, gameInfo.server)
+                    getScript(getCookieSync(), true, gameInfo.server, "h5")
                 );
                 setData($.html());
             }

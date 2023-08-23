@@ -5,11 +5,13 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 
+import { getUid } from "./account";
 import {
     DATA_DIR,
     createQuickPick,
     err,
     getCfg,
+    getContext,
     httpRequest,
     is4399Domain,
     openUrl,
@@ -20,13 +22,16 @@ import {
 /** 获取要注入的 HTML 代码片段 */
 const getScript = (
     cookie: string = "",
-    includeDefaultScript: boolean = true,
-    server: string
+    registerServiceWorker: boolean = true,
+    server: string = "",
+    gameType: "flash" | "h5" | "other" = "h5"
 ): string => {
     if (!getCfg("injectionScripts", true))
-        return getCfg("enableProxy") && getCfg("enableServiceWorker")
-            ? 'navigator.serviceWorker.register("/sw-4ov.js");'
-            : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})";
+        return registerServiceWorker
+            ? getCfg("enableProxy") && getCfg("enableServiceWorker")
+                ? 'navigator.serviceWorker.register("/sw-4ov.js");'
+                : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"
+            : "";
     let s = "";
     const f = (getCfg("htmlScripts", []) as ScriptConfig[]).map(item =>
         item?.enabled ? item.filename : ""
@@ -50,8 +55,7 @@ const getScript = (
     });
 
     return (
-        (includeDefaultScript
-            ? `
+        `
 <style>
 html, body {
     overflow: hidden;
@@ -67,6 +71,15 @@ p.tip4ov {
 }
 </style>
 <script>
+const __4399_on_vscode__ = {
+    gameType: "${gameType}",
+    userID: ${getUid()},
+    version: [${(
+        getContext().extension.packageJSON.version as string | undefined
+    )
+        ?.split(".")
+        .map(n => +n)}],
+}
 // 强制设置 referrer
 Object.defineProperty(document, "referrer", {
     value: "https://www.4399.com/",
@@ -105,13 +118,14 @@ addEventListener("click", ev => {
 document.documentElement.insertAdjacentHTML("beforeend", "<p class='tip4ov'>游戏正在加载，第一次加载需要一些时间，请耐心等待</p>");
 
 ${
-    getCfg("enableProxy") && getCfg("enableServiceWorker")
-        ? 'navigator.serviceWorker.register("/sw-4ov.js");'
-        : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"
+    registerServiceWorker
+        ? getCfg("enableProxy") && getCfg("enableServiceWorker")
+            ? 'navigator.serviceWorker.register("/sw-4ov.js");'
+            : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"
+        : ""
 }
 </script>
-`
-            : "") + s
+` + s
     );
 };
 /** 获取用于运行 H5 游戏的 HTML 代码 */
@@ -172,7 +186,7 @@ const getWebviewHtml_h5 = (
 /** 获取用于运行 Flash 游戏的 HTML 代码 */
 const getWebviewHtml_flash = (
     fullWebServerUri: vscode.Uri | string,
-    server: string,
+    server = "",
     w: string | number = "100%",
     h: string | number = "100%"
 ) => `
@@ -198,39 +212,6 @@ const getWebviewHtml_flash = (
             }
         </style>
         <script>
-            // 打开链接
-            Object.defineProperty(window, "open", {
-                value: (url) => {
-                    console.log(url);
-                    fetch("/_4ov/openUrl/" + url);
-                },
-                writable: true,
-            });Object.defineProperty(window, "open", {
-                value: url => {
-                    let u = new URL(url, location.href);
-                    u = u.href.replaceAll(location.host, "_4ov-server");
-                    fetch("/_4ov/openUrl/" + u);
-                },
-                writable: true,
-            });
-            addEventListener("click", ev => {
-                if (ev.target?.tagName === "A" && ev.target.href) {
-                    ev.preventDefault();
-                    let u = new URL(ev.target.href, location.href);
-                    if (ev.target.pathname !== location.pathname && !u.hash) {
-                        u = u.href.replaceAll(location.host, "_4ov-server");
-                        open(u.href);
-                    }
-                }
-            });
-            ${
-                getCfg("enableProxy") && getCfg("enableServiceWorker")
-                    ? 'navigator.serviceWorker.register("/sw-4ov.js");'
-                    : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"
-            }
-        </script>
-        ${getScript("", false, server)}
-        <script>
             window.play = function (url) {
                 var html =
                     '<object id="flashgame" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="//download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=10,0,0,0" width="100%" height="100%"><param id="game" name="movie" value="' +
@@ -253,6 +234,7 @@ const getWebviewHtml_flash = (
                 return "https://unpkg.com/@ruffle-rs/ruffle/ruffle.js";
             }
         })()}"></script>
+        ${getScript("", true, server, "flash")}
     </head>
     <body style="height: 100%;margin: 0;padding: 0;">
         <p style=color #888;">游戏正在加载，第一次加载需要一些时间，请耐心等待</p>
