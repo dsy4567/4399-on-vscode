@@ -1,5 +1,5 @@
 {
-    "4399-on-vscode.outputLogs": true,
+    "4399-on-vscode.printLogs": true,
     "[css]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
@@ -21,14 +21,12 @@
     "[typescript]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    "commentTranslate.source": "Bing",
-    "commentTranslate.targetLanguage": "zh-CN",
     "files.exclude": {
         "out": false
     },
     "prettier.arrowParens": "avoid",
     "prettier.bracketSpacing": true,
-    "prettier.endOfLine": "auto",
+    "prettier.endOfLine": "lf",
     "prettier.printWidth": 80,
     "prettier.proseWrap": "preserve",
     "prettier.quoteProps": "as-needed",
