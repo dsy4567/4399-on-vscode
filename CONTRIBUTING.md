@@ -33,7 +33,7 @@
         -   使用 `vscode.env.openExternal(vscode.Uri.parse(url))` 在浏览器打开链接/在资源管理器中打开文件夹
         -   使用 `vscode.env.asExternalUri(vscode.Uri.parse(url))` 解析包含环回地址（如 `127.0.0.1`）的 URL
 -   使用 ES2022 语法
--   使用严格模式 `"use strict"`
+-   纯 JS 文件应使用严格模式 `"use strict"`
 -   变量/函数名等尽量使用小驼峰命名法，类型使用大驼峰命名法，全局常量尽量使用全大写的下划线法命名法
 -   使用 `let` 声明变量
 -   `let`/`const` 语句可根据用途分组
