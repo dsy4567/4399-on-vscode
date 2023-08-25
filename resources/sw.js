@@ -4,6 +4,8 @@
  * See COPYING in the project root for license information.
  */
 
+"use strict";
+
 const whiteList = [
     "cdnjs.cloudflare.com",
     "jsdelivr.net",
@@ -49,7 +51,7 @@ self.addEventListener("fetch", ev => {
                         if (done) break;
                         c.push(value);
                     }
-                    if (c[0]) c = new Blob(c);
+                    c = new Blob(c);
                 }
                 return await fetch(u, {
                     body: c,
