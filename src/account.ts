@@ -14,19 +14,6 @@ import { err, getContext, httpRequest, loaded, objectToQuery } from "./utils";
 
 let COOKIE: string;
 
-/** 设置 cookie */
-async function setCookie(c: string = ""): Promise<void> {
-    COOKIE = c;
-    return new Promise(async (resolve, reject) => {
-        try {
-            getContext().secrets.store("cookie", c);
-            resolve();
-        } catch (e) {
-            err("无法设置 cookie", e);
-            reject(e);
-        }
-    });
-}
 /** 获取 cookie */
 async function getCookie(): Promise<string> {
     return new Promise(async (resolve, reject) => {
@@ -53,6 +40,55 @@ function getUid() {
     const uid = +cookie.parse(getCookieSync())["Pauth"]?.split(/(\%7C|\|)/g)[0];
     if (isNaN(uid)) return 0;
     return uid;
+}
+/** 设置 cookie */
+async function setCookie(c: string = ""): Promise<void> {
+    COOKIE = c;
+    return new Promise(async (resolve, reject) => {
+        try {
+            getContext().secrets.store("cookie", c);
+            resolve();
+        } catch (e) {
+            err("无法设置 cookie", e);
+            reject(e);
+        }
+    });
+}
+
+/** 签到 */
+function checkIn(quiet?: boolean) {
+    login(async () => {
+        try {
+            const data: {
+                code?: number;
+                result?:
+                    | null
+                    | string
+                    | {
+                          days?: number;
+                          credit?: number;
+                      };
+                msg?: string;
+            } = (
+                await httpRequest.get(
+                    "https://my.4399.com/plugins/sign/set-t-" +
+                        new Date().getTime(),
+                    "json"
+                )
+            ).data;
+            if (data.result === null) err("签到失败, 其他错误: " + data.msg);
+            else if (typeof data.result === "string")
+                !quiet && vscode.window.showInformationMessage(data.result);
+            else if (typeof data.result === "object")
+                !quiet &&
+                    vscode.window.showInformationMessage(
+                        `签到成功, 您已连续签到${data.result.days}天`
+                    );
+            else err("签到失败, 返回数据非法");
+        } catch (e) {
+            err("签到失败: ", String(e));
+        }
+    });
 }
 /**
  * 登录, 如未登录则要求用户登录, 然后执行回调, 否则直接执行回调
@@ -172,41 +208,6 @@ async function login(
         }
     }
 }
-/** 签到 */
-function checkIn(quiet?: boolean) {
-    login(async () => {
-        try {
-            const data: {
-                code?: number;
-                result?:
-                    | null
-                    | string
-                    | {
-                          days?: number;
-                          credit?: number;
-                      };
-                msg?: string;
-            } = (
-                await httpRequest.get(
-                    "https://my.4399.com/plugins/sign/set-t-" +
-                        new Date().getTime(),
-                    "json"
-                )
-            ).data;
-            if (data.result === null) err("签到失败, 其他错误: " + data.msg);
-            else if (typeof data.result === "string")
-                !quiet && vscode.window.showInformationMessage(data.result);
-            else if (typeof data.result === "object")
-                !quiet &&
-                    vscode.window.showInformationMessage(
-                        `签到成功, 您已连续签到${data.result.days}天`
-                    );
-            else err("签到失败, 返回数据非法");
-        } catch (e) {
-            err("签到失败: ", String(e));
-        }
-    });
-}
 /** 我的 */
 function my() {
     login(async c => {
@@ -273,4 +274,4 @@ function my() {
     });
 }
 
-export { setCookie, getCookie, getCookieSync, getUid, login, checkIn, my };
+export { getCookie, getCookieSync, getUid, setCookie, checkIn, login, my };

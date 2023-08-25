@@ -75,6 +75,8 @@ p.tip4ov {
 }
 </style>
 <script>
+"use strict";
+
 const __4399_on_vscode__ = {
     gameType: "${gameType}",
     userID: ${getUid()},
@@ -121,6 +123,7 @@ addEventListener("click", ev => {
 // 加载提示
 document.documentElement.insertAdjacentHTML("beforeend", "<p class='tip4ov'>游戏正在加载，第一次加载需要一些时间，请耐心等待</p>");
 
+// serviceWorker
 ${
     registerServiceWorker
         ? getCfg("enableProxy") && getCfg("enableServiceWorker")
@@ -217,7 +220,7 @@ const getWebviewHtml_flash = (
         </style>
         <script>
             window.play = function (url) {
-                var html =
+                const html =
                     '<object id="flashgame" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="//download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=10,0,0,0" width="100%" height="100%"><param id="game" name="movie" value="' +
                     url +
                     '" /><embed id="flashgame1" name="flashgame" src="' +
@@ -227,7 +230,7 @@ const getWebviewHtml_flash = (
                     }" height="${
     typeof h === "string" ? h : h + "%"
 }" /> <param name="quality" value="high" /></object>';
-                document.body.innerHTML =html
+                document.body.innerHTML = html
             };
         </script>
         <script src="${(() => {
@@ -482,4 +485,4 @@ async function manageScripts() {
     }
 }
 
-export { getScript, getWebviewHtml_flash, getWebviewHtml_h5, manageScripts };
+export { getScript, getWebviewHtml_h5, getWebviewHtml_flash, manageScripts };

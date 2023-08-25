@@ -13,10 +13,10 @@ import { play } from "./game";
 import {
     createQuickPick,
     err,
-    log,
     getContext,
     globalStorage,
     httpRequest,
+    log,
 } from "./utils";
 
 // 搜索相关
@@ -33,62 +33,6 @@ let searchTimeout: NodeJS.Timeout;
 /** 正在展示搜索结果 */
 let showingSearchResult = false;
 
-/** 获取搜索建议 */
-async function suggest(kwd: string) {
-    searchValue = kwd;
-    searchQp.title = "4399 on VSCode: 搜索";
-
-    searchPage = 1;
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(async () => {
-        searchQp.busy = true;
-        searchQp.buttons = [];
-        let res: AxiosResponse<Buffer | string>;
-        try {
-            res = await httpRequest.get(
-                "https://so2.4399.com/search/lx.php?k=" + encodeURI(kwd),
-                "arraybuffer"
-            );
-        } catch (e) {
-            return err("获取搜索建议失败", String(e));
-        }
-        if (!res.data) return err("获取搜索建议失败");
-
-        res.data = iconv.decode(res.data as Buffer, "gb2312");
-        let d: string = res.data;
-        log(d);
-
-        let m = d.split(" =")[1];
-        searchedGames = [];
-        searchQpItems = [];
-
-        try {
-            if (!m) throw new Error("");
-
-            searchedGames = JSON.parse(m.replaceAll("'", '"'));
-        } catch (e) {
-            return err("解析搜索建议失败");
-        }
-
-        searchQpItems.push({
-            label: searchQp.value,
-            description: "直接搜索",
-            alwaysShow: true,
-        });
-        searchedGames.forEach(g => {
-            searchQpItems.push({
-                label: g[0],
-                description: "游戏 ID: " + g[1],
-                alwaysShow: true,
-            });
-        });
-
-        if (searchQpItems[0]) searchQp.items = searchQpItems;
-
-        showingSearchResult = false;
-        searchQp.busy = false;
-    }, 1000);
-}
 /** 搜索 */
 async function search(s: string) {
     if (searchQp.busy) return;
@@ -202,6 +146,62 @@ async function searchGames(s: string) {
 
     searchQp.items = searchQpItems;
     searchQp.show();
+}
+/** 获取搜索建议 */
+async function suggest(kwd: string) {
+    searchValue = kwd;
+    searchQp.title = "4399 on VSCode: 搜索";
+
+    searchPage = 1;
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+        searchQp.busy = true;
+        searchQp.buttons = [];
+        let res: AxiosResponse<Buffer | string>;
+        try {
+            res = await httpRequest.get(
+                "https://so2.4399.com/search/lx.php?k=" + encodeURI(kwd),
+                "arraybuffer"
+            );
+        } catch (e) {
+            return err("获取搜索建议失败", String(e));
+        }
+        if (!res.data) return err("获取搜索建议失败");
+
+        res.data = iconv.decode(res.data as Buffer, "gb2312");
+        let d: string = res.data;
+        log(d);
+
+        let m = d.split(" =")[1];
+        searchedGames = [];
+        searchQpItems = [];
+
+        try {
+            if (!m) throw new Error("");
+
+            searchedGames = JSON.parse(m.replaceAll("'", '"'));
+        } catch (e) {
+            return err("解析搜索建议失败");
+        }
+
+        searchQpItems.push({
+            label: searchQp.value,
+            description: "直接搜索",
+            alwaysShow: true,
+        });
+        searchedGames.forEach(g => {
+            searchQpItems.push({
+                label: g[0],
+                description: "游戏 ID: " + g[1],
+                alwaysShow: true,
+            });
+        });
+
+        if (searchQpItems[0]) searchQp.items = searchQpItems;
+
+        showingSearchResult = false;
+        searchQp.busy = false;
+    }, 1000);
 }
 
 export { searchGames };

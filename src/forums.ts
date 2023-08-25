@@ -17,10 +17,10 @@ import {
     alertWhenUsingRemoteDevEnv,
     createQuickPick,
     err,
-    log,
     getContext,
     globalStorage,
     httpRequest,
+    log,
 } from "./utils";
 
 // 群组相关
@@ -146,6 +146,66 @@ async function enterThread(id: number) {
         err("无法获取帖子页面", String(e));
     }
 }
+/** 搜索群组 */
+function searchForums(kwd: string) {
+    if (threadQp.busy) return;
+
+    clearTimeout(threadTimeout);
+    log("页码: " + threadPage);
+    threadTimeout = setTimeout(async () => {
+        threadQp.busy = true;
+        let res;
+        try {
+            res = (await httpRequest.get(
+                "https://my.4399.com/forums/index-getMtags?type=game&keyword=" +
+                    encodeURI(kwd || "") +
+                    "&page=" +
+                    threadPage,
+                "arraybuffer"
+            )) as AxiosResponse<Buffer | string>;
+        } catch (e) {
+            return err("获取搜索建议失败", "" + e);
+        }
+        if (!res.data) return err("获取搜索建议失败");
+
+        res.data = iconv.decode(res.data as Buffer, "utf8");
+        const d: string = res.data;
+        const $ = cheerio.load(d);
+        threads = [];
+        threadQpItems = [];
+
+        $("ul > li > a > span.title").each((i, elem) => {
+            let g = $(elem).text();
+            let id: string | undefined | number = $(elem)
+                .parent()
+                .attr("href")
+                ?.split("-")
+                ?.at(-1);
+            if (!id || isNaN(Number(id))) return;
+
+            id = Number(id);
+            threads.push([g, id]);
+        });
+
+        threads.forEach(g => {
+            threadQpItems.push({
+                label: g[0],
+                description: "群组 ID: " + g[1],
+                alwaysShow: true,
+            });
+        });
+        threadQpItems.push({
+            label: "下一页",
+            description: "加载下一页群组",
+            alwaysShow: true,
+        });
+
+        if (threadQpItems[0]) threadQp.items = threadQpItems;
+        showingThreads = false;
+        threadQp.buttons = [];
+        threadQp.busy = false;
+    }, 1000);
+}
 /** 显示所有帖子 */
 async function showThreads(id: number, title: string) {
     if (threadQp.busy) return;
@@ -215,66 +275,7 @@ async function showThreads(id: number, title: string) {
         threadQp.busy = false;
     } else err("无法获取群组页面");
 }
-/** 搜索群组 */
-function searchForums(kwd: string) {
-    if (threadQp.busy) return;
 
-    clearTimeout(threadTimeout);
-    log("页码: " + threadPage);
-    threadTimeout = setTimeout(async () => {
-        threadQp.busy = true;
-        let res;
-        try {
-            res = (await httpRequest.get(
-                "https://my.4399.com/forums/index-getMtags?type=game&keyword=" +
-                    encodeURI(kwd || "") +
-                    "&page=" +
-                    threadPage,
-                "arraybuffer"
-            )) as AxiosResponse<Buffer | string>;
-        } catch (e) {
-            return err("获取搜索建议失败", "" + e);
-        }
-        if (!res.data) return err("获取搜索建议失败");
-
-        res.data = iconv.decode(res.data as Buffer, "utf8");
-        const d: string = res.data;
-        const $ = cheerio.load(d);
-        threads = [];
-        threadQpItems = [];
-
-        $("ul > li > a > span.title").each((i, elem) => {
-            let g = $(elem).text();
-            let id: string | undefined | number = $(elem)
-                .parent()
-                .attr("href")
-                ?.split("-")
-                ?.at(-1);
-            if (!id || isNaN(Number(id))) return;
-
-            id = Number(id);
-            threads.push([g, id]);
-        });
-
-        threads.forEach(g => {
-            threadQpItems.push({
-                label: g[0],
-                description: "群组 ID: " + g[1],
-                alwaysShow: true,
-            });
-        });
-        threadQpItems.push({
-            label: "下一页",
-            description: "加载下一页群组",
-            alwaysShow: true,
-        });
-
-        if (threadQpItems[0]) threadQp.items = threadQpItems;
-        showingThreads = false;
-        threadQp.buttons = [];
-        threadQp.busy = false;
-    }, 1000);
-}
 async function main() {
     try {
         let k = ""; // 上次搜索词

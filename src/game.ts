@@ -16,23 +16,24 @@ import * as vscode from "vscode";
 import { login } from "./account";
 import { getPort, initHttpServer, setData } from "./server";
 import {
+    DATA_DIR,
     DIRNAME,
     err,
-    log,
     getCfg,
     getContext,
     globalStorage,
+    httpRequest,
     is4399Domain,
+    log,
     loaded,
     openUrl,
     parseId,
     showWebviewPanel,
-    DATA_DIR,
-    createQuickPick,
-    httpRequest,
 } from "./utils";
 import { showComments } from "./comment";
 
+/** 是否为 flash 游戏 */
+let isFlashGame = false;
 /** e.g. szhong.4399.com */
 let server = "";
 /** e.g. /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
@@ -43,7 +44,6 @@ let gameUrl = "";
 let gameInfoUrls: Record<string, string> = {};
 /** e.g. https://client-zmxyol.3304399.net/client/?... */
 let webGameUrl = "";
-let isFlashGame = false;
 
 // 使用事先准备好的规则匹配难以添加支持的游戏
 let supplements: Supplements = JSON.parse(
@@ -501,6 +501,7 @@ async function showGameDetail(url?: string) {
         err("无法获取游戏页面", String(e));
     }
 }
+
 /** 分类 */
 async function category() {
     let res: AxiosResponse;
@@ -620,16 +621,41 @@ async function recommended() {
 
     play(url);
 }
-/** 写入历史记录 */
-function updateHistory(history: History) {
-    if (!getCfg("updateHistory", true)) return;
 
-    let h: History[] = globalStorage(getContext()).get("history");
-    if (!h || (typeof h === "object" && !h[0])) h = [];
-
-    h.unshift(history);
-    globalStorage(getContext()).set("history", h);
+/** 获取 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
+function getGameInfo() {
+    return {
+        /** e.g. szhong.4399.com */
+        server,
+        /** e.g. /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
+        gamePath,
+        /** e.g. https://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
+        gameUrl,
+        /** e.g. {"原始人部落": "https://www.4399.com/flash/230924.htm"} */
+        gameInfoUrls,
+        /** e.g. https://client-zmxyol.3304399.net/client/?... */
+        webGameUrl,
+        isFlashGame,
+    };
 }
+/** 设置 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
+function setGameInfo(
+    Server?: string,
+    GamePath?: string,
+    GameUrl?: string,
+    GameInfoUrls?: Record<string, string>,
+    WebGameUrl?: string,
+    IsFlashGame?: boolean
+) {
+    if (typeof Server !== "undefined") server = Server;
+    if (typeof GamePath !== "undefined") gamePath = GamePath;
+    if (typeof GameUrl !== "undefined") gameUrl = GameUrl;
+    if (typeof GameInfoUrls !== "undefined") gameInfoUrls = GameInfoUrls;
+    if (typeof WebGameUrl !== "undefined") webGameUrl = WebGameUrl;
+    if (typeof IsFlashGame !== "undefined") isFlashGame = IsFlashGame;
+    return;
+}
+
 /** 显示历史记录 */
 async function showHistory() {
     try {
@@ -665,48 +691,24 @@ async function showHistory() {
         err("无法读取历史记录", String(e));
     }
 }
-/** 获取 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
-function getGameInfo() {
-    return {
-        /** e.g. szhong.4399.com */
-        server,
-        /** e.g. /4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
-        gamePath,
-        /** e.g. https://szhong.4399.com/4399swf/upload_swf/ftp39/cwb/20220706/01a/index.html */
-        gameUrl,
-        /** e.g. {"原始人部落": "https://www.4399.com/flash/230924.htm"} */
-        gameInfoUrls,
-        /** e.g. https://client-zmxyol.3304399.net/client/?... */
-        webGameUrl,
-        isFlashGame,
-    };
-}
-/** 设置 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
-function setGameInfo(
-    Server?: string,
-    GamePath?: string,
-    GameUrl?: string,
-    GameInfoUrls?: Record<string, string>,
-    WebGameUrl?: string,
-    IsFlashGame?: boolean
-) {
-    if (typeof Server !== "undefined") server = Server;
-    if (typeof GamePath !== "undefined") gamePath = GamePath;
-    if (typeof GameUrl !== "undefined") gameUrl = GameUrl;
-    if (typeof GameInfoUrls !== "undefined") gameInfoUrls = GameInfoUrls;
-    if (typeof WebGameUrl !== "undefined") webGameUrl = WebGameUrl;
-    if (typeof IsFlashGame !== "undefined") isFlashGame = IsFlashGame;
-    return;
+/** 写入历史记录 */
+function updateHistory(history: History) {
+    if (!getCfg("updateHistory", true)) return;
+
+    let h: History[] = globalStorage(getContext()).get("history");
+    if (!h || (typeof h === "object" && !h[0])) h = [];
+
+    h.unshift(history);
+    globalStorage(getContext()).set("history", h);
 }
 
 export {
-    category,
     parseServer,
     play,
     playWebGame,
-    recommended,
     showGameDetail,
-    showWebviewPanel,
+    category,
+    recommended,
     getGameInfo,
     setGameInfo,
     showHistory,

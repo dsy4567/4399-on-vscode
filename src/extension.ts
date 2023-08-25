@@ -4,7 +4,6 @@
  * See COPYING in the project root for license information.
  */
 
-"use strict";
 import * as vscode from "vscode";
 
 import { my } from "./account";

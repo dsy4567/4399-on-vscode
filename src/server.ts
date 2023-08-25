@@ -19,11 +19,11 @@ import { getWebviewHtml_flash } from "./scripts";
 import {
     DIRNAME,
     err,
-    log,
     getCfg,
     getContext,
     globalStorage,
     is4399Domain,
+    log,
     openUrl,
 } from "./utils";
 
