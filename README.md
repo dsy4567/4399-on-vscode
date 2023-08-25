@@ -26,10 +26,10 @@
 
 ## 👍 功能
 
+-   🎮 玩 h5 页游、H5 小游戏和部分 flash 小游戏
 -   🖊 登录账号
--   🎮 玩 h5 页游(需要登录)和普通的小游戏(h5 和 flash 游戏)
 -   🔍 搜索游戏
--   ✨ 推荐游戏
+-   ✨ 推荐和分类
 -   👆 手动输入游戏 ID
 -   🕒 历史记录
 -   🔧 自定义标题(摸鱼必备)
@@ -45,7 +45,7 @@
 ## ⚠️ 注意事项
 
 -   **GitHub Codespaces/code-server 请看[这里](https://github.com/dsy4567/4399-on-vscode/wiki/%E8%BF%9C%E7%A8%8B%E5%BC%80%E5%8F%91%E7%9B%B8%E5%85%B3)**
--   **Flash 游戏的运行依赖 [Ruffle](https://github.com/ruffle-rs/ruffle) 模拟器, 在[这里](https://ruffle.rs/#compatibility)查看支持情况**
+-   **Flash 游戏运行依赖 [Ruffle](https://github.com/ruffle-rs/ruffle) 模拟器，其对部分游戏兼容性不佳, 在[这里](https://ruffle.rs/#compatibility)查看支持情况**
 -   请不要用这个扩展玩 u3d 游戏, 此扩展不会支持这类游戏
 -   如果游戏显示方向不正确, 请尽可能让游戏界面变宽(比如取消拆分编辑器)
 
