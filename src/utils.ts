@@ -1,4 +1,8 @@
-/** Copyright (c) 2022-2023 dsy4567. See License in the project root for license information. */
+/**
+ * Copyright (c) 2022-2023 dsy4567, and all contributors.
+ * <https://github.com/dsy4567/4399-on-vscode/graphs/contributors>
+ * See COPYING in the project root for license information.
+ */
 
 import axios, { AxiosResponse, AxiosRequestConfig, ResponseType } from "axios";
 import * as cheerio from "cheerio";

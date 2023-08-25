@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2022-2023 dsy4567, and all contributors.
+ * <https://github.com/dsy4567/4399-on-vscode/graphs/contributors>
+ * See COPYING in the project root for license information.
+ */
+
 import * as cheerio from "cheerio";
 import * as iconv from "iconv-lite";
 import * as vscode from "vscode";
