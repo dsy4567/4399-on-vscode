@@ -277,7 +277,7 @@ async function showWebviewPanel(
         alerted = true;
         vscode.window
             .showInformationMessage(
-                "温馨提示: 请在使用快捷键前使游戏失去焦点",
+                "为使快捷键能够正常使用，请在使用快捷键前使游戏失去焦点",
                 "不再提示"
             )
             .then(val => setCfg("alert", false));
