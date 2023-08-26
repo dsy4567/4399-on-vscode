@@ -139,7 +139,7 @@ function createQuickPick(o: {
     return qp;
 }
 /**
- * 获取工作区配置
+ * 获取配置
  * @param name 去掉 "4399-on-vscode." 后的配置 ID
  * @param defaultValue 找不到配置时的返回值
  * @returns 指定配置的值
@@ -150,11 +150,20 @@ function getCfg(name: CfgNames, defaultValue: any = undefined) {
         .get("4399-on-vscode." + name, defaultValue);
 }
 /**
- * 更改工作区配置
+ * 移除配置
+ * @param name 去掉 "4399-on-vscode." 后的配置 ID
+ */
+async function rmCfg(name: string) {
+    return vscode.workspace
+        .getConfiguration()
+        .update("4399-on-vscode." + name, undefined, true);
+}
+/**
+ * 更改配置
  * @param name 去掉 "4399-on-vscode." 后的配置 ID
  * @param val 更改后的配置值
  */
-function setCfg(name: CfgNames, val: any) {
+async function setCfg(name: CfgNames, val: any) {
     return vscode.workspace
         .getConfiguration()
         .update("4399-on-vscode." + name, val, true);
@@ -467,6 +476,15 @@ async function init() {
                 else if (getCfg("automaticSign")) sign(true);
             })
             .catch(e => err("获取登录状态失败:", e));
+
+    // 移除废弃的配置
+    [
+        "automatic-check-in",
+        "moreOpen",
+        "outputLogs",
+        "scripts",
+        "use-credential-manager",
+    ].forEach(c => rmCfg(c));
 }
 /** 更多操作 */
 function moreAction() {
@@ -551,6 +569,7 @@ export {
     alertWhenUsingRemoteDevEnv,
     createQuickPick,
     getCfg,
+    rmCfg,
     setCfg,
     getContext,
     setContext,
