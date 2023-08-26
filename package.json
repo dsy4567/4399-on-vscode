@@ -2,7 +2,7 @@
     "name": "4399-on-vscode",
     "displayName": "4399 on VSCode",
     "description": "在 VSCode 上玩 4399 小游戏, 帮助你劳逸结合, 提高开发效率(非 4399 官方提供的扩展)",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "engines": {
         "vscode": "^1.70.0"
     },
@@ -241,7 +241,7 @@
         "entertainment"
     ],
     "publisher": "dsy4567",
-    "license": "SEE LICENSE IN LICENSE",
+    "license": "GPL-3.0",
     "dependencies": {
         "axios": "^1.4.0",
         "cheerio": "1.0.0-rc.12",
@@ -250,7 +250,7 @@
         "is-localhost-ip": "^2.0.0",
         "mime": "^3.0.0"
     },
-    "icon": "./resources/icon.png",
+    "icon": "resources/icon.png",
     "repository": "https://github.com/dsy4567/4399-on-vscode.git",
     "author": "dsy4567",
     "bugs": {
