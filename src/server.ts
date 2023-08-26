@@ -4,6 +4,7 @@
  * See COPYING in the project root for license information.
  */
 
+import axios from "axios";
 import * as fs from "fs";
 import * as http from "http";
 import * as https from "https";
@@ -11,7 +12,6 @@ import * as mime from "mime";
 import isLocalhost = require("is-localhost-ip");
 import * as path from "path";
 import * as vscode from "vscode";
-import axios from "axios";
 
 import { getCookieSync } from "./account";
 import { getGameInfo, play } from "./game";
@@ -26,6 +26,7 @@ import {
     log,
     openUrl,
 } from "./utils";
+import { ChildProcess } from "child_process";
 
 /** 游戏入口文件内容 */
 let DATA: Buffer | string;

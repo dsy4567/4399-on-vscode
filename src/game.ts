@@ -145,18 +145,12 @@ async function play(url: string, download = false) {
             Buffer | string
         >;
 
-        if (!res.data)
-            return err(
-                "无法获取游戏页面: 响应文本为空, 您可能需要配置 UA 或登录账号"
-            );
+        if (!res.data) return err("无法获取游戏页面: 响应文本为空");
         res.data = iconv.decode(res.data as Buffer, "gb2312");
         log("成功获取到游戏页面");
         const $ = cheerio.load(res.data);
         const html = $.html();
-        if (!html)
-            return err(
-                "无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号(错误发生在获取游戏详情页阶段)"
-            );
+        if (!html) return err("无法获取游戏页面: 游戏详情页 html 为空");
 
         let title: string | null = "";
         let m: RegExpMatchArray | null = null,
@@ -205,9 +199,7 @@ async function play(url: string, download = false) {
 
                 if (u2) return playWebGame(u2, download);
 
-                err(
-                    "正则匹配结果为空, 此扩展可能出现了问题, 也可能因为这个游戏类型不受支持, 已自动为您跳转至游戏详情页面"
-                );
+                err("游戏类型不受支持, 已自动为您跳转至游戏详情页面");
                 return showWebviewPanel(url, title);
             }
             let p = (gamePath_matched as RegExpMatchArray)[0]
@@ -264,10 +256,7 @@ async function play(url: string, download = false) {
                 "arraybuffer"
             )) as AxiosResponse<Buffer | string>;
 
-            if (!res.data)
-                return err(
-                    "无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号 (错误发生在处理游戏真实页面阶段)"
-                );
+            if (!res.data) return err("无法获取游戏页面: html 为空");
 
             if (
                 isFlashPage &&
@@ -450,10 +439,7 @@ async function showGameDetail(url?: string) {
             (await httpRequest.get(url, "arraybuffer")).data,
             "gb2312"
         );
-        if (!html)
-            return err(
-                "无法获取游戏页面: html 为空, 您可能需要配置 UA 或登录账号(错误发生在获取游戏详情页阶段)"
-            );
+        if (!html) return err("无法获取游戏页面: html 为空");
 
         const $ = cheerio.load(html);
         const desc1 = $("#introduce > font").text().replaceAll(/[\n ]/gi, "");
