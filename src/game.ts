@@ -55,6 +55,7 @@ if (supplements._ver !== 1) supplements = {} as Supplements;
 
 /**
  * 获取存放小游戏的服务器
+ * @returns 一个兑现游戏资源服务器域名的 Promise
  */
 async function parseServer(server_matched: RegExpMatchArray): Promise<string> {
     try {
@@ -81,7 +82,7 @@ async function parseServer(server_matched: RegExpMatchArray): Promise<string> {
     }
 }
 /**
- * 获取普通小游戏的真实地址
+ * 启动 H5/flash 小游戏
  * @param url 游戏详情页链接
  */
 async function play(url: string, download = false) {
@@ -334,7 +335,7 @@ async function play(url: string, download = false) {
     }
 }
 /**
- * 获取 h5 页游的真实地址
+ * 启动 h5 页游
  * @param urlOrId 游戏详情页链接或游戏 ID(字符串)
  */
 function playWebGame(urlOrId: string, download = false) {
@@ -622,7 +623,14 @@ async function recommended() {
     play(url);
 }
 
-/** 获取 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
+/**
+ * 获取 {@link server}
+ * {@link gamePath}
+ * {@link gameUrl}
+ * {@link gameInfoUrls}
+ * {@link webGameUrl}
+ * {@link isFlashGame} 变量值
+ */
 function getGameInfo() {
     return {
         /** e.g. szhong.4399.com */
@@ -638,7 +646,13 @@ function getGameInfo() {
         isFlashGame,
     };
 }
-/** 设置 {@link server} {@link gamePath} {@link gameUrl} {@link gameInfoUrls} {@link webGameUrl} {@link isFlashGame} 变量值 */
+/** 设置 {@link server}
+ * {@link gamePath}
+ * {@link gameUrl}
+ * {@link gameInfoUrls}
+ * {@link webGameUrl}
+ * {@link isFlashGame} 变量值
+ */
 function setGameInfo(
     Server?: string,
     GamePath?: string,

@@ -10,6 +10,11 @@ import * as vscode from "vscode";
 
 import { createQuickPick, err, httpRequest, log } from "./utils";
 
+/**
+ * 显示热门评论
+ * @param gameId 游戏 ID
+ * @param title 游戏标题
+ */
 async function showComments(gameId: number, title: string) {
     let commentQp = createQuickPick({
             value: "",

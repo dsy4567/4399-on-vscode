@@ -26,7 +26,10 @@ import {
     setContext,
 } from "./utils";
 
-/** 入口 */
+/**
+ * 入口
+ * @param ctx 扩展上下文
+ */
 export async function activate(ctx: vscode.ExtensionContext) {
     setContext(ctx);
 

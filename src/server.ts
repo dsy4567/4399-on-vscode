@@ -33,7 +33,7 @@ let DATA: Buffer | string;
 let HTTP_SERVER: http.Server | undefined;
 /** 服务器端口 */
 let PORT = 44399;
-/** 覆盖用户设置的 referer, 尽量使用 initHttpServer() 函数设置该值 */
+/** 覆盖用户设置的 referer，不要乱动, 尽量使用 initHttpServer() 函数设置该值 */
 let REF: string | undefined;
 
 /**
@@ -41,9 +41,9 @@ let REF: string | undefined;
  * @param callback 服务器启动后要执行的回调
  * @param ref 覆盖用户设置的 referer
  */
-async function initHttpServer(callback: Function, ref?: string) {
+async function initHttpServer(callback: () => void, ref?: string) {
     REF = ref;
-    let onRequest: http.RequestListener = async (request, response) => {
+    const onRequest: http.RequestListener = async (request, response) => {
         function get(
             request: http.IncomingMessage,
             response: http.ServerResponse,

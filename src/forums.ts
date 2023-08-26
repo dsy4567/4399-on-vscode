@@ -23,11 +23,12 @@ import {
     log,
 } from "./utils";
 
-// 群组相关
 let threadQp: vscode.QuickPick<vscode.QuickPickItem>;
 let threadQpItems: vscode.QuickPickItem[] = [];
-let threadId = 0;
-let threadTitle = "";
+/** 群组 ID */
+let forumId = 0;
+/** 群组名 */
+let forumTitle = "";
 /** 已输入的搜索词 */
 let threadSearchValue: string;
 /** 页码 */
@@ -39,7 +40,10 @@ let threadTimeout: NodeJS.Timeout;
 /** 正在展示所有帖子 */
 let showingThreads = false;
 
-/** 进入帖子 */
+/**
+ * 进入帖子
+ * @param id 帖子 ID
+ */
 async function enterThread(id: number) {
     try {
         if (!id) return;
@@ -146,7 +150,10 @@ async function enterThread(id: number) {
         err("无法获取帖子页面", String(e));
     }
 }
-/** 搜索群组 */
+/**
+ * 搜索群组
+ * @param kwd 搜索词
+ */
 function searchForums(kwd: string) {
     if (threadQp.busy) return;
 
@@ -206,7 +213,11 @@ function searchForums(kwd: string) {
         threadQp.busy = false;
     }, 1000);
 }
-/** 显示所有帖子 */
+/**
+ * 显示所有帖子
+ * @param id 群组 ID
+ * @param title 群组名
+ */
 async function showThreads(id: number, title: string) {
     if (threadQp.busy) return;
 
@@ -304,17 +315,17 @@ async function main() {
                     threadQp.activeItems[0].description === "加载下一页帖子"
                 ) {
                     threadPage++;
-                    showThreads(threadId, threadTitle);
+                    showThreads(forumId, forumTitle);
                 } else if (
                     threadQp.activeItems[0].description?.includes("群组 ID: ")
                 ) {
                     threadPage = 1;
-                    threadId = +threadQp.activeItems[0].description?.replace(
+                    forumId = +threadQp.activeItems[0].description?.replace(
                         "群组 ID: ",
                         ""
                     );
-                    threadTitle = threadQp.activeItems[0].label;
-                    showThreads(threadId, threadTitle);
+                    forumTitle = threadQp.activeItems[0].label;
+                    showThreads(forumId, forumTitle);
                     globalStorage(getContext()).set(
                         "kwd-forums",
                         threadQp.value
@@ -346,7 +357,7 @@ async function main() {
                             result = (
                                 await httpRequest.post(
                                     "https://my.4399.com/forums/operate-leaveMtag",
-                                    `tagid=${threadId}&_AJAX_=1`,
+                                    `tagid=${forumId}&_AJAX_=1`,
                                     "json"
                                 )
                             ).data;
@@ -359,7 +370,7 @@ async function main() {
                             result = (
                                 await httpRequest.post(
                                     "https://my.4399.com/forums/operate-joinMtag",
-                                    `tagid=${threadId}&_AJAX_=1`,
+                                    `tagid=${forumId}&_AJAX_=1`,
                                     "json"
                                 )
                             ).data;
@@ -376,7 +387,7 @@ async function main() {
                             result = (
                                 await httpRequest.post(
                                     "https://my.4399.com/forums/grade-signIn",
-                                    `sign=1&tagid=${threadId}&_AJAX_=1`,
+                                    `sign=1&tagid=${forumId}&_AJAX_=1`,
                                     "json"
                                 )
                             ).data;
@@ -398,7 +409,7 @@ async function main() {
                     err(e);
                 }
                 threadQp.busy = false;
-                showThreads(threadId, threadTitle);
+                showThreads(forumId, forumTitle);
             });
             if (!threadQp.value) searchForums("");
         }
@@ -413,9 +424,8 @@ async function main() {
     }
 }
 
-/** 逛群组 */
-export const showForums = () => {
-    login(() => {
-        main();
-    });
-};
+export const /** 逛群组 */ showForums = () => {
+        login(() => {
+            main();
+        });
+    };

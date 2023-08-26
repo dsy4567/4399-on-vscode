@@ -25,10 +25,11 @@ let RemoteDevEnv_alerted = false;
 /** 扩展上下文 */
 let context: vscode.ExtensionContext;
 /** 加载提示状态栏项 */
+
 const STATUS_BAR_ITEM: vscode.StatusBarItem =
     vscode.window.createStatusBarItem(1);
-
 /** `<扩展安装路径>/src/` */
+
 const DIRNAME = __dirname;
 /** 主目录路径 e.g. `"C:\users\you\.4ov-data\"`, `"/home/you/.4ov-data/"` */
 const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
@@ -36,8 +37,7 @@ const DATA_DIR = path.join(os.userInfo().homedir, ".4ov-data/");
 /**
  * 获取发起请求时的配置
  * @param responseType 响应类型
- * @param noCookie 是否带上 cookie
- * @param ref referer
+ * @param noCookie 是否不带上 cookie
  * @returns Axios 请求配置
  */
 function getReqCfg<RT>(
@@ -59,12 +59,27 @@ function getReqCfg<RT>(
 }
 /** axios 的封装 */
 const httpRequest = {
+    /**
+     * 发起 GET 请求
+     * @param url URL
+     * @param responseType 响应类型
+     * @param noCookie 请求是否不带上 cookie
+     * @returns 一个兑现 axios 响应的 Promise
+     */
     get<RT>(url: string, responseType: ResponseType & RT, noCookie = false) {
         return axios.get<RTypes[ResponseType & RT]>(
             url,
             getReqCfg(responseType, noCookie)
         );
     },
+    /**
+     * 发起 GET 请求
+     * @param url URL
+     * @param data 请求体
+     * @param responseType 响应类型
+     * @param noCookie 请求是否不带上 cookie
+     * @returns 一个兑现 axios 响应的 Promise
+     */
     post<RT>(
         url: string,
         data: string | undefined,
@@ -97,7 +112,17 @@ function alertWhenUsingRemoteDevEnv() {
             });
     }
 }
-/** `vscode.window.createQuickPick` 的封装 */
+/**
+ * `vscode.window.createQuickPick` 的封装
+ * @param o QuickPick 的 {@link vscode.QuickPick.title title}
+ * {@link vscode.QuickPick.value value}
+ * {@link vscode.QuickPick.placeholder placeholder}
+ * {@link vscode.QuickPick.canSelectMany canSelectMany}
+ * {@link vscode.QuickPick.matchOnDescription matchOnDescription}
+ * {@link vscode.QuickPick.matchOnDetail matchOnDetail}
+ * {@link vscode.QuickPick.ignoreFocusOut ignoreFocusOut} 属性
+ * @returns 一个 `vscode.QuickPick`
+ */
 function createQuickPick(o: {
     value?: string;
     title?: string;
@@ -117,6 +142,7 @@ function createQuickPick(o: {
  * 获取工作区配置
  * @param name 去掉 "4399-on-vscode." 后的配置 ID
  * @param defaultValue 找不到配置时的返回值
+ * @returns 指定配置的值
  */
 function getCfg(name: CfgNames, defaultValue: any = undefined) {
     return vscode.workspace
@@ -133,17 +159,18 @@ function setCfg(name: CfgNames, val: any) {
         .getConfiguration()
         .update("4399-on-vscode." + name, val, true);
 }
-/** 获取上下文 */
+/** 获取扩展上下文 */
 function getContext() {
     return context;
 }
-/** 设置上下文 */
+/** 设置扩展上下文 */
 function setContext(ctx: vscode.ExtensionContext) {
     context = ctx;
 }
 /**
  * 全局存储
  * @param context 扩展上下文
+ * @returns 一个包含 get 和 set 方法的对象
  */
 function globalStorage(context: vscode.ExtensionContext): GlobalStorage {
     return {
@@ -178,7 +205,7 @@ function openUrl(url: string) {
  * @param title 游戏标题
  * @param type 游戏类型(可留空, flash 游戏/其他)
  * @param hasIcon 显示游戏图标
- * @param asExternalUri 没用
+ * @param asExternalUri 不知道有啥用，默认 `true`
  */
 async function showWebviewPanel(
     url: string,
