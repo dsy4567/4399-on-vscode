@@ -17,7 +17,7 @@ type CfgNames =
     | "updateHistory"
     | "background"
     | "alert"
-    | "automaticCheckIn"
+    | "automaticSign"
     | "enableProxy"
     | "requestWithCookieOn4399Domain"
     | "enableServiceWorker"

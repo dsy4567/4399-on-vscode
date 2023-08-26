@@ -12,7 +12,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { checkIn, getCookie, getCookieSync, setCookie } from "./account";
+import { sign, getCookie, getCookieSync, setCookie } from "./account";
 import { getGameInfo, setGameInfo } from "./game";
 import { getScript, getWebviewHtml_h5, manageScripts } from "./scripts";
 import { getData, setData, getPort, initHttpServer } from "./server";
@@ -464,7 +464,7 @@ async function init() {
                         .then(val => {
                             if (val === "退出登录") setCookie();
                         });
-                else if (getCfg("automaticCheckIn")) checkIn(true);
+                else if (getCfg("automaticSign")) sign(true);
             })
             .catch(e => err("获取登录状态失败:", e));
 }

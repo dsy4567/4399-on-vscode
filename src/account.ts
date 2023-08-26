@@ -174,7 +174,7 @@ async function setCookie(c: string = ""): Promise<void> {
 }
 
 /** 签到 */
-function checkIn(quiet?: boolean) {
+function sign(quiet?: boolean) {
     login(async () => {
         try {
             const data: {
@@ -268,10 +268,10 @@ function my() {
                     "https://gprp.4399.com/cg/get_gamehistory.php?page_size=100",
                     "played_gids"
                 );
-            else if (value.includes("签到")) checkIn();
+            else if (value.includes("签到")) sign();
             else if (value.includes("退出登录")) login(() => {}, true);
         }
     });
 }
 
-export { getCookie, getCookieSync, getUid, setCookie, checkIn, login, my };
+export { getCookie, getCookieSync, getUid, setCookie, sign, login, my };

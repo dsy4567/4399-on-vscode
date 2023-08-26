@@ -119,7 +119,7 @@
                     "description": "控制是否允许游戏后台运行",
                     "type": "boolean"
                 },
-                "4399-on-vscode.automaticCheckIn": {
+                "4399-on-vscode.automaticSign": {
                     "default": false,
                     "description": "控制是否自动签到",
                     "type": "boolean"
