@@ -100,5 +100,5 @@ export async function activate(ctx: vscode.ExtensionContext) {
 
     await init();
 
-    log("4399 on VSCode is ready!");
+    log("4399 on VSCode is active!");
 }

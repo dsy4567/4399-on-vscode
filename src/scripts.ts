@@ -23,6 +23,8 @@ import {
     showWebviewPanel,
 } from "./utils";
 
+const defaultRuffleSource = "https://unpkg.com/@ruffle-rs/ruffle/ruffle.js";
+
 /** 获取要注入的 HTML 代码片段 */
 const getScript = (
     cookie: string = "",
@@ -238,7 +240,7 @@ const getWebviewHtml_flash = (
                 const u = new URL(getCfg("RuffleSource"));
                 return u;
             } catch (e) {
-                return "https://unpkg.com/@ruffle-rs/ruffle/ruffle.js";
+                return defaultRuffleSource;
             }
         })()}"></script>
         ${getScript("", true, server, "flash")}

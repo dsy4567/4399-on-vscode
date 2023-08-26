@@ -10,6 +10,15 @@ import * as vscode from "vscode";
 
 import { createQuickPick, err, httpRequest, log } from "./utils";
 
+/** 接口地址 */
+const API_URLS = {
+    /** 评论 */
+    comment: (gameId: number, page: number) =>
+        `https://cdn.comment.4399pk.com/nhot-${gameId}-${page}.htm` /** 回复 */,
+    reply: (gameId: number, cid: number, page: number) =>
+        `https://cdn.comment.4399pk.com/user_reply.php?fid=${gameId}&cid=${cid}&p=${page}&t=${Math.random()}`,
+};
+
 /**
  * 显示热门评论
  * @param gameId 游戏 ID
@@ -29,7 +38,7 @@ async function showComments(gameId: number, title: string) {
         const html = iconv.decode(
             (
                 await httpRequest.get(
-                    `https://cdn.comment.4399pk.com/nhot-${gameId}-${page}.htm`,
+                    API_URLS.comment(gameId, page),
                     "arraybuffer"
                 )
             ).data,
@@ -146,7 +155,7 @@ async function showComments(gameId: number, title: string) {
             if (!comment.lastPage)
                 qpItems.push({
                     label: " | > 查看更多回复",
-                    description: "" + i,
+                    description: "index: " + i,
                 });
         }
 
@@ -162,10 +171,7 @@ async function showComments(gameId: number, title: string) {
         const page = ++items[CommentIndex].repliesPage,
             cid = items[CommentIndex].cid,
             json = (
-                await httpRequest.get(
-                    `https://cdn.comment.4399pk.com/user_reply.php?fid=${gameId}&cid=${cid}&p=${page}&t=${Math.random()}`,
-                    "json"
-                )
+                await httpRequest.get(API_URLS.reply(gameId, cid, page), "json")
             ).data;
         log("页码", page, "CommentIndex", CommentIndex);
         if (!json.data) return err("无法获取评论页面: 响应为空");
@@ -204,7 +210,7 @@ async function showComments(gameId: number, title: string) {
             if (!comment.lastPage)
                 qpItems.push({
                     label: " | > 查看更多回复",
-                    description: "" + i,
+                    description: "index: " + i,
                 });
         }
 
@@ -228,7 +234,12 @@ async function showComments(gameId: number, title: string) {
                 try {
                     commentQp.keepScrollPosition = true;
                     await showReplies(
-                        +(commentQp.activeItems[0].description || -1)
+                        +(
+                            commentQp.activeItems[0].description?.replace(
+                                "index: ",
+                                ""
+                            ) || -1
+                        )
                     );
                     commentQp.keepScrollPosition = false;
                 } catch (e) {

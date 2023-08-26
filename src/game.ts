@@ -32,6 +32,19 @@ import {
 } from "./utils";
 import { showComments } from "./comment";
 
+/** 接口地址 */
+const API_URLS = {
+    /** 登录页游 */
+    webGame: (gameId: number, cookieValue: string) =>
+        [
+            "https://h.api.4399.com/intermodal/user/grant2",
+            `gameId=${gameId}&authType=cookie&cookieValue=${cookieValue}`,
+        ] as const,
+    /** 添加到收藏盒 */
+    addCollection: (gameId: string) =>
+        `"https://gprp.4399.com/cg/add_collection.php?gid=${gameId}`,
+};
+
 /** 是否为 flash 游戏 */
 let isFlashGame = false;
 /** e.g. szhong.4399.com */
@@ -365,11 +378,7 @@ function playWebGame(urlOrId: string, download = false) {
                 };
             } = (
                 await httpRequest.post(
-                    "https://h.api.4399.com/intermodal/user/grant2",
-                    "gameId=" +
-                        gameId +
-                        "&authType=cookie&cookieValue=" +
-                        cookieValue,
+                    ...API_URLS.webGame(gameId, cookieValue),
                     "json"
                 )
             ).data;
@@ -478,8 +487,7 @@ async function showGameDetail(url?: string) {
                 login(async () => {
                     try {
                         await httpRequest.get(
-                            "https://gprp.4399.com/cg/add_collection.php?gid=" +
-                                gameId,
+                            API_URLS.addCollection(gameId),
                             "json"
                         );
                         vscode.window.showInformationMessage(

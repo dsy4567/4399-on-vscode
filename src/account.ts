@@ -12,6 +12,20 @@ import * as vscode from "vscode";
 import { play } from "./game";
 import { err, getContext, httpRequest, loaded, objectToQuery } from "./utils";
 
+/** 接口地址 */
+const API_URLS = {
+    /** 登录 */
+    login: (username: string, password: string) =>
+        [
+            "https://ptlogin.4399.com/ptlogin/login.do?v=1",
+            `username=${username}&password=${password}`,
+        ] as const,
+    /** 签到 */
+    get sign() {
+        return "https://my.4399.com/plugins/sign/set-t-" + new Date().getTime();
+    },
+};
+
 let COOKIE: string;
 
 /** 获取 cookie */
@@ -107,8 +121,7 @@ async function login(
                 if (pwd)
                     try {
                         const r = await httpRequest.post(
-                            "https://ptlogin.4399.com/ptlogin/login.do?v=1",
-                            `username=${user}&password=${pwd}`,
+                            ...API_URLS.login(user, pwd),
                             "arraybuffer",
                             true
                         );
@@ -187,13 +200,7 @@ function sign(quiet?: boolean) {
                           credit?: number;
                       };
                 msg?: string;
-            } = (
-                await httpRequest.get(
-                    "https://my.4399.com/plugins/sign/set-t-" +
-                        new Date().getTime(),
-                    "json"
-                )
-            ).data;
+            } = (await httpRequest.get(API_URLS.sign, "json")).data;
             if (data.result === null) err("签到失败, 其他错误: " + data.msg);
             else if (typeof data.result === "string")
                 !quiet && vscode.window.showInformationMessage(data.result);

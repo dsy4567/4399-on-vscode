@@ -19,6 +19,16 @@ import {
     log,
 } from "./utils";
 
+/** 接口地址 */
+const API_URLS = {
+    /** 搜索结果 */
+    result: (kwd: string = "", page: number) =>
+        `https://so2.4399.com/search/search.php?k=${encodeURI(kwd)}&p=${page}`,
+    /** 搜索建议 */
+    suggest: (kwd: string = "") =>
+        `https://so2.4399.com/search/lx.php?k=${encodeURI(kwd)}`,
+};
+
 // 搜索相关
 let searchQp: vscode.QuickPick<vscode.QuickPickItem>;
 let searchQpItems: vscode.QuickPickItem[] = [];
@@ -44,10 +54,7 @@ async function search(s: string) {
     let res;
     try {
         res = (await httpRequest.get(
-            "https://so2.4399.com/search/search.php?k=" +
-                encodeURI(s) +
-                "&p=" +
-                searchPage,
+           API_URLS.result(s,searchPage),
             "arraybuffer"
         )) as AxiosResponse<Buffer | string>;
     } catch (e) {
@@ -160,7 +167,7 @@ async function suggest(kwd: string) {
         let res: AxiosResponse<Buffer | string>;
         try {
             res = await httpRequest.get(
-                "https://so2.4399.com/search/lx.php?k=" + encodeURI(kwd),
+               API_URLS.suggest(kwd),
                 "arraybuffer"
             );
         } catch (e) {

@@ -23,6 +23,38 @@ import {
     log,
 } from "./utils";
 
+/** 接口地址 */
+const API_URLS = {
+    /** 搜索 */
+    search: (kwd: string = "") =>
+        `https://my.4399.com/forums/index-getMtags?type=game&keyword=${encodeURI(
+            kwd
+        )}&page=${threadPage}`,
+    /** 群组内所有帖子 */
+    forum: (id: number) =>
+        `https://my.4399.com/forums/mtag-${id}?page=${threadPage}`,
+    /** 帖子 */
+    thread: (id: number) => `https://my.4399.com/forums/thread-${id}`,
+    /** 加入群组 */
+    join: (id: number) =>
+        [
+            "https://my.4399.com/forums/operate-joinMtag",
+            `tagid=${forumId}&_AJAX_=1`,
+        ] as const,
+    /** 离开群组 */
+    leave: (id: number) =>
+        [
+            "https://my.4399.com/forums/operate-leaveMtag",
+            `tagid=${forumId}&_AJAX_=1`,
+        ] as const,
+    /** 群组内签到 */
+    sign: (id: number) =>
+        [
+            "https://my.4399.com/forums/grade-signIn",
+            `tagid=${forumId}&_AJAX_=1`,
+        ] as const,
+};
+
 let threadQp: vscode.QuickPick<vscode.QuickPickItem>;
 let threadQpItems: vscode.QuickPickItem[] = [];
 /** 群组 ID */
@@ -52,10 +84,7 @@ async function enterThread(id: number) {
                 vscode.Uri.parse("http://localhost:" + getPort())
             ),
             d: Buffer = (
-                await httpRequest.get(
-                    `https://my.4399.com/forums/thread-${id}`,
-                    "arraybuffer"
-                )
+                await httpRequest.get(API_URLS.thread(id), "arraybuffer")
             ).data;
         if (!d) return err("无法获取帖子页面");
 
@@ -113,7 +142,9 @@ async function enterThread(id: number) {
             "</h1> <br /> " +
             `
                                    <style>* {color: #888;}</style>
-                                   <a href="https://my.4399.com/forums/thread-${id}">在浏览器中打开</a>
+                                   <a href="${API_URLS.thread(
+                                       id
+                                   )}">在浏览器中打开</a>
                                 ` +
             ($(".mainPost [class*='post_author_name']").html() || "") + // 张三
             " " +
@@ -164,10 +195,7 @@ function searchForums(kwd: string) {
         let res;
         try {
             res = (await httpRequest.get(
-                "https://my.4399.com/forums/index-getMtags?type=game&keyword=" +
-                    encodeURI(kwd || "") +
-                    "&page=" +
-                    threadPage,
+                API_URLS.search(kwd),
                 "arraybuffer"
             )) as AxiosResponse<Buffer | string>;
         } catch (e) {
@@ -226,12 +254,8 @@ async function showThreads(id: number, title: string) {
     threadQp.busy = true;
 
     log("群组 ID: " + id);
-    const d: Buffer = (
-        await httpRequest.get(
-            `https://my.4399.com/forums/mtag-${id}?page=${threadPage}`,
-            "arraybuffer"
-        )
-    ).data;
+    const d: Buffer = (await httpRequest.get(API_URLS.forum(id), "arraybuffer"))
+        .data;
 
     if (d) {
         const $ = cheerio.load(d);
@@ -356,8 +380,7 @@ async function main() {
                         case "离开群组":
                             result = (
                                 await httpRequest.post(
-                                    "https://my.4399.com/forums/operate-leaveMtag",
-                                    `tagid=${forumId}&_AJAX_=1`,
+                                    ...API_URLS.leave(forumId),
                                     "json"
                                 )
                             ).data;
@@ -369,8 +392,7 @@ async function main() {
                         case "加入群组":
                             result = (
                                 await httpRequest.post(
-                                    "https://my.4399.com/forums/operate-joinMtag",
-                                    `tagid=${forumId}&_AJAX_=1`,
+                                    ...API_URLS.join(forumId),
                                     "json"
                                 )
                             ).data;
@@ -386,8 +408,7 @@ async function main() {
                         case "签到":
                             result = (
                                 await httpRequest.post(
-                                    "https://my.4399.com/forums/grade-signIn",
-                                    `sign=1&tagid=${forumId}&_AJAX_=1`,
+                                    ...API_URLS.sign(forumId),
                                     "json"
                                 )
                             ).data;
