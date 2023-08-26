@@ -265,7 +265,7 @@ async function initHttpServer(callback: Function, ref?: string) {
             } else if (U.pathname === "/favicon.ico") {
                 response.writeHead(200, { "content-type": "image/png" });
                 response.end(
-                    fs.readFileSync(path.join(DIRNAME, "../icon.png"))
+                    fs.readFileSync(path.join(DIRNAME, "../resources/icon.png"))
                 );
             } else if (U.pathname === getGameInfo().gamePath) {
                 log("访问游戏入口页面直接返回数据");

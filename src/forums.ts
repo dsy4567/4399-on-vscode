@@ -133,7 +133,7 @@ async function enterThread(id: number) {
                 }
             );
             const iconPath: vscode.Uri = vscode.Uri.file(
-                path.join(DIRNAME, "../icon.png")
+                path.join(DIRNAME, "../resources/icon.png")
             );
             panel.webview.html = html;
             panel.iconPath = {

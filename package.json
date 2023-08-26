@@ -250,7 +250,7 @@
         "is-localhost-ip": "^2.0.0",
         "mime": "^3.0.0"
     },
-    "icon": "icon.png",
+    "icon": "./resources/icon.png",
     "repository": "https://github.com/dsy4567/4399-on-vscode.git",
     "author": "dsy4567",
     "bugs": {

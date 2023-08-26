@@ -251,7 +251,7 @@ async function showWebviewPanel(
 
     // 获取游戏图标
     let iconPath: vscode.Uri = vscode.Uri.file(
-        path.join(DIRNAME, "../icon.png")
+        path.join(DIRNAME, "../resources/icon.png")
     );
     const setIcon = () => {
         panel.iconPath = {
