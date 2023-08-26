@@ -1,31 +1,28 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
-
 name: build
 
 on:
-  workflow_dispatch:
+    workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-      - name: install dependencies
-        run: npm i
-      - name: install vsce
-        run: npm i -g vsce
-      - name: run vsce package
-        run: vsce package
-      - name: commit
-        run: |
-          git config --global user.email dsy4567@outlook.com
-          git config --global user.name dsy4567
-          git add .
-          git commit -m "run vsce package" -a
-      - name: GitHub Push
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js
+              uses: actions/setup-node@v3
+            - name: install dependencies
+              run: npm i
+            - name: install vsce
+              run: npm i -g vsce
+            - name: run vsce package
+              run: vsce package
+            - name: commit
+              run: |
+                  git config --global user.email dsy4567@outlook.com
+                  git config --global user.name dsy4567
+                  git add .
+                  git commit -m "📦️ 运行 vsce package" -a
+            - name: GitHub Push
+              uses: ad-m/github-push-action@master
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
