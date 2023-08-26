@@ -225,13 +225,13 @@
         "@types/cookie": "^0.5.1",
         "@types/glob": "^8.1.0",
         "@types/mime": "^3.0.1",
-        "@types/node": "~16.18.38",
+        "@types/node": "16.x",
         "@types/vscode": "^1.70.0",
-        "@typescript-eslint/eslint-plugin": "^5.60.1",
-        "@typescript-eslint/parser": "^5.60.1",
-        "eslint": "^8.44.0",
-        "glob": "^8.1.0",
-        "typescript": "^5.1.6"
+        "@typescript-eslint/eslint-plugin": "^6.4.1",
+        "@typescript-eslint/parser": "^6.4.1",
+        "eslint": "^8.48.0",
+        "glob": "^10.3.3",
+        "typescript": "^5.2.2"
     },
     "keywords": [
         "小霸王",
@@ -243,7 +243,7 @@
     "publisher": "dsy4567",
     "license": "SEE LICENSE IN LICENSE",
     "dependencies": {
-        "axios": "^0.27.2",
+        "axios": "^1.4.0",
         "cheerio": "1.0.0-rc.12",
         "cookie": "^0.5.0",
         "iconv-lite": "^0.6.3",
