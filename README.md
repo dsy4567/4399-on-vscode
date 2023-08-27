@@ -55,18 +55,6 @@
 -   如果焦点在游戏界面上, 大多数 VSCode 内的快捷键可能会失效
 -   游戏无法锁定鼠标(如射击类游戏)
 
-## 🍪 获取 cookie
-
-cookie 用于登录 h5 页游以及使用更多需要登录的功能
-
-请使用基于 chromium 内核的浏览器登录 4399, 然后在 [ptlogin.4399.com](https://ptlogin.4399.com) 下打开开发者工具(按 F12), 在控制台(console)下输入以下代码即可(cookie 将复制到剪贴板)
-
-```javascript
-copy(document.cookie);
-```
-
-> 请确保 cookie 里包含 `Pauth` 值
-
 ## 🤝 特别感谢
 
 这个扩展依赖的项目
