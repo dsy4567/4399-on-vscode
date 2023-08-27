@@ -85,7 +85,7 @@ async function login(
         if (value?.includes("使用 cookie 登录")) {
             let c = await vscode.window.showInputBox({
                 title: "4399 on VSCode: 登录(使用 cookie)",
-                prompt: "请输入 cookie, 获取方法请见扩展详情页, 登录后, 您可以玩页游或者使用其它需要登录的功能",
+                prompt: "请输入 cookie, 获取方法请见 GitHub wiki 页,
             });
             if (c)
                 try {
