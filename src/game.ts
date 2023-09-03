@@ -35,10 +35,10 @@ import { showComments } from "./comment";
 /** 接口地址 */
 const API_URLS = {
     /** 登录页游 */
-    webGame: (gameId: number, cookieValue: string) =>
+    webGame: (gameId: number, pauth: string) =>
         [
             "https://h.api.4399.com/intermodal/user/grant2",
-            `gameId=${gameId}&authType=cookie&cookieValue=${cookieValue}`,
+            `gameId=${gameId}&authType=cookie&cookieValue=${pauth}`,
         ] as const,
     /** 添加到收藏盒 */
     addCollection: (gameId: string) =>
@@ -354,8 +354,8 @@ function playWebGame(urlOrId: string, download = false) {
             return err("h5 页游链接格式不正确, 或该游戏类型不支持");
 
         try {
-            let cookieValue = cookie.parse(c)["Pauth"];
-            if (!cookieValue) return err("cookie 没有 Pauth 的值");
+            let pauth = cookie.parse(c)["Pauth"];
+            if (!pauth) return err("cookie 没有 Pauth 的值");
 
             let data: {
                 data?: {
@@ -367,7 +367,7 @@ function playWebGame(urlOrId: string, download = false) {
                 };
             } = (
                 await httpRequest.post(
-                    ...API_URLS.webGame(gameId, cookieValue),
+                    ...API_URLS.webGame(gameId, pauth),
                     "json"
                 )
             ).data;
