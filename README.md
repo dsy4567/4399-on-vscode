@@ -59,18 +59,18 @@
 
 这个扩展依赖的项目
 
--   [axios](https://github.com/axios/axios)
+-   [Axios](https://github.com/axios/axios)
 -   [cheerio](https://github.com/cheeriojs/cheerio)
 -   [cookie](https://github.com/jshttp/cookie)
 -   [iconv-lite](https://github.com/ashtuchkin/iconv-lite)
 -   [is-localhost-ip](https://github.com/tinovyatkin/is-localhost-ip)
 -   [mime](https://github.com/broofa/mime)
--   [ruffle](https://github.com/ruffle-rs/ruffle)
+-   [Ruffle](https://github.com/ruffle-rs/ruffle)
 
 给我灵感的项目
 
--   [flash collector](https://github.com/cnotech/flash-collector)
--   [vsc netease music](https://github.com/nondanee/vsc-netease-music)
+-   [Flash Collector](https://github.com/cnotech/flash-collector)
+-   [VSC Netease Music](https://github.com/nondanee/vsc-netease-music)
 
 ## ⚖️ 许可证
 
