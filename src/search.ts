@@ -43,8 +43,8 @@ let searchTimeout: NodeJS.Timeout;
 /** 正在展示搜索结果 */
 let showingSearchResult = false;
 
-/** 搜索 */
-async function search(s: string) {
+/** 搜索关键词 */
+async function searchByKwd(s: string) {
     if (searchQp.busy) return;
 
     searchQp.title = s + " 的搜索结果";
@@ -54,7 +54,7 @@ async function search(s: string) {
     let res;
     try {
         res = (await httpRequest.get(
-           API_URLS.result(s,searchPage),
+            API_URLS.result(s, searchPage),
             "arraybuffer"
         )) as AxiosResponse<Buffer | string>;
     } catch (e) {
@@ -107,7 +107,7 @@ async function search(s: string) {
  * @param s 默认搜索词
  */
 async function searchGames(s: string) {
-    if (searchQp) searchQp.value = searchValue;
+    if (searchQp) searchQp.value = s || searchValue;
     else {
         searchQp = createQuickPick({
             value: s || "",
@@ -117,13 +117,13 @@ async function searchGames(s: string) {
         searchQp.onDidChangeValue(suggest);
         searchQp.onDidAccept(() => {
             if (searchQp.activeItems[0].description === "直接搜索")
-                search(searchQp.value).catch(e => {
+                searchByKwd(searchQp.value).catch(e => {
                     searchQp.busy = false;
                     err(e);
                 });
             else if (searchQp.activeItems[0].label === "下一页") {
                 searchPage++;
-                search(searchQp.value).catch(e => {
+                searchByKwd(searchQp.value).catch(e => {
                     searchQp.busy = false;
                     err(e);
                 });
@@ -166,10 +166,7 @@ async function suggest(kwd: string) {
         searchQp.buttons = [];
         let res: AxiosResponse<Buffer | string>;
         try {
-            res = await httpRequest.get(
-               API_URLS.suggest(kwd),
-                "arraybuffer"
-            );
+            res = await httpRequest.get(API_URLS.suggest(kwd), "arraybuffer");
         } catch (e) {
             return err("获取搜索建议失败", String(e));
         }

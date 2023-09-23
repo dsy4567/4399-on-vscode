@@ -14,7 +14,9 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 import { login } from "./account";
+import { showComments } from "./comment";
 import { getPort, initHttpServer, setData } from "./server";
+import { searchGames } from "./search";
 import {
     DATA_DIR,
     DIRNAME,
@@ -30,7 +32,6 @@ import {
     parseId,
     showWebviewPanel,
 } from "./utils";
-import { showComments } from "./comment";
 
 /** 接口地址 */
 const API_URLS = {
@@ -172,7 +173,10 @@ async function play(url: string, download = false) {
             }
 
         title = title || url;
-        if ($("title").text().includes("您访问的页面不存在！") && res.status)
+        if (
+            $("title").text().includes("您访问的页面不存在！") &&
+            res.status // 3xx 状态码， 没有 Location 响应头
+        )
             return err("无法获取游戏信息: 游戏可能因为某些原因被删除");
 
         if (
@@ -199,8 +203,8 @@ async function play(url: string, download = false) {
 
                 if (u2) return playWebGame(u2, download);
 
-                err("游戏类型不受支持, 已自动为您跳转至游戏详情页面");
-                return showWebviewPanel(url, title);
+                err("游戏类型不受支持, 请尝试搜索相似游戏");
+                return searchGames(title);
             }
             let p = (gamePath_matched as RegExpMatchArray)[0]
                 .replaceAll(" ", "")
@@ -224,8 +228,10 @@ async function play(url: string, download = false) {
         }
 
         // 简单地判断域名是否有效
-        if ((await isLocalhost(server)) || /[/:?#\\=&]/g.test(server))
-            return err("游戏服务器域名 " + server + " 非法");
+        if ((await isLocalhost(server)) || /[/:?#\\=&]/g.test(server)) {
+            err(`游戏服务器域名 ${server} 非法, 请尝试搜索相似游戏`);
+            return searchGames(title);
+        }
 
         if (
             !is4399Domain(server) &&
@@ -241,7 +247,10 @@ async function play(url: string, download = false) {
 
         gameUrl = "https://" + server + gamePath;
 
-        if (!gameUrl) return err("游戏真实地址为空");
+        if (!gameUrl) {
+            err(`游戏真实地址为空, 请尝试搜索相似游戏`);
+            return searchGames(title);
+        }
         if (
             !$(
                 "#skinbody > div:nth-child(7) > div.fl-box > div.intr.cf > div.eqwrap"
@@ -256,7 +265,10 @@ async function play(url: string, download = false) {
                 "arraybuffer"
             )) as AxiosResponse<Buffer | string>;
 
-            if (!res.data) return err("无法获取游戏页面: html 为空");
+            if (!res.data) {
+                err(`无法获取游戏页面: html 为空, 请尝试搜索相似游戏`);
+                return searchGames(title);
+            }
 
             if (
                 isFlashPage &&
@@ -328,9 +340,13 @@ async function play(url: string, download = false) {
                         }
                     });
                 }
-            else err("无法获取游戏真实页面: 响应为空");
+            else {
+                err(`无法获取游戏真实页面: 响应为空, 请尝试搜索相似游戏`);
+                return searchGames(title);
+            }
         } catch (e) {
-            err("无法获取游戏真实页面: ", e);
+            err("无法获取游戏真实页面: ", e, "请尝试搜索相似游戏");
+            return searchGames(title);
         }
     } catch (e) {
         err("无法获取游戏页面: ", e);
