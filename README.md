@@ -76,4 +76,4 @@
 
 版权所有 © 2022 - 2023 dsy4567 及[所有贡献者](https://github.com/dsy4567/4399-on-vscode/graphs/contributors)
 
-4399 on VSCode 在 GPLv3 下获得许可，有关详细信息，请查阅项目根目录下的 [COPYING](./COPYING) 文件
+4399 on VSCode 在 GPLv3 下获得许可，有关详细信息，请查阅项目根目录下的 [LICENSE.txt](./LICENSE.txt) 文件
