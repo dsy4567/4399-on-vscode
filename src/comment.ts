@@ -155,8 +155,8 @@ async function showComments(gameId: number, title: string) {
             if (!comment.lastPage)
                 qpItems.push({
                     label: " | > 查看更多回复",
-                    description: "index: " + i,
-                });
+                    action: () => showReplies(i),
+                } as vscode.QuickPickItem);
         }
 
         qpItems.push({
@@ -210,8 +210,8 @@ async function showComments(gameId: number, title: string) {
             if (!comment.lastPage)
                 qpItems.push({
                     label: " | > 查看更多回复",
-                    description: "index: " + i,
-                });
+                    action: () => showReplies(i),
+                } as vscode.QuickPickItem);
         }
 
         qpItems.push({
@@ -233,14 +233,11 @@ async function showComments(gameId: number, title: string) {
             case " | > 查看更多回复":
                 try {
                     commentQp.keepScrollPosition = true;
-                    await showReplies(
-                        +(
-                            commentQp.activeItems[0].description?.replace(
-                                "index: ",
-                                ""
-                            ) || -1
-                        )
-                    );
+                    await (
+                        commentQp.activeItems[0] as vscode.QuickPickItem & {
+                            action: () => Promise<void>;
+                        }
+                    ).action();
                     commentQp.keepScrollPosition = false;
                 } catch (e) {
                     err("无法获取回复:", e);
