@@ -32,6 +32,29 @@ async function showComments(gameId: number, title: string) {
         }),
         page = 1,
         items: Comment[] = [];
+    const pushItem = (
+        comment: Comment,
+        qpItems: vscode.QuickPickItem[],
+        i: number
+    ) => {
+        qpItems.push({
+            label: `${comment.top ? "[置顶评论] " : ""}${comment.nickname}: ${
+                comment.content
+            }`,
+        });
+        for (let j = 0; j < comment.replies.length; j++) {
+            const reply = comment.replies[j];
+            qpItems.push({
+                label: " | ",
+                description: `${reply.nickname}: ${reply.content}`,
+            });
+        }
+        if (!comment.lastPage)
+            qpItems.push({
+                label: " | > 查看更多回复",
+                action: () => showReplies(i),
+            } as vscode.QuickPickItem);
+    };
     const showComments = async () => {
         commentQp.busy = true;
         items = [];
