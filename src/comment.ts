@@ -97,6 +97,13 @@ async function showComments(gameId: number, title: string) {
                     $(
                         $(elem).siblings("span[id*='reply_']")[(i + 1) * 3 - 1]
                     ).children("div.hf1").length < 5,
+                likes: +$(elem)
+                    .children(".xq")
+                    .children(".hf")
+                    .children(".ding")
+                    .children("em")
+                    .text()
+                    .replace(/\[|\]/g, ""),
             };
             // 回复
             $($(elem).siblings("span[id*='reply_']")[(i + 1) * 3 - 1])
@@ -112,6 +119,22 @@ async function showComments(gameId: number, title: string) {
                                 .children("a")
                                 .text() || "未知用户",
                         content: $(elem).children("p").text(),
+                        cid: +(
+                            $(elem)
+                                .children(".xq")
+                                .children(".hf")
+                                .children(".ding")
+                                .children("em")
+                                .attr("id")
+                                ?.replace("tag_", "") || 0
+                        ),
+                        likes: +$(elem)
+                            .children(".xq")
+                            .children(".hf")
+                            .children(".ding")
+                            .children("em")
+                            .text()
+                            .replace(/\[|\]/g, ""),
                     });
                 });
             items.push(item);
@@ -139,6 +162,13 @@ async function showComments(gameId: number, title: string) {
                 lastPage:
                     $(elem).children("span[id*='reply_']").children("div.hf1")
                         .length < 5,
+                likes: +$(elem)
+                    .children(".xq")
+                    .children(".hf")
+                    .children(".ding")
+                    .children("em")
+                    .text()
+                    .replace(/\[|\]/g, ""),
             };
             // 回复
             $(elem)
@@ -155,6 +185,22 @@ async function showComments(gameId: number, title: string) {
                                 .children("a")
                                 .text() || "未知用户",
                         content: $(elem).children("p").text(),
+                        cid: +(
+                            $(elem)
+                                .children(".xq")
+                                .children(".hf")
+                                .children(".ding")
+                                .children("em")
+                                .attr("id")
+                                ?.replace("tag_", "") || 0
+                        ),
+                        likes: +$(elem)
+                            .children(".xq")
+                            .children(".hf")
+                            .children(".ding")
+                            .children("em")
+                            .text()
+                            .replace(/\[|\]/g, ""),
                     });
                 });
             items.push(item);
@@ -212,6 +258,22 @@ async function showComments(gameId: number, title: string) {
                             .children("a")
                             .text() || "未知用户",
                     content: $(elem).children("p").text(),
+                    cid: +(
+                        $(elem)
+                            .children(".xq")
+                            .children(".hf")
+                            .children(".ding")
+                            .children("em")
+                            .attr("id")
+                            ?.replace("tag_", "") || 0
+                    ),
+                    likes: +$(elem)
+                        .children(".xq")
+                        .children(".hf")
+                        .children(".ding")
+                        .children("em")
+                        .text()
+                        .replace(/\[|\]/g, ""),
                 });
             });
 
@@ -276,6 +338,12 @@ async function showComments(gameId: number, title: string) {
         }
     });
     commentQp.onDidHide(() => commentQp.dispose());
+    commentQp.buttons = [
+        {
+            tooltip: "写评论",
+            iconPath: new vscode.ThemeIcon("pencil"),
+        },
+    ];
 
     commentQp.show();
     showComments().catch(e => {

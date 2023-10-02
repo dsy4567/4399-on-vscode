@@ -31,10 +31,13 @@ type Comment = {
     repliesPage: number;
     cid: number;
     lastPage: boolean;
+    likes: number;
 };
 type Reply = {
     nickname: string;
     content: string;
+    cid: number;
+    likes: number;
 };
 type GlobalStorage = {
     get(key: "history"): History[];
