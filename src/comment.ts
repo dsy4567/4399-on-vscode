@@ -8,15 +8,21 @@ import * as cheerio from "cheerio";
 import * as iconv from "iconv-lite";
 import * as vscode from "vscode";
 
+import { comment } from ".";
 import { createQuickPick, err, httpRequest, log } from "./utils";
 
 /** 接口地址 */
 const API_URLS = {
-    /** 评论 */
-    comment: (gameId: number, page: number) =>
-        `https://cdn.comment.4399pk.com/nhot-${gameId}-${page}.htm` /** 回复 */,
-    reply: (gameId: number, cid: number, page: number) =>
+    /** 热门评论 */
+    comment_hot: (gameId: number, page: number) =>
+        `https://cdn.comment.4399pk.com/nhot-${gameId}-${page}.htm`,
+    /** 最新评论 */
+    comment_new: (gameId: number, page: number) =>
+        `https://cdn.comment.4399pk.com/page-${gameId}-${page}.htm`,
+    /** 回复 */ reply: (gameId: number, cid: number, page: number) =>
         `https://cdn.comment.4399pk.com/user_reply.php?fid=${gameId}&cid=${cid}&p=${page}&t=${Math.random()}`,
+    /** 点赞 */ like: (gameId: number, cid: number, flag: "" | "reply") =>
+        `https://cdn.comment.4399pk.com/flower_new.php?fid=${gameId}&cid=${cid}&flag=${flag}&t=${Math.random()}&_=${+new Date()}`,
 };
 
 /**
@@ -25,43 +31,47 @@ const API_URLS = {
  * @param title 游戏标题
  */
 async function showComments(gameId: number, title: string) {
-    let commentQp = createQuickPick({
+    let commentQp = createQuickPick<comment.CommentQuickPickItemData>({
             value: "",
-            title: title + " 的评论",
             prompt: "",
         }),
         page = 1,
-        items: Comment[] = [];
-    const pushItem = (
-        comment: Comment,
-        qpItems: vscode.QuickPickItem[],
-        i: number
+        hot = true,
+        qpItems: comment.CommentQuickPickItem[] = [];
+
+    const like = async (
+        target: comment.Comment | comment.Reply | undefined,
+        flag: "" | "reply"
     ) => {
-        qpItems.push({
-            label: `${comment.top ? "[置顶评论] " : ""}${comment.nickname}: ${
-                comment.content
-            }`,
-        });
-        for (let j = 0; j < comment.replies.length; j++) {
-            const reply = comment.replies[j];
-            qpItems.push({
-                label: " | ",
-                description: `${reply.nickname}: ${reply.content}`,
-            });
+        if (!target) return;
+        if (target.liked)
+            return vscode.window.showErrorMessage("您已点过赞了，不能重复点赞");
+        target.liked = true;
+
+        try {
+            const data = await httpRequest.get(
+                API_URLS.like(gameId, target?.cid || 0, flag),
+                "json"
+            );
+            data.data.status === "failure"
+                ? (err(data.data.msg), "")
+                : vscode.window.showInformationMessage("点赞成功");
+        } catch (e) {
+            err("点赞失败");
+            target.liked = false;
         }
-        if (!comment.lastPage)
-            qpItems.push({
-                label: " | > 查看更多回复",
-                action: () => showReplies(i),
-            } as vscode.QuickPickItem);
     };
     const showComments = async () => {
-        commentQp.busy = true;
-        items = [];
+        (commentQp.title = `${title} 的${hot ? "热门" : "最新"}评论`),
+            (commentQp.busy = true);
+        qpItems = [];
         const html = iconv.decode(
             (
                 await httpRequest.get(
-                    API_URLS.comment(gameId, page),
+                    (hot ? API_URLS.comment_hot : API_URLS.comment_new)(
+                        gameId,
+                        page
+                    ),
                     "arraybuffer"
                 )
             ).data,
@@ -74,7 +84,7 @@ async function showComments(gameId: number, title: string) {
 
         // 置顶评论
         $("#cntBox > div.zd").each((i, elem) => {
-            let item: Comment = {
+            const comment: comment.Comment = {
                 nickname:
                     $(elem)
                         .children("div.zd_t")
@@ -83,8 +93,8 @@ async function showComments(gameId: number, title: string) {
                         .text() || "未知用户",
                 content: $(elem).children("div.con").text(),
                 top: true,
-                replies: [],
                 repliesPage: 1,
+                lastReplyIndex: -1,
                 cid: -(
                     $(elem)
                         .children("div.con")
@@ -105,13 +115,32 @@ async function showComments(gameId: number, title: string) {
                     .text()
                     .replace(/\[|\]/g, ""),
             };
+            qpItems.push({
+                label: `${comment.top ? "[置顶评论] " : ""}${
+                    comment.nickname
+                }: ${comment.content}`,
+                data: { comment },
+                action(target) {
+                    vscode.window.showInformationMessage(target.label);
+                },
+                buttons: [
+                    {
+                        tooltip: "点赞",
+                        iconPath: new vscode.ThemeIcon("heart"),
+                        action(_, qpItem) {
+                            like(qpItem?.data?.comment, "");
+                        },
+                    },
+                ],
+            });
+
             // 回复
             $($(elem).siblings("span[id*='reply_']")[(i + 1) * 3 - 1])
                 .children("div.hf1")
                 .children("div.hf_le")
                 .children("div.hf_ri1")
                 .each((i, elem) => {
-                    item.replies.push({
+                    const reply: comment.Reply = {
                         nickname:
                             $(elem)
                                 .children("div.hf_wj")
@@ -135,13 +164,51 @@ async function showComments(gameId: number, title: string) {
                             .children("em")
                             .text()
                             .replace(/\[|\]/g, ""),
+                    };
+                    qpItems.push({
+                        label: " | ",
+                        description: `${reply.nickname}: ${reply.content}`,
+                        data: { reply },
+                        action(target) {
+                            vscode.window.showInformationMessage(
+                                target.description || ""
+                            );
+                        },
+                        buttons: [
+                            {
+                                tooltip: "点赞",
+                                iconPath: new vscode.ThemeIcon("heart"),
+                                action(_, qpItem) {
+                                    like(qpItem?.data?.reply, "reply");
+                                },
+                            },
+                        ],
                     });
                 });
-            items.push(item);
+            if (!comment.lastPage) {
+                const item = {
+                    label: " | > 查看更多回复",
+                    action: async () => {
+                        try {
+                            commentQp.keepScrollPosition = true;
+                            await showReplies(
+                                qpItems.indexOf(item),
+                                comment.cid,
+                                comment
+                            );
+                            commentQp.keepScrollPosition = false;
+                        } catch (e) {
+                            err("无法获取回复:", e);
+                            commentQp.busy = false;
+                        }
+                    },
+                };
+                qpItems.push(item);
+            }
         });
         // 普通评论
         $("#cntBox > div.lam > div.am_ri > div.lam").each((i, elem) => {
-            let item: Comment = {
+            let comment: comment.Comment = {
                 nickname:
                     $(elem)
                         .children("div.lam_t")
@@ -150,7 +217,7 @@ async function showComments(gameId: number, title: string) {
                         .children("a")
                         .text() || "未知用户",
                 content: $(elem).children("div.tex").children("p").text(),
-                replies: [],
+                lastReplyIndex: -1,
                 repliesPage: 1,
                 cid: +(
                     $(elem)
@@ -170,6 +237,23 @@ async function showComments(gameId: number, title: string) {
                     .text()
                     .replace(/\[|\]/g, ""),
             };
+            qpItems.push({
+                label: `${comment.nickname}: ${comment.content}`,
+                data: { comment },
+                action(target) {
+                    vscode.window.showInformationMessage(target.label);
+                },
+                buttons: [
+                    {
+                        tooltip: "点赞",
+                        iconPath: new vscode.ThemeIcon("heart"),
+                        action(_, qpItem) {
+                            like(qpItem?.data?.comment, "");
+                        },
+                    },
+                ],
+            });
+
             // 回复
             $(elem)
                 .children("span[id*='reply_']")
@@ -177,7 +261,7 @@ async function showComments(gameId: number, title: string) {
                 .children("div.hf_le")
                 .children("div.hf_ri1")
                 .each((i, elem) => {
-                    item.replies.push({
+                    const reply: comment.Reply = {
                         nickname:
                             $(elem)
                                 .children("div.hf_wj")
@@ -201,147 +285,146 @@ async function showComments(gameId: number, title: string) {
                             .children("em")
                             .text()
                             .replace(/\[|\]/g, ""),
+                    };
+                    qpItems.push({
+                        label: " | ",
+                        description: `${reply.nickname}: ${reply.content}`,
+                        action(target) {
+                            vscode.window.showInformationMessage(
+                                target.description || ""
+                            );
+                        },
+                        data: { reply },
+                        buttons: [
+                            {
+                                tooltip: "点赞",
+                                iconPath: new vscode.ThemeIcon("heart"),
+                                action(_, qpItem) {
+                                    like(qpItem?.data?.reply, "reply");
+                                },
+                            },
+                        ],
                     });
                 });
-            items.push(item);
-        });
-
-        let qpItems: vscode.QuickPickItem[] = [];
-        for (let i = 0; i < items.length; i++) {
-            const comment = items[i];
-            qpItems.push({
-                label: `${comment.top ? "[置顶评论] " : ""}${
-                    comment.nickname
-                }: ${comment.content}`,
-            });
-            for (let j = 0; j < comment.replies.length; j++) {
-                const reply = comment.replies[j];
-                qpItems.push({
-                    label: " | ",
-                    description: `${reply.nickname}: ${reply.content}`,
-                });
-            }
-            if (!comment.lastPage)
-                qpItems.push({
+            if (!comment.lastPage) {
+                const item = {
                     label: " | > 查看更多回复",
-                    action: () => showReplies(i),
-                } as vscode.QuickPickItem);
-        }
+                    action: async () => {
+                        try {
+                            commentQp.keepScrollPosition = true;
+                            await showReplies(
+                                qpItems.indexOf(item),
+                                comment.cid,
+                                comment
+                            );
+                            commentQp.keepScrollPosition = false;
+                        } catch (e) {
+                            err("无法获取回复:", e);
+                            commentQp.busy = false;
+                        }
+                    },
+                };
+                qpItems.push(item);
+            }
+        });
 
         qpItems.push({
             label: "下一页",
-            description: "加载下一页内容",
+            description: `第 ${page} 页`,
+            action: () => {
+                page++;
+                showComments().catch(e => {
+                    err("无法获取下一页评论:", e);
+                });
+            },
         });
         commentQp.items = qpItems;
         commentQp.busy = false;
     };
-    const showReplies = async (CommentIndex: number) => {
+    const showReplies = async (
+        qpIndex: number,
+        cid: number,
+        comment: comment.Comment
+    ) => {
         commentQp.busy = true;
-        const page = ++items[CommentIndex].repliesPage,
-            cid = items[CommentIndex].cid,
+
+        const page = ++comment.repliesPage,
             json = (
                 await httpRequest.get(API_URLS.reply(gameId, cid, page), "json")
             ).data;
-        log("页码", page, "CommentIndex", CommentIndex);
+        log("页码", page, "CommentIndex", qpIndex);
         if (!json.data) return err("无法获取评论页面: 响应为空");
         const $ = cheerio.load(json.data);
 
-        if ($("div.hf1").length < 5 || json.cur_page !== page)
-            items[CommentIndex].lastPage = true;
-        else
-            $("div.hf1 > div.hf_le > div.hf_ri1").each((i, elem) => {
-                items[CommentIndex].replies.push({
-                    nickname:
-                        $(elem)
-                            .children("div.hf_wj")
-                            .children("b")
-                            .children("a")
-                            .text() || "未知用户",
-                    content: $(elem).children("p").text(),
-                    cid: +(
-                        $(elem)
-                            .children(".xq")
-                            .children(".hf")
-                            .children(".ding")
-                            .children("em")
-                            .attr("id")
-                            ?.replace("tag_", "") || 0
-                    ),
-                    likes: +$(elem)
+        let i = 0;
+        $("div.hf1 > div.hf_le > div.hf_ri1").each((_, elem) => {
+            const reply: comment.Reply = {
+                nickname:
+                    $(elem)
+                        .children("div.hf_wj")
+                        .children("b")
+                        .children("a")
+                        .text() || "未知用户",
+                content: $(elem).children("p").text(),
+                cid: +(
+                    $(elem)
                         .children(".xq")
                         .children(".hf")
                         .children(".ding")
                         .children("em")
-                        .text()
-                        .replace(/\[|\]/g, ""),
-                });
+                        .attr("id")
+                        ?.replace("tag_", "") || 0
+                ),
+                likes: +$(elem)
+                    .children(".xq")
+                    .children(".hf")
+                    .children(".ding")
+                    .children("em")
+                    .text()
+                    .replace(/\[|\]/g, ""),
+            };
+            qpItems.splice(qpIndex + i++, 0, {
+                label: " | ",
+                description: `${reply.nickname}: ${reply.content}`,
+                data: { reply },
+                action(target) {
+                    vscode.window.showInformationMessage(
+                        target.description || ""
+                    );
+                },
+                buttons: [
+                    {
+                        tooltip: "点赞",
+                        iconPath: new vscode.ThemeIcon("heart"),
+                        action(_, qpItem) {
+                            like(qpItem?.data?.reply, "reply");
+                        },
+                    },
+                ],
             });
+        });
 
-        let qpItems: vscode.QuickPickItem[] = [];
-        for (let i = 0; i < items.length; i++) {
-            const comment = items[i];
-            qpItems.push({
-                label: `${comment.top ? "[置顶评论] " : ""}${
-                    comment.nickname
-                }: ${comment.content}`,
-            });
-            for (let j = 0; j < comment.replies.length; j++) {
-                const reply = comment.replies[j];
-                qpItems.push({
-                    label: " | ",
-                    description: `${reply.nickname}: ${reply.content}`,
-                });
-            }
-            if (!comment.lastPage)
-                qpItems.push({
-                    label: " | > 查看更多回复",
-                    action: () => showReplies(i),
-                } as vscode.QuickPickItem);
+        if ($("div.hf1").length < 5 || json.cur_page !== page) {
+            comment.lastPage = true;
+            qpItems.splice(qpIndex + i, 1);
         }
 
-        qpItems.push({
-            label: "下一页",
-            description: "加载下一页内容",
-        });
         commentQp.items = qpItems;
         commentQp.busy = false;
     };
 
-    commentQp.onDidAccept(async () => {
-        switch (commentQp.activeItems[0].label) {
-            case "下一页":
-                page++;
-                showComments().catch(e => {
-                    err("无法获取评论:", e);
-                });
-                break;
-            case " | > 查看更多回复":
-                try {
-                    commentQp.keepScrollPosition = true;
-                    await (
-                        commentQp.activeItems[0] as vscode.QuickPickItem & {
-                            action: () => Promise<void>;
-                        }
-                    ).action();
-                    commentQp.keepScrollPosition = false;
-                } catch (e) {
-                    err("无法获取回复:", e);
-                    commentQp.busy = false;
-                }
-                break;
-            default:
-                vscode.window.showInformationMessage(
-                    commentQp.activeItems[0].description ||
-                        commentQp.activeItems[0].label
-                );
-                break;
-        }
-    });
     commentQp.onDidHide(() => commentQp.dispose());
     commentQp.buttons = [
         {
-            tooltip: "写评论",
-            iconPath: new vscode.ThemeIcon("pencil"),
+            tooltip: "切换热门/最新评论",
+            iconPath: new vscode.ThemeIcon("arrow-swap"),
+            action: () => {
+                hot = !hot;
+                page = 1;
+                showComments().catch(e => {
+                    err("无法获取评论:", e);
+                });
+            },
         },
     ];
 

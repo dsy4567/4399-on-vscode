@@ -480,7 +480,7 @@ async function showGameDetail(url?: string) {
             "❤️ 添加到收藏盒",
             "⬇️ 下载游戏（仅单文件 Flash 游戏）",
             "🌏 在浏览器中打开详情页面",
-            "💬 热门评论",
+            "💬 查看评论",
         ]);
         if (!item) return;
 
@@ -503,7 +503,7 @@ async function showGameDetail(url?: string) {
                 play(url, true);
             else if (item === "🌏 在浏览器中打开详情页面")
                 openUrl(url as string);
-            else if (item === "💬 热门评论") showComments(+gameId, title);
+            else if (item === "💬 查看评论") showComments(+gameId, title);
             else vscode.window.showInformationMessage(item);
         } catch (e) {
             err("无法获取游戏页面", String(e));
