@@ -12,6 +12,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
+import { utils } from ".";
 import { sign, getCookie, getCookieSync, setCookie } from "./account";
 import { getGameInfo, setGameInfo } from "./game";
 import { getScript, getWebviewHtml_h5, manageScripts } from "./scripts";
@@ -123,12 +124,15 @@ function alertWhenUsingRemoteDevEnv() {
  * {@link vscode.QuickPick.ignoreFocusOut ignoreFocusOut} 属性
  * @returns 一个 `vscode.QuickPick`
  */
-function createQuickPick(o: {
+function createQuickPick<
+    D = any,
+    I extends utils.QuickPickItemWithActionAndData = utils.QuickPickItemWithActionAndData<D>
+>(o: {
     value?: string;
     title?: string;
     prompt?: string;
-}): vscode.QuickPick<vscode.QuickPickItem> {
-    const qp = vscode.window.createQuickPick();
+}): utils.QuickPick<D, I> {
+    const qp = vscode.window.createQuickPick<I>() as utils.QuickPick<D, I>;
     qp.title = o.title;
     qp.value = o.value || "";
     qp.placeholder = o.prompt;
@@ -136,6 +140,28 @@ function createQuickPick(o: {
     qp.matchOnDescription = true;
     qp.matchOnDetail = true;
     qp.ignoreFocusOut = true;
+    qp.onDidAccept(async () => {
+        const target = qp.activeItems[0];
+        try {
+            await target.action?.(target);
+        } catch (e) {
+            err(e);
+        }
+    });
+    qp.onDidTriggerButton(async target => {
+        try {
+            await target.action?.(target);
+        } catch (e) {
+            err(e);
+        }
+    });
+    qp.onDidTriggerItemButton(async target => {
+        try {
+            await target.button.action?.(target.button, target.item);
+        } catch (e) {
+            err(e);
+        }
+    });
     return qp;
 }
 /**
