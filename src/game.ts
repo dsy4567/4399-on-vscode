@@ -13,6 +13,7 @@ import isLocalhost = require("is-localhost-ip");
 import * as path from "path";
 import * as vscode from "vscode";
 
+import { game } from ".";
 import { login } from "./account";
 import { showComments } from "./comment";
 import { getPort, initHttpServer, setData } from "./server";
@@ -60,12 +61,12 @@ let gameInfoUrls: Record<string, string> = {};
 let webGameUrl = "";
 
 // 使用事先准备好的规则匹配难以添加支持的游戏
-let supplements: Supplements = JSON.parse(
+let supplements: game.Supplements = JSON.parse(
     fs
         .readFileSync(path.join(DIRNAME, "../resources/supplements.json"))
         .toString()
 );
-if (supplements._ver !== 1) supplements = {} as Supplements;
+if (supplements._ver !== 1) supplements = {} as game.Supplements;
 
 /**
  * 获取存放小游戏的服务器
@@ -445,7 +446,16 @@ async function showGameDetail(url?: string) {
         title = (await vscode.window.showQuickPick(u)) || "";
         url = gameInfoUrls[title];
     }
-    if (!url) return;
+
+    if (
+        !url &&
+        !(url = await vscode.window.showInputBox({
+            title: "4399 on VSCode: 显示游戏详细信息",
+            prompt: "启动任意游戏或输入游戏链接/id 以继续",
+            placeHolder: "e.g. 114514 https://www.4399.com/flash/114514.htm",
+        }))
+    )
+        return;
     let gameId = "" + parseId(url);
 
     try {
@@ -456,8 +466,22 @@ async function showGameDetail(url?: string) {
             "gb2312"
         );
         if (!html) return err("无法获取游戏页面: html 为空");
-
         const $ = cheerio.load(html);
+
+        let m: RegExpMatchArray | null = null;
+
+        m = html.match(/<title>.+<\/title>/i);
+        if (!m) title = $("title").html() || "未知";
+        else
+            try {
+                title = m[0]
+                    .replace(/<\/?title>/gi, "")
+                    .split(/[-_ |，,¦]/gi)[0]
+                    .replaceAll(/[\n ]/gi, "");
+            } catch (e) {
+                title = $("title").html() || "未知";
+                err("无法匹配游戏标题:", e);
+            }
         const desc1 = $("#introduce > font").text().replaceAll(/[\n ]/gi, "");
         const desc2 = $(
             "body > div.waper > div.content > div > div.box1.cf > div.intro.fl > div"
@@ -683,7 +707,7 @@ function setGameInfo(
 /** 显示历史记录 */
 async function showHistory() {
     try {
-        let h: History[] = globalStorage(getContext()).get("history");
+        let h: game.History[] = globalStorage(getContext()).get("history");
         if (!h || (typeof h === "object" && !h[0])) h = [];
 
         h.unshift({
@@ -716,10 +740,10 @@ async function showHistory() {
     }
 }
 /** 写入历史记录 */
-function updateHistory(history: History) {
+function updateHistory(history: game.History) {
     if (!getCfg("updateHistory", true)) return;
 
-    let h: History[] = globalStorage(getContext()).get("history");
+    let h: game.History[] = globalStorage(getContext()).get("history");
     if (!h || (typeof h === "object" && !h[0])) h = [];
 
     h.unshift(history);
