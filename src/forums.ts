@@ -10,6 +10,7 @@ import * as iconv from "iconv-lite";
 import * as path from "path";
 import * as vscode from "vscode";
 
+import { forums, utils } from ".";
 import { login } from "./account";
 import { getPort, initHttpServer } from "./server";
 import {
@@ -39,24 +40,24 @@ const API_URLS = {
     join: (id: number) =>
         [
             "https://my.4399.com/forums/operate-joinMtag",
-            `tagid=${forumId}&_AJAX_=1`,
+            `tagid=${id}&_AJAX_=1`,
         ] as const,
     /** 离开群组 */
     leave: (id: number) =>
         [
             "https://my.4399.com/forums/operate-leaveMtag",
-            `tagid=${forumId}&_AJAX_=1`,
+            `tagid=${id}&_AJAX_=1`,
         ] as const,
     /** 群组内签到 */
     sign: (id: number) =>
         [
             "https://my.4399.com/forums/grade-signIn",
-            `tagid=${forumId}&_AJAX_=1`,
+            `tagid=${id}&sign=1&_AJAX_=1`,
         ] as const,
 };
 
-let threadQp: vscode.QuickPick<vscode.QuickPickItem>;
-let threadQpItems: vscode.QuickPickItem[] = [];
+let threadQp: utils.QuickPick<forums.ForumsQuickPickItemData>;
+let threadQpItems: forums.ForumsQuickPickItem[] = [];
 /** 群组 ID */
 let forumId = 0;
 /** 群组名 */
@@ -65,8 +66,6 @@ let forumTitle = "";
 let threadSearchValue: string;
 /** 页码 */
 let threadPage: number = 1;
-/** e.g. threadData[0] == ["造梦无双", 84526] */
-let threads: [string, number][];
 /** 延迟获取搜索建议 */
 let threadTimeout: NodeJS.Timeout;
 /** 正在展示所有帖子 */
@@ -206,7 +205,6 @@ function searchForums(kwd: string) {
         res.data = iconv.decode(res.data as Buffer, "utf8");
         const d: string = res.data;
         const $ = cheerio.load(d);
-        threads = [];
         threadQpItems = [];
 
         $("ul > li > a > span.title").each((i, elem) => {
@@ -219,20 +217,37 @@ function searchForums(kwd: string) {
             if (!id || isNaN(Number(id))) return;
 
             id = Number(id);
-            threads.push([g, id]);
-        });
-
-        threads.forEach(g => {
             threadQpItems.push({
-                label: g[0],
-                description: "群组 ID: " + g[1],
+                label: g,
+                description: "群组 ID: " + id,
                 alwaysShow: true,
+                action(target) {
+                    threadPage = 1;
+                    forumId = +(
+                        target.description?.replace("群组 ID: ", "") || -1
+                    );
+                    forumTitle = target.label;
+                    showThreads(forumId, forumTitle);
+                    globalStorage(getContext()).set(
+                        "kwd-forums",
+                        threadQp.value
+                    );
+                },
+                data: {
+                    id,
+                    title: g,
+                },
             });
         });
+
         threadQpItems.push({
             label: "下一页",
-            description: "加载下一页群组",
+            description: `第 ${threadPage} 页`,
             alwaysShow: true,
+            action() {
+                threadPage++;
+                searchForums(threadQp.value);
+            },
         });
 
         if (threadQpItems[0]) threadQp.items = threadQpItems;
@@ -249,7 +264,6 @@ function searchForums(kwd: string) {
 async function showThreads(id: number, title: string) {
     if (threadQp.busy) return;
 
-    threads = [];
     threadQpItems = [];
     threadQp.busy = true;
 
@@ -260,7 +274,6 @@ async function showThreads(id: number, title: string) {
     if (d) {
         const $ = cheerio.load(d);
         let joined = false;
-        threads = [];
 
         // 获取标题和类型
         $("div.listtitle > div.title").each((i, elem) => {
@@ -272,21 +285,28 @@ async function showThreads(id: number, title: string) {
 
             type = type || "[顶] ";
             title = type + title;
-            threads.push([title, id]);
+            threadQpItems.push({
+                label: title,
+                description: "帖子 ID: " + id,
+                alwaysShow: true,
+                action(target) {
+                    enterThread(
+                        +(target.description?.replace("帖子 ID: ", "") || -1)
+                    );
+                },
+                data: { id, title },
+            });
         });
         joined = $("a.join").hasClass("hasjoin");
 
-        threads.forEach(g => {
-            threadQpItems.push({
-                label: g[0],
-                description: "帖子 ID: " + g[1],
-                alwaysShow: true,
-            });
-        });
         threadQpItems.push({
             label: "下一页",
-            description: "加载下一页帖子",
+            description: `第 ${threadPage} 页`,
             alwaysShow: true,
+            action() {
+                threadPage++;
+                showThreads(forumId, forumTitle);
+            },
         });
 
         if (threadQpItems[0]) {
@@ -301,82 +321,9 @@ async function showThreads(id: number, title: string) {
                 iconPath: joined
                     ? new vscode.ThemeIcon("remove")
                     : new vscode.ThemeIcon("add"),
-            },
-            {
-                tooltip: "签到",
-                iconPath: new vscode.ThemeIcon("check"),
-            },
-        ];
-        threadQp.busy = false;
-    } else err("无法获取群组页面");
-}
-
-async function main() {
-    try {
-        let k = ""; // 上次搜索词
-
-        if (threadQp) threadQp.value = threadSearchValue;
-        else {
-            k = globalStorage(getContext()).get("kwd-forums");
-            threadQp = createQuickPick({
-                value: k || "",
-                title: "4399 on VSCode: 逛群组",
-                prompt: "搜索群组",
-            });
-            threadQp.onDidChangeValue(kwd => {
-                if (showingThreads) return;
-
-                threadQp.title = "4399 on VSCode: 逛群组";
-                threadSearchValue = kwd;
-                threadPage = 1;
-                searchForums(kwd);
-            });
-            threadQp.onDidAccept(async () => {
-                if (threadQp.activeItems[0].description === "加载下一页群组") {
-                    threadPage++;
-                    searchForums(threadQp.value);
-                } else if (
-                    threadQp.activeItems[0].description === "加载下一页帖子"
-                ) {
-                    threadPage++;
-                    showThreads(forumId, forumTitle);
-                } else if (
-                    threadQp.activeItems[0].description?.includes("群组 ID: ")
-                ) {
-                    threadPage = 1;
-                    forumId = +threadQp.activeItems[0].description?.replace(
-                        "群组 ID: ",
-                        ""
-                    );
-                    forumTitle = threadQp.activeItems[0].label;
-                    showThreads(forumId, forumTitle);
-                    globalStorage(getContext()).set(
-                        "kwd-forums",
-                        threadQp.value
-                    );
-                } else if (
-                    threadQp.activeItems[0].description?.includes("帖子 ID: ")
-                )
-                    enterThread(
-                        +threadQp.activeItems[0].description?.replace(
-                            "帖子 ID: ",
-                            ""
-                        )
-                    );
-            });
-            threadQp.onDidTriggerButton(async b => {
-                if (threadQp.busy) return;
-                if (b === vscode.QuickInputButtons.Back) {
-                    threadQp.title = "4399 on VSCode: 逛群组";
-                    threadQp.value = threadSearchValue = "";
-                    threadPage = 1;
-                    return searchForums("");
-                }
-
-                threadQp.busy = true;
-                try {
+                async action(button) {
                     let result: any;
-                    switch (b.tooltip) {
+                    switch (button.tooltip) {
                         case "离开群组":
                             result = (
                                 await httpRequest.post(
@@ -405,32 +352,66 @@ async function main() {
                                     result?.msg || "操作失败"
                                 );
                             break;
-                        case "签到":
-                            result = (
-                                await httpRequest.post(
-                                    ...API_URLS.sign(forumId),
-                                    "json"
-                                )
-                            ).data;
-                            if (result?.code === 100)
-                                vscode.window.showInformationMessage(
-                                    result?.msg ||
-                                        `签到成功, 已连续签到 ${+result?.result
-                                            ?.totalDays} 天`
-                                );
-                            else
-                                vscode.window.showInformationMessage(
-                                    result?.msg || "操作失败"
-                                );
-                            break;
-                        default:
-                            break;
                     }
-                } catch (e) {
-                    err(e);
+                    showThreads(forumId, forumTitle);
+                },
+            },
+            {
+                tooltip: "签到",
+                iconPath: new vscode.ThemeIcon("check"),
+                async action() {
+                    const result = (
+                        await httpRequest.post(
+                            ...API_URLS.sign(forumId),
+                            "json"
+                        )
+                    ).data;
+                    if (result?.code === 100)
+                        vscode.window.showInformationMessage(
+                            result?.msg ||
+                                `签到成功, 已连续签到 ${+result?.result
+                                    ?.totalDays} 天`
+                        );
+                    else
+                        vscode.window.showInformationMessage(
+                            result?.msg || "操作失败"
+                        );
+                    showThreads(forumId, forumTitle);
+                },
+            },
+        ];
+        threadQp.busy = false;
+    } else err("无法获取群组页面");
+}
+
+async function main() {
+    try {
+        let k = ""; // 上次搜索词
+
+        if (threadQp) threadQp.value = threadSearchValue;
+        else {
+            k = globalStorage(getContext()).get("kwd-forums");
+            threadQp = createQuickPick({
+                value: k || "",
+                title: "4399 on VSCode: 逛群组",
+                prompt: "搜索群组",
+            });
+            threadQp.onDidChangeValue(kwd => {
+                if (showingThreads) return;
+
+                threadQp.title = "4399 on VSCode: 逛群组";
+                threadSearchValue = kwd;
+                threadPage = 1;
+                searchForums(kwd);
+            });
+            threadQp.onDidTriggerButton(async b => {
+                if (threadQp.busy) return;
+                if (b === vscode.QuickInputButtons.Back) {
+                    threadQp.title = "4399 on VSCode: 逛群组";
+                    threadQp.value = threadSearchValue = "";
+                    threadPage = 1;
+                    return searchForums("");
                 }
-                threadQp.busy = false;
-                showThreads(forumId, forumTitle);
             });
             if (!threadQp.value) searchForums("");
         }

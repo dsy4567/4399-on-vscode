@@ -9,6 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 
+import { scripts } from ".";
 import { getUid } from "./account";
 import {
     DATA_DIR,
@@ -39,7 +40,7 @@ const getScript = (
                 : "navigator.serviceWorker.getRegistrations().then((r)=>{r.forEach(sw=>sw.unregister())})"
             : "";
     let s = "";
-    const f = (getCfg("htmlScripts", []) as ScriptConfig[]).map(item =>
+    const f = (getCfg("htmlScripts", []) as scripts.ScriptConfig[]).map(item =>
         item?.enabled ? item.filename : ""
     );
     f.forEach(file => {
@@ -265,32 +266,34 @@ async function manageScripts() {
         let scriptsQp = createQuickPick({
                 title: "管理 HTML 代码片段",
             }),
-            qpItems: vscode.QuickPickItem[] = [],
-            onlineQpItems: vscode.QuickPickItem[] = [],
-            installedItems: (ScriptConfig | null)[];
-        scriptsQp.keepScrollPosition = true;
-        scriptsQp.buttons = [
-            {
-                tooltip: "了解更多",
-                iconPath: new vscode.ThemeIcon("globe"),
-            },
-            {
-                tooltip: "反馈",
-                iconPath: new vscode.ThemeIcon("feedback"),
-            },
-        ];
+            installedItems: (scripts.ScriptConfig | null)[] = getCfg(
+                "htmlScripts",
+                []
+            ),
+            onlineQpItems: scripts.OnlineScriptQuickPickItem[] = [],
+            qpItems: scripts.ScriptsQuickPickItem[] = [];
 
-        const f = (update = true) => {
-            scriptsQp.items = [];
-            qpItems = [];
-            installedItems = getCfg("htmlScripts", []);
+        const updateQpItems = async (updateConfig = true) => {
+            let s: Set<string> = new Set(),
+                remove: number[] = [];
+
             scriptsQp.busy = true;
+            qpItems = [];
+
             qpItems.push({
                 label: "已安装",
-                kind: -1,
+                kind: vscode.QuickPickItemKind.Separator,
             });
-            installedItems.forEach(installedItem => {
-                if (!installedItem?.filename) return;
+            installedItems.forEach((installedItem, i) => {
+                if (
+                    !installedItem ||
+                    !installedItem.filename ||
+                    s.has(installedItem.filename)
+                )
+                    return remove.push(i);
+                s.add(installedItem.filename);
+
+                const id = installedItem.filename.split(".")[0];
                 qpItems.push({
                     label: installedItem.displayName,
                     description: installedItem.filename,
@@ -298,6 +301,15 @@ async function manageScripts() {
                         {
                             tooltip: "简介",
                             iconPath: new vscode.ThemeIcon("info"),
+                            action() {
+                                showWebviewPanel(
+                                    `https://dsy4567.github.io/4ov-scripts/${id}/`,
+                                    installedItem.displayName || "简介",
+                                    "",
+                                    true,
+                                    false
+                                );
+                            },
                         },
                         {
                             tooltip: installedItem.enabled ? "禁用" : "启用",
@@ -306,181 +318,172 @@ async function manageScripts() {
                                     ? "debug-breakpoint-unverified"
                                     : "debug-breakpoint"
                             ),
+                            action() {
+                                installedItem.enabled = !installedItem.enabled;
+                                updateQpItems();
+                            },
                         },
                         {
-                            tooltip: "安装或更新",
-                            iconPath: new vscode.ThemeIcon("cloud-download"),
+                            tooltip: "更新",
+                            iconPath: new vscode.ThemeIcon("arrow-circle-up"),
+                            async action() {
+                                installOrUpdateScript(
+                                    id,
+                                    installedItem.displayName,
+                                    installedItem
+                                );
+                            },
                         },
                         {
                             tooltip: "移除",
                             iconPath: new vscode.ThemeIcon("trashcan"),
+                            action() {
+                                installedItem.filename = "";
+                                try {
+                                    fs.rmSync(
+                                        path.join(
+                                            DATA_DIR,
+                                            "html-scripts/",
+                                            id + ".html"
+                                        )
+                                    );
+                                } catch (e) {}
+                                vscode.window.showInformationMessage(
+                                    "移除成功: " + installedItem.displayName
+                                );
+                                updateQpItems();
+                            },
                         },
                     ],
                 });
             });
-            scriptsQp.items = qpItems;
-            if (update)
-                httpRequest
-                    .get(
-                        "https://dsy4567.github.io/4ov-scripts/download.html",
-                        "text"
-                    )
-                    .then(res => {
-                        const $ = cheerio.load(res.data);
-                        let items: Record<string, string> = {};
-                        $("ul#items > li").each((i, el) => {
-                            const dataset = $(el).data() as Record<
-                                string,
-                                string
-                            >;
-                            items[dataset["id"]] = dataset["displayName"];
-                        });
+            remove.forEach((r, i) => {
+                installedItems.splice(r + i, 1);
+            });
+            qpItems.push(
+                {
+                    label: "全部",
+                    kind: -1,
+                },
+                ...onlineQpItems
+            );
 
-                        qpItems.push({
-                            label: "全部",
-                            kind: -1,
-                        });
-                        Object.entries(items).forEach(([id, displayName]) => {
-                            if (!id) return;
-                            const o = {
-                                label: displayName,
-                                description: id + ".html",
-                                buttons: [
-                                    {
-                                        tooltip: "简介",
-                                        iconPath: new vscode.ThemeIcon("info"),
-                                    },
-                                    {
-                                        tooltip: "安装或更新",
-                                        iconPath: new vscode.ThemeIcon(
-                                            "cloud-download"
-                                        ),
-                                    },
-                                ],
-                            };
-                            qpItems.push(o);
-                            onlineQpItems.push(o);
-                        });
-                        scriptsQp.items = qpItems;
-                        scriptsQp.busy = false;
-                    })
-                    .catch(e => {
-                        err("无法获取 HTML 代码片段下载页", e);
-                        scriptsQp.busy = false;
-                    });
-            else {
-                qpItems.push(
-                    {
-                        label: "全部",
-                        kind: -1,
-                    },
-                    ...onlineQpItems
-                );
-                scriptsQp.items = qpItems;
+            scriptsQp.items = qpItems;
+
+            if (updateConfig) {
+                await setCfg("htmlScripts", installedItems);
+
                 scriptsQp.busy = false;
             }
-            scriptsQp.busy = true;
-            setCfg("htmlScripts", installedItems).then(
-                () => {
-                    scriptsQp.busy = false;
-                },
-                () => {
-                    scriptsQp.busy = false;
-                }
-            );
         };
-        scriptsQp.onDidTriggerItemButton(async b => {
-            try {
-                if (scriptsQp.busy) return;
-                scriptsQp.busy = true;
-                installedItems = getCfg("htmlScripts", []);
-                let installedItem: ScriptConfig | null = null,
-                    installedItemIndex = -1,
-                    id = b.item.description?.split(".")[0];
-                installedItems.forEach((_, i) => {
-                    if (b.item.description === _?.filename) {
-                        installedItem = _;
-                        installedItemIndex = i;
+        const installOrUpdateScript = async (
+            id: string,
+            displayName: string,
+            installedItem?: scripts.ScriptConfig
+        ) => {
+            scriptsQp.busy = true;
+            fs.writeFileSync(
+                path.join(DATA_DIR, "html-scripts/", id + ".html"),
+                (
+                    await httpRequest.get(
+                        `https://dsy4567.github.io/4ov-scripts/${id}/${id}.html`,
+                        "arraybuffer"
+                    )
+                ).data
+            );
+
+            if (installedItem) {
+                installedItem.displayName = displayName;
+                installedItem.filename = id + ".html";
+            } else {
+                let installed = false;
+                for (const item of installedItems)
+                    if (item?.filename.split(".")[0] === id) {
+                        item.displayName = displayName;
+                        installed = true;
+                        break;
                     }
-                });
-                installedItem = installedItem as ScriptConfig | null;
-
-                switch (b.button.tooltip) {
-                    case "简介":
-                        showWebviewPanel(
-                            `https://dsy4567.github.io/4ov-scripts/${id}/`,
-                            b.item.label,
-                            "",
-                            true,
-                            false
-                        );
-                        break;
-                    case "禁用":
-                    case "启用":
-                        if (installedItem)
-                            installedItem.enabled = !installedItem.enabled;
-                        break;
-                    case "安装或更新":
-                        fs.writeFileSync(
-                            path.join(DATA_DIR, "html-scripts/", id + ".html"),
-                            (
-                                await httpRequest.get(
-                                    `https://dsy4567.github.io/4ov-scripts/${id}/${id}.html`,
-                                    "arraybuffer"
-                                )
-                            ).data
-                        );
-                        if (installedItem) {
-                            installedItem.displayName = b.item.label;
-                            installedItem.filename = id + ".html";
-                        } else
-                            installedItems.push({
-                                displayName: b.item.label,
-                                enabled: true,
-                                filename: id + ".html",
-                            });
-                        vscode.window.showInformationMessage(
-                            "安装成功: " + b.item.label
-                        );
-                        break;
-                    case "移除":
-                        installedItems.splice(installedItemIndex, 1);
-                        fs.rmSync(
-                            path.join(DATA_DIR, "html-scripts/", id + ".html")
-                        );
-                        vscode.window.showInformationMessage(
-                            "移除成功: " + b.item.label
-                        );
-                        break;
-                    default:
-                        break;
-                }
-
-                installedItems.forEach((item, i) => {
-                    if (!item || !item.filename) installedItems.splice(i, 1);
-                });
-                await setCfg("htmlScripts", installedItems);
-            } catch (e) {
-                err(e);
+                !installed &&
+                    installedItems.push({
+                        displayName: displayName,
+                        enabled: true,
+                        filename: id + ".html",
+                    });
             }
-            scriptsQp.busy = false;
-            f(false);
+            vscode.window.showInformationMessage("安装成功: " + displayName);
+            updateQpItems();
+        };
+
+        scriptsQp.busy = true;
+        const prom = httpRequest.get(
+            "https://dsy4567.github.io/4ov-scripts/download.html",
+            "text"
+        );
+        updateQpItems(false).then(() => {
+            prom.then(res => {
+                const $ = cheerio.load(res.data);
+                $("ul#items > li").each((i, el) => {
+                    const dataset = $(el).data() as Record<string, string>;
+                    const id = dataset["id"],
+                        displayName = dataset["displayName"];
+                    if (!id) return;
+
+                    const o: scripts.OnlineScriptQuickPickItem = {
+                        label: displayName,
+                        description: id + ".html",
+                        buttons: [
+                            {
+                                tooltip: "简介",
+                                iconPath: new vscode.ThemeIcon("info"),
+                                action() {
+                                    showWebviewPanel(
+                                        `https://dsy4567.github.io/4ov-scripts/${id}/`,
+                                        displayName,
+                                        "",
+                                        true,
+                                        false
+                                    );
+                                },
+                            },
+                            {
+                                tooltip: "安装或更新",
+                                iconPath: new vscode.ThemeIcon(
+                                    "cloud-download"
+                                ),
+                                action() {
+                                    installOrUpdateScript(id, displayName);
+                                },
+                            },
+                        ],
+                    };
+                    onlineQpItems.push(o);
+                });
+                updateQpItems(false);
+                scriptsQp.busy = false;
+            }).catch(e => {
+                err("无法获取 HTML 代码片段下载页", e);
+                scriptsQp.busy = false;
+            });
         });
-        scriptsQp.onDidTriggerButton(b => {
-            switch (b.tooltip) {
-                case "了解更多":
+
+        scriptsQp.keepScrollPosition = true;
+        scriptsQp.buttons = [
+            {
+                tooltip: "了解更多",
+                iconPath: new vscode.ThemeIcon("globe"),
+                action() {
                     openUrl("https://dsy4567.github.io/4ov-scripts/");
-                    break;
-                case "反馈":
+                },
+            },
+            {
+                tooltip: "反馈/贡献",
+                iconPath: new vscode.ThemeIcon("feedback"),
+                action() {
                     openUrl("https://github.com/dsy4567/4ov-scripts/issues");
-                    break;
-                default:
-                    break;
-            }
-        });
+                },
+            },
+        ];
         scriptsQp.onDidHide(() => scriptsQp.dispose());
-
-        f();
         scriptsQp.show();
     } catch (e) {
         err(e);
