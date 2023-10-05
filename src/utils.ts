@@ -8,6 +8,7 @@ import axios, { AxiosResponse, AxiosRequestConfig, ResponseType } from "axios";
 import * as cheerio from "cheerio";
 import * as fs from "fs";
 import * as iconv from "iconv-lite";
+import isLocalhost = require("is-localhost-ip");
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
@@ -17,7 +18,6 @@ import { sign, getCookie, getCookieSync, setCookie } from "./account";
 import { getGameInfo, setGameInfo } from "./game";
 import { getScript, getWebviewHtml_h5, manageScripts } from "./scripts";
 import { getData, setData, getPort, initHttpServer } from "./server";
-import isLocalhost = require("is-localhost-ip");
 
 /** 第一次游戏前提示 */
 let alerted = false;
@@ -68,7 +68,7 @@ const httpRequest = {
      * @returns 一个兑现 axios 响应的 Promise
      */
     get<RT>(url: string, responseType: ResponseType & RT, noCookie = false) {
-        return axios.get<RTypes[ResponseType & RT]>(
+        return axios.get<utils.RTypes[ResponseType & RT]>(
             url,
             getReqCfg(responseType, noCookie)
         );
@@ -79,19 +79,21 @@ const httpRequest = {
      * @param data 请求体
      * @param responseType 响应类型
      * @param noCookie 请求是否不带上 cookie
+     * @param contentType 请求体类型
      * @returns 一个兑现 axios 响应的 Promise
      */
     post<RT>(
         url: string,
         data: string | undefined,
         responseType: ResponseType & RT,
-        noCookie = false
+        noCookie = false,
+        contentType: string = "application/x-www-form-urlencoded; charset=UTF-8"
     ) {
-        return axios.post<RTypes[ResponseType & RT]>(
-            url,
-            data,
-            getReqCfg(responseType, noCookie)
-        );
+        let reqCfg = getReqCfg(responseType, noCookie);
+        (reqCfg.headers as Exclude<typeof reqCfg.headers, undefined>)[
+            "content-type"
+        ] = contentType;
+        return axios.post<utils.RTypes[ResponseType & RT]>(url, data, reqCfg);
     },
 };
 
@@ -170,7 +172,7 @@ function createQuickPick<
  * @param defaultValue 找不到配置时的返回值
  * @returns 指定配置的值
  */
-function getCfg(name: CfgNames, defaultValue: any = undefined) {
+function getCfg(name: utils.CfgNames, defaultValue: any = undefined) {
     return vscode.workspace
         .getConfiguration()
         .get("4399-on-vscode." + name, defaultValue);
@@ -189,7 +191,7 @@ async function rmCfg(name: string) {
  * @param name 去掉 "4399-on-vscode." 后的配置 ID
  * @param val 更改后的配置值
  */
-async function setCfg(name: CfgNames, val: any) {
+async function setCfg(name: utils.CfgNames, val: any) {
     return vscode.workspace
         .getConfiguration()
         .update("4399-on-vscode." + name, val, true);
@@ -207,7 +209,7 @@ function setContext(ctx: vscode.ExtensionContext) {
  * @param context 扩展上下文
  * @returns 一个包含 get 和 set 方法的对象
  */
-function globalStorage(context: vscode.ExtensionContext): GlobalStorage {
+function globalStorage(context: vscode.ExtensionContext): utils.GlobalStorage {
     return {
         get: (key: string) => JSON.parse(context.globalState.get(key) || '""'),
         set: (key: string, value: any) =>
