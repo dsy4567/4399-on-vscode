@@ -43,7 +43,7 @@ const API_URLS = {
         ] as const,
     /** 添加到收藏盒 */
     addCollection: (gameId: string) =>
-        `"https://gprp.4399.com/cg/add_collection.php?gid=${gameId}`,
+        `https://gprp.4399.com/cg/add_collection.php?gid=${gameId}`,
 };
 
 /** 是否为 flash 游戏 */
@@ -496,7 +496,7 @@ async function showGameDetail(url?: string) {
                             "添加到收藏盒成功"
                         );
                     } catch (e) {
-                        err("添加到收藏盒失败", String(e));
+                        err("添加到收藏盒失败", e);
                     }
                 });
             else if (item === "⬇️ 下载游戏（仅单文件 Flash 游戏）")
