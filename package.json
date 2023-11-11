@@ -243,7 +243,7 @@
     "publisher": "dsy4567",
     "license": "GPL-3.0",
     "dependencies": {
-        "axios": "^1.4.0",
+        "axios": "^1.6.0",
         "cheerio": "1.0.0-rc.12",
         "cookie": "^0.5.0",
         "iconv-lite": "^0.6.3",
